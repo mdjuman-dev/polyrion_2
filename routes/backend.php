@@ -26,6 +26,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::get('/market/edit/{id}', 'edit')->name('market.edit');
             Route::put('/market/update/{id}', 'update')->name('market.update');
             Route::delete('/market/delete/{id}', 'delete')->name('market.delete');
+
+            Route::get('/event', 'storeEvents');
         });
     });
 });

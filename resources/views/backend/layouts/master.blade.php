@@ -631,6 +631,7 @@
 
 
     <!-- Vendor JS -->
+    <script src="{{ asset('global/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('backend/assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('backend/assets/js/pages/chat-popup.js') }}"></script>
     <script src="{{ asset('backend/assets/js/demo.js') }}"></script>

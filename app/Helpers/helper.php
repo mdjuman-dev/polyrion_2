@@ -1,7 +1,12 @@
 <?php
 
 use Carbon\Carbon;
-
+if (!function_exists('toMysqlDate')) {
+    function toMysqlDate($date)
+    {
+        return $date ? date('Y-m-d H:i:s', strtotime($date)) : null;
+    }
+}
 if (!function_exists('format_date')) {
     /**
      * Format a date/time value

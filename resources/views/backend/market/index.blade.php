@@ -31,6 +31,8 @@
                             </div>
                         </div>
 
+
+
                         <div class="box modern-search-box">
                             <div class="box-body">
                                 <form action="{{ route('admin.market.search') }}" method="post" id="searchForm">
@@ -69,6 +71,11 @@
                         </div>
                     </div>
                 </div>
+                <div>
+                    <button id="payBtn" class="btn btn-primary">
+                        <i class="fa fa-paypal"></i> Pay with Binance Pay
+                    </button>
+                </div>
             </section>
 
             <!-- Results Section -->
@@ -90,9 +97,11 @@
                                         <div class="col-md-7">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <h2 class="market-main-title">{{ $data->title ?? 'Market Title' }}</h2>
+                                                    <h2 class="market-main-title">{{ $data->title ?? 'Market Title' }}
+                                                    </h2>
                                                     <p class="market-main-description">
-                                                        {{ $data->description ?? 'No description available' }}</p>
+                                                        {{ $data->description ?? 'No description available' }}
+                                                    </p>
                                                     <div class="market-dates">
                                                         @if (isset($data->startDate))
                                                             <span class="badge badge-primary">
@@ -124,8 +133,7 @@
                             <!-- Markets Grid -->
                             <div class="row market-grid" id="marketsGrid">
                                 @foreach ($data->markets ?? [] as $index => $item)
-                                    <div class="col-lg-6 col-xl-4 market-card-wrapper"
-                                        data-market-index="{{ $index }}">
+                                    <div class="col-lg-6 col-xl-4 market-card-wrapper" data-market-index="{{ $index }}">
                                         <div class="box market-card modern-market-card">
                                             <!-- Card Header with Image -->
                                             <div class="market-card-header-modern">
@@ -206,11 +214,13 @@
                                                         <div class="outcome-cards">
                                                             <div class="outcome-card outcome-yes">
                                                                 <div class="outcome-label">YES</div>
-                                                                <div class="outcome-percent">{{ $yesPercent }}%</div>
+                                                                <div class="outcome-percent">{{ $yesPercent }}%
+                                                                </div>
                                                             </div>
                                                             <div class="outcome-card outcome-no">
                                                                 <div class="outcome-label">NO</div>
-                                                                <div class="outcome-percent">{{ $noPercent }}%</div>
+                                                                <div class="outcome-percent">{{ $noPercent }}%
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -712,9 +722,93 @@
     @endpush
 
     @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.min.js"></script>
+        <script>
+            const MERCHANT_ADDRESS = "0xYOUR_MERCHANT_ADDRESS";
+            const TOKEN_ADDRESS = "0xUSDT_OR_USDC_CONTRACT"; // network অনুযায়ী ঠিক করা লাগবে
+            const TOKEN_DECIMALS = 6; // USDT অনেক সময় 6, USDC 6; কিছু token 18 হতে পারে
+
+            const ERC20_ABI = [
+                "function transfer(address to, uint256 amount) public returns (bool)",
+                "function decimals() view returns (uint8)"
+            ];
+
+            async function payWithMetaMask(amountHuman) {
+                if (!window.ethereum) {
+                    alert("Please install MetaMask.");
+                    return;
+                }
+
+                try {
+                    // 1. connect
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    const signer = await provider.getSigner();
+
+                    // 2. parse amount
+                    const decimals = TOKEN_DECIMALS; // চাইলে contract.decimals() দিয়ে dynamic নাও করতে পারো
+                    const amount = ethers.parseUnits(amountHuman.toString(), decimals); // big int
+
+                    // 3. contract transfer
+                    const token = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+                    const tx = await token.transfer(MERCHANT_ADDRESS, amount);
+
+                    console.log("txHash:", tx.hash);
+
+                    // 4. notify backend for verification & record
+                    const res = await fetch('/api/metamask/notify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            txHash: tx.hash,
+                            expectedAmount: amount.toString(),
+                            token: TOKEN_ADDRESS
+                        })
+                    });
+                    const body = await res.json();
+                    alert(body.message || 'Payment sent. Waiting verification.');
+
+                    // optionally wait for confirmation locally:
+                    // await tx.wait(); // blocks until mined
+                } catch (e) {
+                    console.error(e);
+                    alert('Payment failed or rejected by user.');
+                }
+            }
+
+            document.getElementById('payBtn').addEventListener('click', () => payWithMetaMask(10)); // 10 USDT
+        </script>
+
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            $('#payBtn').click(function () {
+                $.ajax({
+                    url: "/binance-pay",
+                    method: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                    },
+                    success: function (res) {
+                        if (res.code === 'SUCCESS') {
+                            window.location.href = res.data.qrLink;
+
+                        } else {
+                            alert("Payment init failed.");
+                        }
+                    },
+                    error: function (err) {
+                        console.log(err);
+                        alert("Server error.");
+                    }
+                });
+            });
+        </script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
                 // Initialize tooltips
                 $('[data-toggle="tooltip"]').tooltip();
 
@@ -723,8 +817,7 @@
                     @foreach ($data->markets ?? [] as $index => $item)
                         const ctx{{ $index }} = document.getElementById('volumeChart{{ $index }}');
                         if (ctx{{ $index }}) {
-                            const gradient = ctx{{ $index }}.getContext('2d').createLinearGradient(0, 0, 0,
-                                120);
+                            const gradient = ctx{{ $index }}.getContext('2d').createLinearGradient(0, 0, 0, 120);
                             gradient.addColorStop(0, 'rgba(40, 167, 69, 0.4)');
                             gradient.addColorStop(0.5, 'rgba(40, 167, 69, 0.2)');
                             gradient.addColorStop(1, 'rgba(40, 167, 69, 0)');
@@ -736,9 +829,9 @@
                                     datasets: [{
                                         label: 'Volume',
                                         data: [
-                                            {{ $item->volume24hr ?? 0 }},
-                                            {{ $item->volume1wk ?? 0 }},
-                                            {{ $item->volume1mo ?? 0 }},
+                                                            {{ $item->volume24hr ?? 0 }},
+                                                            {{ $item->volume1wk ?? 0 }},
+                                                            {{ $item->volume1mo ?? 0 }},
                                             {{ $item->volume1yr ?? 0 }}
                                         ],
                                         borderColor: 'rgba(40, 167, 69, 1)',
@@ -774,7 +867,7 @@
                                                 size: 13
                                             },
                                             callbacks: {
-                                                label: function(context) {
+                                                label: function (context) {
                                                     return '$' + context.parsed.y.toLocaleString();
                                                 }
                                             },
@@ -808,7 +901,7 @@
                                                     size: 11,
                                                     weight: '500'
                                                 },
-                                                callback: function(value) {
+                                                callback: function (value) {
                                                     if (value >= 1000000) {
                                                         return '$' + (value / 1000000).toFixed(1) + 'M';
                                                     } else if (value >= 1000) {
@@ -830,10 +923,10 @@
                     @endforeach
                 @endif
 
-                // Form validation
-                const searchForm = document.getElementById('searchForm');
+                        // Form validation
+                        const searchForm = document.getElementById('searchForm');
                 if (searchForm) {
-                    searchForm.addEventListener('submit', function(e) {
+                    searchForm.addEventListener('submit', function (e) {
                         const searchInput = document.getElementById('search');
                         if (!searchInput.value.trim()) {
                             e.preventDefault();

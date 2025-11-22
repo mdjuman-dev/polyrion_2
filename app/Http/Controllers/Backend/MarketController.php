@@ -16,6 +16,8 @@ class MarketController extends Controller
 {
     function index()
     {
+
+
         return view('backend.market.index');
     }
 
@@ -263,4 +265,98 @@ class MarketController extends Controller
         $request->merge(['event_id' => $id]);
         return $this->store($request);
     }
+    function storeEvents()
+    {
+        $response = Http::get('https://gamma-api.polymarket.com/events', [
+            'closed' => false,
+            'limit' => 10,
+        ]);
+
+        if (!$response->successful()) {
+            return "api error";
+        }
+        $events = $response->json();
+        if (!$events) {
+            return "No events found";
+        }
+        dd($events);
+        foreach ($events as $ev) {
+
+            // 1. Save Event
+            $event = Event::updateOrCreate(
+                ['slug' => $ev['slug']],
+                [
+                    'slug' => $ev['slug'],
+                    'title' => $ev['title'],
+                    'description' => $ev['description'],
+                    'image' => $ev['image'] ?? null,
+                    'icon' => $ev['icon'] ?? null,
+
+                    'liquidity' => $ev['liquidity'] ?? null,
+                    'volume' => $ev['volume'] ?? null,
+                    'volume_24hr' => $ev['volume24hr'] ?? null,
+                    'volume_1wk' => $ev['volume1wk'] ?? null,
+                    'volume_1mo' => $ev['volume1mo'] ?? null,
+                    'volume_1yr' => $ev['volume1yr'] ?? null,
+
+                    'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                    'active' => $ev['active'] ?? null,
+                    'closed' => $ev['closed'] ?? null,
+                    'archived' => $ev['archived'] ?? null,
+                    'new' => $ev['new'] ?? null,
+                    'featured' => $ev['featured'] ?? null,
+
+                    'start_date' => $ev['startDate'] ?? null,
+                    'end_date' => $ev['endDate'] ?? null,
+                ]
+            );
+
+            // 2. Save Markets
+            if (!empty($ev['markets'])) {
+                foreach ($ev['markets'] as $mk) {
+
+                    Market::updateOrCreate(
+                        ['slug' => $mk['slug']],
+                        [
+                            'event_id' => $event->id,
+
+                            'question' => $mk['question'] ?? null,
+                            'groupItem_title' => $mk['groupItemTitle'] ?? null,
+                            'slug' => $mk['slug'] ?? null,
+                            'description' => $mk['description'] ?? null,
+
+                            'image' => $mk['image'] ?? null,
+                            'icon' => $mk['icon'] ?? null,
+
+                            'liquidity_clob' => $mk['liquidityClob'] ?? null,
+                            'volume' => $mk['volume'] ?? null,
+                            'volume24hr' => $mk['volume24hr'] ?? null,
+                            'volume1wk' => $mk['volume1wk'] ?? null,
+                            'volume1mo' => $mk['volume1mo'] ?? null,
+                            'volume1yr' => $mk['volume1yr'] ?? null,
+
+                            'outcome_prices' => $mk['outcomePrices'] ?? null,
+                            'outcomes' => $mk['outcomes'] ?? null,
+
+                            'active' => $mk['active'] ?? null,
+                            'closed' => $mk['closed'] ?? null,
+                            'archived' => $mk['archived'] ?? null,
+                            'featured' => $mk['featured'] ?? null,
+                            'new' => $mk['new'] ?? null,
+                            'restricted' => $mk['restricted'] ?? null,
+                            'approved' => $mk['approved'] ?? null,
+
+                            'start_date' => toMysqlDate($mk['startDate'] ?? null),
+                            'end_date' => toMysqlDate($mk['endDate'] ?? null),
+
+                        ]
+                    );
+                }
+            }
+        }
+
+        return "Events & markets saved successfully!";
+    }
+
+
 }
