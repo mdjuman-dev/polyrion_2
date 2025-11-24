@@ -22,5 +22,5 @@ Route::get('/auth/facebook/callback', [FacebookController::class, 'facebookCallb
 //Home Page
 Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
+    Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
 });
-

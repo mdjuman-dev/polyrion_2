@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->longText('description')->nullable();
             $table->string('image')->nullable();
             $table->string('icon')->nullable();
+            $table->string('resolution_source')->nullable();
 
             // Trading info
             $table->decimal('liquidity_clob', 30, 8)->nullable()->default(0);

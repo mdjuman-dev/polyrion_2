@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Backend;
 
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -11,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Event;
 use App\Models\Market;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class MarketController extends Controller
 {
@@ -265,98 +265,146 @@ class MarketController extends Controller
         $request->merge(['event_id' => $id]);
         return $this->store($request);
     }
+
+
+
+    function toMysqlDate(?string $date): ?string
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($date)->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     function storeEvents()
     {
-        $response = Http::get('https://gamma-api.polymarket.com/events', [
-            'closed' => false,
-            'limit' => 10,
-        ]);
+        // 30 seconds-এর মধ্যে complete করার জন্য optimized version
+        $startTime = time();
+        $maxExecutionTime = 25; // 25 seconds max (5 seconds buffer)
+        $limit = 100; // Smaller batch size for faster processing
+        $offset = 0;
+        $maxBatches = 5; // Maximum 5 batches per run
+        $batchCount = 0;
+        $totalProcessed = 0;
 
-        if (!$response->successful()) {
-            return "api error";
-        }
-        $events = $response->json();
-        if (!$events) {
-            return "No events found";
-        }
-        dd($events);
-        foreach ($events as $ev) {
+        while ($batchCount < $maxBatches) {
+            // Time check - যদি 25 seconds হয়ে যায়, break করো
+            if ((time() - $startTime) >= $maxExecutionTime) {
+                Log::info("Time limit reached. Processed {$totalProcessed} events in this run.");
+                break;
+            }
 
-            // 1. Save Event
-            $event = Event::updateOrCreate(
-                ['slug' => $ev['slug']],
-                [
-                    'slug' => $ev['slug'],
-                    'title' => $ev['title'],
-                    'description' => $ev['description'],
-                    'image' => $ev['image'] ?? null,
-                    'icon' => $ev['icon'] ?? null,
+            $response = Http::get('https://gamma-api.polymarket.com/events', [
+                'closed' => false,
+                'limit' => $limit,
+                'offset' => $offset,
+                'order' => 'id',
+                'ascending' => false,
+            ]);
 
-                    'liquidity' => $ev['liquidity'] ?? null,
-                    'volume' => $ev['volume'] ?? null,
-                    'volume_24hr' => $ev['volume24hr'] ?? null,
-                    'volume_1wk' => $ev['volume1wk'] ?? null,
-                    'volume_1mo' => $ev['volume1mo'] ?? null,
-                    'volume_1yr' => $ev['volume1yr'] ?? null,
+            if (!$response->successful()) {
+                Log::error("Error fetching events: status " . $response->status() . " at offset " . $offset);
+                break;
+            }
 
-                    'liquidity_clob' => $ev['liquidityClob'] ?? null,
-                    'active' => $ev['active'] ?? null,
-                    'closed' => $ev['closed'] ?? null,
-                    'archived' => $ev['archived'] ?? null,
-                    'new' => $ev['new'] ?? null,
-                    'featured' => $ev['featured'] ?? null,
+            $events = $response->json();
+            if (empty($events)) {
+                Log::info("No more events at offset " . $offset);
+                break;
+            }
 
-                    'start_date' => $ev['startDate'] ?? null,
-                    'end_date' => $ev['endDate'] ?? null,
-                ]
-            );
-
-            // 2. Save Markets
-            if (!empty($ev['markets'])) {
-                foreach ($ev['markets'] as $mk) {
-
-                    Market::updateOrCreate(
-                        ['slug' => $mk['slug']],
-                        [
-                            'event_id' => $event->id,
-
-                            'question' => $mk['question'] ?? null,
-                            'groupItem_title' => $mk['groupItemTitle'] ?? null,
-                            'slug' => $mk['slug'] ?? null,
-                            'description' => $mk['description'] ?? null,
-
-                            'image' => $mk['image'] ?? null,
-                            'icon' => $mk['icon'] ?? null,
-
-                            'liquidity_clob' => $mk['liquidityClob'] ?? null,
-                            'volume' => $mk['volume'] ?? null,
-                            'volume24hr' => $mk['volume24hr'] ?? null,
-                            'volume1wk' => $mk['volume1wk'] ?? null,
-                            'volume1mo' => $mk['volume1mo'] ?? null,
-                            'volume1yr' => $mk['volume1yr'] ?? null,
-
-                            'outcome_prices' => $mk['outcomePrices'] ?? null,
-                            'outcomes' => $mk['outcomes'] ?? null,
-
-                            'active' => $mk['active'] ?? null,
-                            'closed' => $mk['closed'] ?? null,
-                            'archived' => $mk['archived'] ?? null,
-                            'featured' => $mk['featured'] ?? null,
-                            'new' => $mk['new'] ?? null,
-                            'restricted' => $mk['restricted'] ?? null,
-                            'approved' => $mk['approved'] ?? null,
-
-                            'start_date' => toMysqlDate($mk['startDate'] ?? null),
-                            'end_date' => toMysqlDate($mk['endDate'] ?? null),
-
-                        ]
-                    );
+            foreach ($events as $ev) {
+                // Time check inside loop too
+                if ((time() - $startTime) >= $maxExecutionTime) {
+                    Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
+                    break 2; // Break both loops
                 }
+
+                $event = Event::updateOrCreate(
+                    ['slug' => $ev['slug']],
+                    [
+                        'slug' => $ev['slug'],
+                        'title' => $ev['title'] ?? null,
+                        'description' => $ev['description'] ?? null,
+                        'image' => $ev['image'] ?? null,
+                        'icon' => $ev['icon'] ?? null,
+
+                        'liquidity' => $ev['liquidity'] ?? null,
+                        'volume' => $ev['volume'] ?? null,
+                        'volume_24hr' => $ev['volume24hr'] ?? null,
+                        'volume_1wk' => $ev['volume1wk'] ?? null,
+                        'volume_1mo' => $ev['volume1mo'] ?? null,
+                        'volume_1yr' => $ev['volume1yr'] ?? null,
+
+                        'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                        'active' => $ev['active'] ?? null,
+                        'closed' => $ev['closed'] ?? null,
+                        'archived' => $ev['archived'] ?? null,
+                        'new' => $ev['new'] ?? null,
+                        'featured' => $ev['featured'] ?? null,
+
+                        'start_date' => toMysqlDate($ev['startDate'] ?? null),
+                        'end_date' => toMysqlDate($ev['endDate'] ?? null),
+                    ]
+                );
+
+                if (!empty($ev['markets'])) {
+                    foreach ($ev['markets'] as $mk) {
+                        Market::updateOrCreate(
+                            ['slug' => $mk['slug']],
+                            [
+                                'event_id' => $event->id,
+                                'question' => $mk['question'] ?? null,
+                                'groupItem_title' => $mk['groupItemTitle'] ?? null,
+                                'description' => $mk['description'] ?? null,
+                                'resolution_source' => $mk['resolutionSource'] ?? null,
+                                'image' => $mk['image'] ?? null,
+                                'icon' => $mk['icon'] ?? null,
+
+                                'liquidity_clob' => $mk['liquidityClob'] ?? null,
+                                'volume' => $mk['volume'] ?? null,
+                                'volume24hr' => $mk['volume24hr'] ?? null,
+                                'volume1wk' => $mk['volume1wk'] ?? null,
+                                'volume1mo' => $mk['volume1mo'] ?? null,
+                                'volume1yr' => $mk['volume1yr'] ?? null,
+
+                                'outcome_prices' => $mk['outcomePrices'] ?? null,
+                                'outcomes' => $mk['outcomes'] ?? null,
+
+                                'active' => $mk['active'] ?? null,
+                                'closed' => $mk['closed'] ?? null,
+                                'archived' => $mk['archived'] ?? null,
+                                'featured' => $mk['featured'] ?? null,
+                                'new' => $mk['new'] ?? null,
+                                'restricted' => $mk['restricted'] ?? null,
+                                'approved' => $mk['approved'] ?? null,
+
+                                'start_date' => toMysqlDate($mk['startDate'] ?? null),
+                                'end_date' => toMysqlDate($mk['endDate'] ?? null),
+                            ]
+                        );
+                    }
+                }
+
+                $totalProcessed++;
+            }
+
+            Log::info("Fetched " . count($events) . " events from offset " . $offset);
+
+            $offset += $limit;
+            $batchCount++;
+
+            // Rate limiting - কিন্তু sleep কমিয়ে দিলাম
+            if ($batchCount < $maxBatches) {
+                usleep(200000); // 0.2 seconds instead of 1 second
             }
         }
 
-        return "Events & markets saved successfully!";
+        return "Processed {$totalProcessed} events. Next batch will continue from offset {$offset}.";
     }
-
-
 }

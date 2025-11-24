@@ -138,57 +138,241 @@
                     </div>
                 </div>
             </div>
-            <!-- Markets Grid -->
-            <div class="markets-grid mt-3 mt-lg-0">
-                <!-- Market Card 2 -->
-                @foreach ($events as $event)
-
-                    <div class="market-card">
-                        <div class="market-card-header">
-                            <div class="market-profile-img">
-                                <img src="{{ $event->image }}" alt="{{ $event->title }}">
-                            </div>
-                            <a href="" class="market-card-title">{{ $event->title }}</a>
-                        </div>
-                        <div class="market-card-body">
-
-                            @foreach ($event->markets as $market)
-
-                                @php
-                                    $prices = json_decode($market->outcome_prices, true);
-                                    $yesProb = isset($prices[0]) ? round($prices[0] * 100) : 0;
-                                    $noProb = isset($prices[1]) ? round($prices[1] * 100) : 0;
-                                @endphp
-                                @if(!$market->outcomes == null)
-                                    <div class="market-card-outcome-row">
-                                        <span class="market-card-outcome-label">{{ $market->groupItem_title }}</span>
-                                        <span class="market-card-outcome-probability">{{$yesProb}}%</span>
-                                        <button class="market-card-yes-btn">Yes</button>
-                                        <button class="market-card-no-btn">No</button>
-                                    </div>
-                                @else
-                                    <div class="market-card-outcome-row">
-                                        <span class="market-card-outcome-label">{{ $market->groupItem_title }}</span>
-                                        <span class="market-card-outcome-probability">{{$yesProb}}%</span>
-                                        <button class="market-card-yes-btn">Yes</button>
-                                        <button class="market-card-no-btn">No</button>
-                                    </div>
-                                @endif
-                            @endforeach
-
-                        </div>
-                        <div class="market-footer">
-                            <span class="market-card-volume"><i class="fas fa-money-bill-wave"></i> ${{ $event->volume }}
-                                Vol.</span>
-                            <div class="market-actions d-flex gap-2">
-                                <!-- <button class="market-card-action-btn"><i class="fas fa-redo"></i></button> -->
-                                <!-- <button class="market-card-action-btn"><i class="fas fa-gift"></i></button> -->
-                                <button class="market-card-action-btn"><i class="fas fa-bookmark"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
+            <!-- Markets Grid - Livewire Component with Auto Refresh -->
+            <livewire:markets-grid />
         </div>
     </main>
+    @push('style')
+        <style>
+            /* Common Styles */
+            .market-card {
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .market-card-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .market-profile-img {
+                width: 48px;
+                height: 48px;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .market-profile-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .market-card-title {
+                color: var(--text-primary);
+                text-decoration: none;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            /* Type 1: Single Market (Ukraine style) */
+            .single-market .market-card-header {
+                justify-content: space-between;
+            }
+
+            .market-title-section {
+                flex: 1;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .market-chance {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                background: var(--hover);
+                padding: 4px 12px;
+                border-radius: 6px;
+            }
+
+            .chance-arrow {
+                color: var(--danger);
+                font-size: 18px;
+            }
+
+            .chance-value {
+                color: var(--danger);
+                font-weight: 700;
+                font-size: 18px;
+            }
+
+            .chance-label {
+                color: var(--text-secondary);
+                font-size: 12px;
+            }
+
+            .market-card-body-single {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .market-card-yes-btn-large,
+            .market-card-no-btn-large {
+                padding: 10px 16px;
+                border-radius: 8px;
+                border: none;
+                font-size: 18px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+
+            .market-card-yes-btn-large {
+                background: rgba(0, 200, 83, 0.1);
+                color: var(--success);
+                border: 2px solid rgba(0, 200, 83, 0.3);
+            }
+
+            .market-card-yes-btn-large:hover {
+                background: rgba(0, 200, 83, 0.2);
+                border-color: var(--success);
+            }
+
+            .market-card-no-btn-large {
+                background: rgba(255, 71, 87, 0.1);
+                color: var(--danger);
+                border: 2px solid rgba(255, 71, 87, 0.3);
+            }
+
+            .market-card-no-btn-large:hover {
+                background: rgba(255, 71, 87, 0.2);
+                border-color: var(--danger);
+            }
+
+            /* Type 2: Multi Market (Fed rates style) */
+            .multi-market .market-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            .market-card-outcome-row {
+                display: grid;
+                grid-template-columns: 2fr auto auto auto;
+                align-items: center;
+                gap: 12px;
+                padding: 8px;
+                background: var(--secondary);
+                border-radius: 6px;
+            }
+
+            .market-card-outcome-label {
+                color: var(--text-secondary);
+                font-size: 14px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .market-card-outcome-probability {
+                color: var(--text-primary);
+                font-weight: 700;
+                font-size: 16px;
+            }
+
+            .market-card-yes-btn,
+            .market-card-no-btn {
+                padding: 6px 12px;
+                border-radius: 6px;
+                border: none;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                min-width: 45px;
+                white-space: nowrap;
+            }
+
+            .market-card-yes-btn {
+                background: rgba(0, 200, 83, 0.1);
+                color: var(--success);
+            }
+
+            .market-card-yes-btn:hover {
+                background: rgba(0, 200, 83, 0.2);
+            }
+
+            .market-card-no-btn {
+                background: rgba(255, 71, 87, 0.1);
+                color: var(--danger);
+            }
+
+            .market-card-no-btn:hover {
+                background: rgba(255, 71, 87, 0.2);
+            }
+
+            /* Footer (Common) */
+            .market-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-top: 12px;
+                border-top: 1px solid var(--border);
+            }
+
+            .market-card-volume {
+                color: var(--text-secondary);
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .market-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .market-card-action-btn {
+                background: var(--secondary);
+                border: 1px solid var(--border);
+                color: var(--text-secondary);
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+
+            .market-card-action-btn:hover {
+                background: var(--hover);
+                color: var(--accent);
+                border-color: var(--accent);
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+                .market-card-outcome-row {
+                    grid-template-columns: 1fr auto;
+                    gap: 8px;
+                }
+
+                .market-card-outcome-probability {
+                    grid-column: 2;
+                    grid-row: 1;
+                }
+
+                .market-card-yes-btn,
+                .market-card-no-btn {
+                    grid-column: span 1;
+                }
+            }
+        </style>
+    @endpush
 @endsection

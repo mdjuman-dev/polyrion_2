@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/responsive.css') }}">
+    @stack('style')
 </head>
 
 <body class="dark-theme has-bottom-nav">
@@ -17,7 +18,7 @@
         <header>
             <div class="d-lg-block d-none">
                 <div class="header-content ">
-                    <a href="#" class="logo">
+                    <a href="{{ route('home') }}" class="logo">
                         <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
                         <span>Polyrion</span>
                     </a>
@@ -263,7 +264,8 @@
     <script src="{{ asset('frontend/assets/js/jquery.min.js') }}"></script>
     <script src="{{ asset('frontend/assets/js/bootstrap.min.js') }}"></script>
     <script src="{{ asset('frontend/assets/js/app.js') }}"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    @stack('script')
 </body>
 
 </html>

@@ -1,6 +1,22 @@
 <?php
 
 use Carbon\Carbon;
+
+if (!function_exists('formatVolume')) {
+    function formatVolume($number)
+    {
+        if ($number >= 1000000000) {
+            return round($number / 1000000000, 1) . 'B';
+        } elseif ($number >= 1000000) {
+            return round($number / 1000000, 1) . 'M';
+        } elseif ($number >= 1000) {
+            return round($number / 1000, 1) . 'K';
+        } else {
+            return $number;
+        }
+    }
+}
+
 if (!function_exists('toMysqlDate')) {
     function toMysqlDate($date)
     {
@@ -8,13 +24,7 @@ if (!function_exists('toMysqlDate')) {
     }
 }
 if (!function_exists('format_date')) {
-    /**
-     * Format a date/time value
-     *
-     * @param mixed $date Can be Carbon instance, DateTime, or string
-     * @param string $format Date format (default: 'd M Y, H:i')
-     * @return string
-     */
+
     function format_date($date, string $format = 'd M Y, H:i'): string
     {
         if (is_null($date)) {
