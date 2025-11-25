@@ -17,6 +17,7 @@ class HomeController extends Controller
     function marketDetails($slug)
     {
 
-        return view('frontend.market_details',);
+        $event = Event::where('slug', $slug)->with('markets')->firstOrFail();
+        return view('frontend.market_details', compact('event'));
     }
 }

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Backend\Auth\LoginController;
+use App\Http\Controllers\Backend\GlobalSettingsController;
 use App\Http\Controllers\Backend\HomeController;
 use App\Http\Controllers\Backend\MarketController;
 
@@ -17,6 +18,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+        // Market Management Routes
         Route::controller(MarketController::class)->group(function () {
             Route::get('/market', 'index')->name('market.index');
             Route::post('/market/search', 'search')->name('market.search');
@@ -29,5 +31,13 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
             Route::get('/event', 'storeEvents');
         });
+
+        //Global Setting Management Routes
+        Route::controller(GlobalSettingsController::class)->group(function () {
+            
+            Route::get('/setting', 'setting')->name('setting');
+            Route::post('/setting/update', 'settingUpdate')->name('setting.update');
+        });
+
     });
 });

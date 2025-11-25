@@ -283,22 +283,23 @@ class MarketController extends Controller
 
     function storeEvents()
     {
-        // 30 seconds-এর মধ্যে complete করার জন্য optimized version
         $startTime = time();
-        $maxExecutionTime = 25; // 25 seconds max (5 seconds buffer)
-        $limit = 100; // Smaller batch size for faster processing
+        $maxExecutionTime = 25;
+        $limit = 100;
         $offset = 0;
-        $maxBatches = 5; // Maximum 5 batches per run
+        $maxBatches = 5;
         $batchCount = 0;
         $totalProcessed = 0;
 
         while ($batchCount < $maxBatches) {
-            // Time check - যদি 25 seconds হয়ে যায়, break করো
+
+            // Global time check
             if ((time() - $startTime) >= $maxExecutionTime) {
                 Log::info("Time limit reached. Processed {$totalProcessed} events in this run.");
                 break;
             }
 
+            // Fetch events
             $response = Http::get('https://gamma-api.polymarket.com/events', [
                 'closed' => false,
                 'limit' => $limit,
@@ -313,47 +314,53 @@ class MarketController extends Controller
             }
 
             $events = $response->json();
+
             if (empty($events)) {
                 Log::info("No more events at offset " . $offset);
                 break;
             }
 
+            // Process each event
             foreach ($events as $ev) {
-                // Time check inside loop too
+
+                // Time check inside loop
                 if ((time() - $startTime) >= $maxExecutionTime) {
                     Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
-                    break 2; // Break both loops
+                    break 2; // Break outer while + foreach
                 }
 
-                $event = Event::updateOrCreate(
-                    ['slug' => $ev['slug']],
-                    [
-                        'slug' => $ev['slug'],
-                        'title' => $ev['title'] ?? null,
-                        'description' => $ev['description'] ?? null,
-                        'image' => $ev['image'] ?? null,
-                        'icon' => $ev['icon'] ?? null,
-
-                        'liquidity' => $ev['liquidity'] ?? null,
-                        'volume' => $ev['volume'] ?? null,
-                        'volume_24hr' => $ev['volume24hr'] ?? null,
-                        'volume_1wk' => $ev['volume1wk'] ?? null,
-                        'volume_1mo' => $ev['volume1mo'] ?? null,
-                        'volume_1yr' => $ev['volume1yr'] ?? null,
-
-                        'liquidity_clob' => $ev['liquidityClob'] ?? null,
-                        'active' => $ev['active'] ?? null,
-                        'closed' => $ev['closed'] ?? null,
-                        'archived' => $ev['archived'] ?? null,
-                        'new' => $ev['new'] ?? null,
-                        'featured' => $ev['featured'] ?? null,
-
-                        'start_date' => toMysqlDate($ev['startDate'] ?? null),
-                        'end_date' => toMysqlDate($ev['endDate'] ?? null),
-                    ]
-                );
-
+                // Only save events that have at least one market
                 if (!empty($ev['markets'])) {
+
+                    $event = Event::updateOrCreate(
+                        ['slug' => $ev['slug']],
+                        [
+                            'slug' => $ev['slug'],
+                            'title' => $ev['title'] ?? null,
+                            'description' => $ev['description'] ?? null,
+                            'image' => $ev['image'] ?? null,
+                            'icon' => $ev['icon'] ?? null,
+
+                            'liquidity' => $ev['liquidity'] ?? null,
+                            'volume' => $ev['volume'] ?? null,
+                            'volume_24hr' => $ev['volume24hr'] ?? null,
+                            'volume_1wk' => $ev['volume1wk'] ?? null,
+                            'volume_1mo' => $ev['volume1mo'] ?? null,
+                            'volume_1yr' => $ev['volume1yr'] ?? null,
+
+                            'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                            'active' => $ev['active'] ?? null,
+                            'closed' => $ev['closed'] ?? null,
+                            'archived' => $ev['archived'] ?? null,
+                            'new' => $ev['new'] ?? null,
+                            'featured' => $ev['featured'] ?? null,
+
+                            'start_date' => toMysqlDate($ev['startDate'] ?? null),
+                            'end_date' => toMysqlDate($ev['endDate'] ?? null),
+                        ]
+                    );
+
+                    // Save markets
                     foreach ($ev['markets'] as $mk) {
                         Market::updateOrCreate(
                             ['slug' => $mk['slug']],
@@ -399,9 +406,9 @@ class MarketController extends Controller
             $offset += $limit;
             $batchCount++;
 
-            // Rate limiting - কিন্তু sleep কমিয়ে দিলাম
+            // Small delay between batches to avoid rate limit
             if ($batchCount < $maxBatches) {
-                usleep(200000); // 0.2 seconds instead of 1 second
+                usleep(200000); // 200 ms
             }
         }
 

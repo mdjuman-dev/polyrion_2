@@ -14,7 +14,8 @@
                         <div class="market-profile-img">
                             <img src="{{ $event->image }}" alt="{{ $event->title }}">
                         </div>
-                        <a href="{{ route('market.details', $event->slug) }}" class="market-card-title">{{ $event->title }}</a>
+                        <a href="{{ route('market.details', $event->slug) }}"
+                            class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 60) }}</a>
                     </div>
                     <div class="market-card-body">
                         @foreach ($event->markets as $market)
@@ -28,8 +29,8 @@
                                 <div class="market-card-outcome-row">
                                     <span class="market-card-outcome-label">{{ $market->groupItem_title }}</span>
                                     <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                                    <button class="market-card-yes-btn">{{ $outcomes[0] ?? 'Yes' }}</button>
-                                    <button class="market-card-no-btn">{{ $outcomes[1] ?? 'No' }}</button>
+                                    <button class="market-card-yes-btn">{{ 'Yes' }}</button>
+                                    <button class="market-card-no-btn">{{ 'No' }}</button>
                                 </div>
                             @endif
                         @endforeach
@@ -61,11 +62,11 @@
                             <img src="{{ $event->image }}" alt="{{ $event->title }}">
                         </div>
                         <div class="market-title-section">
-                            <a href="{{ route('market.details', $event->slug) }}" class="market-card-title">{{ $event->title }}</a>
+                            <a href="{{ route('market.details', $event->slug) }}"
+                                class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 30) }}</a>
                             <div class="market-chance">
                                 <span class="chance-arrow">↓</span>
                                 <span class="chance-value">{{ $yesProb }}%</span>
-                                <span class="chance-label">chance</span>
                             </div>
                         </div>
                     </div>
@@ -81,7 +82,6 @@
                             ${{ formatVolume($event->volume) }} Vol.
                         </span>
                         <div class="market-actions d-flex gap-2">
-                            <button class="market-card-action-btn"><i class="fas fa-redo"></i></button>
                             <button class="market-card-action-btn"><i class="fas fa-bookmark"></i></button>
                         </div>
                     </div>

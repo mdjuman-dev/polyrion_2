@@ -6,157 +6,8 @@
     <main>
         <div class="main-layout">
             <div class="main-content">
-                <div class="market-detail-header">
-                    <div class="market-header-top">
-                        <div class="market-header-left">
-                            <div class="market-profile-img">
-                                <img src="assets/images/user.webp" alt="Profile">
-                            </div>
-                            <div class="market-header-info">
-                                <h1 class="market-title">Fed decision in December?</h1>
-                                <div class="market-header-meta">
-                                    <span class="market-volume">$97,962,719 Vol.</span>
-                                    <span class="market-date">Dec 10, 2025</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="market-header-actions">
-                            <button class="market-action-btn" aria-label="Share">
-                                <i class="fas fa-link"></i>
-                            </button>
-                            <button class="market-action-btn" aria-label="Bookmark">
-                                <i class="fas fa-bookmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="date-selection-tabs">
-                        <button class="date-tab-btn" aria-label="Refresh">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button class="date-tab active">Dec 10</button>
-                        <button class="date-tab">Jan 28, 2026</button>
-                        <button class="date-tab">Mar 18, 2026</button>
-                        <button class="date-tab">Apr 29, 2026</button>
-                    </div>
-                </div>
-                <div class="chart-legend">
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background: #f97316;"></div>
-                        <span>No change 50%</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background: #3b82f6;"></div>
-                        <span>25 bps decrease 48%</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background: #06b6d4;"></div>
-                        <span>50+ bps decrease 1.9%</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background: #eab308;"></div>
-                        <span>25+ bps increase &lt;1%</span>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="marketChart"></canvas>
-                    <div class="chart-controls">
-                        <button class="chart-btn">1H</button>
-                        <button class="chart-btn">6H</button>
-                        <button class="chart-btn">1D</button>
-                        <button class="chart-btn">1W</button>
-                        <button class="chart-btn">1M</button>
-                        <button class="chart-btn active">ALL</button>
-                    </div>
-                </div>
-                <div class="outcome-section">
-                    <div class="outcome-section-header">
-                        <span class="outcome-label">OUTCOME</span>
-                        <div class="outcome-chance-header">
-                            <span>% CHANCE</span>
-                            <button class="refresh-btn" aria-label="Refresh">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="outcome-row">
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                            <div class="outcome-info">
-                                <div class="outcome-name">No change</div>
-                                <div class="outcome-volume">$42,385,240 Vol.</div>
-                            </div>
-                            <div class="outcome-percent-wrapper">
-                                <span class="outcome-percent">50%</span>
-                                <span class="percent-change text-success">▲2%</span>
-                            </div>
-                        </div>
-                        <div class="outcome-actions ">
-                            <button class="btn-yes">Buy Yes 50.2¢</button>
-                            <button class="btn-no">Buy No 49.8¢</button>
-                        </div>
-                    </div>
-                    <div class="outcome-row">
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                            <div class="outcome-info">
-                                <div class="outcome-name">25 bps decrease</div>
-                                <div class="outcome-volume">$38,142,180 Vol.</div>
-                            </div>
-                            <div class="outcome-percent-wrapper">
-                                <span class="outcome-percent">48%</span>
-                                <span class="percent-change text-success">▲1.5%</span>
-                            </div>
-                        </div>
-                        <div class="outcome-actions ">
-                            <button class="btn-yes">Buy Yes 48.3¢</button>
-                            <button class="btn-no">Buy No 51.7¢</button>
-                        </div>
-                    </div>
-                    <div class="outcome-row">
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                            <div class="outcome-info">
-                                <div class="outcome-name">50+ bps decrease</div>
-                                <div class="outcome-volume">$1,861,299 Vol.</div>
-                            </div>
-                            <div class="outcome-percent-wrapper">
-                                <span class="outcome-percent">1.9%</span>
-                                <span class="percent-change text-danger">▼0.3%</span>
-                            </div>
-                        </div>
-                        <div class="outcome-actions ">
-                            <button class="btn-yes">Buy Yes 1.9¢</button>
-                            <button class="btn-no">Buy No 98.1¢</button>
-                        </div>
-                    </div>
-                    <div class="outcome-row">
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                            <div class="outcome-info">
-                                <div class="outcome-name">25+ bps increase</div>
-                                <div class="outcome-volume">$574,000 Vol.</div>
-                            </div>
-                            <div class="outcome-percent-wrapper">
-                                <span class="outcome-percent">&lt;1%</span>
-                                <span class="percent-change text-danger">▼0.2%</span>
-                            </div>
-                        </div>
-                        <div class="outcome-actions ">
-                            <button class="btn-yes">Buy Yes 0.8¢</button>
-                            <button class="btn-no">Buy No 99.2¢</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="market-info-section">
-                    <div class="market-rules-section">
-                        <h3 class="market-rules-title">Rules</h3>
-                        <div class="market-rules-content">
-                            <p>The FED interest rates are defined in this market by the upper bound of the target
-                                federal funds range. The decisions on the target federal funds rate are made by the
-                                Federal Open Market Committee (FOMC) during their scheduled meetings.</p>
-                            <button class="show-more-btn">
-                                Show more
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <livewire:market-details.chart :event="$event" />
+                <livewire:market-details.markets :event="$event" />
                 <div class="tab-container">
                     <div class="tab-nav">
                         <div class="tab-item active" data-tab="comments">Comments (214)</div>
@@ -167,7 +18,6 @@
                     <div class="tab-content active" id="comments">
                         <div class="comments-section">
                             <div class="comment-input-container">
-
                                 <div class="comment-input-wrapper">
                                     <input class="comment-input" type="text" placeholder="Write a comment...">
                                     <button class="comment-submit-btn">
@@ -358,110 +208,132 @@
             </div>
             <!-- Mobile Panel Overlay -->
             <div class="mobile-panel-overlay" id="mobilePanelOverlay"></div>
-            <div class="trading-panel" id="tradingPanel">
-                <div class="panel-header">
-                    <div class="market-profile-img">
-                        <img src="assets/images/user.webp" alt="Profile">
-                    </div>
-                    <div class="panel-title-wrapper">
-                        <div class="panel-market-title" id="panelMarketTitle">Fed decision in December?</div>
-                        <div class="panel-title" id="panelOutcomeTitle">50+ bps decrease</div>
-                    </div>
-                    <button class="panel-close-btn hide-desktop" id="panelCloseBtn" aria-label="Close">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <!-- <div class="order-type-selector">
-                            <div class="action-tabs" id="actionTabs">
-                                <button class="action-tab active" id="buyTab">Buy</button>
-                                <button class="action-tab" id="sellTab">Sell</button>
-                            </div>
-                            <select class="order-type-select" id="orderType">
-                                <option value="market">Market</option>
-                                <option value="limit">Limit</option>
-                            </select>
-                        </div> -->
-                <div class="limit-order-fields" id="limitOrderFields">
-                    <div class="limit-input-group">
-                        <label class="limit-input-label">Limit Price</label>
-                        <input type="text" class="limit-input" id="limitPrice" placeholder="0.0¢">
-                    </div>
-                </div>
-                <div class="outcome-selection">
-                    <div class="outcome-buttons">
-                        <button class="outcome-btn-yes active" id="yesBtn">Yes</button>
-                        <button class="outcome-btn-no" id="noBtn">No</button>
-                    </div>
-                </div>
-                <div class="shares-input-group">
-                    <div class="shares-controls">
-                        <label class="input-label">Shares</label>
-                        <input type="number" class="shares-input" id="sharesInput" value="0" min="0"
-                            placeholder="0" aria-label="Number of shares">
-                    </div>
-                    <div class="price-buttons">
-                        <button class="shares-price" data-price="10" onclick="updateShares(10)">+10$</button>
-                        <button class="shares-price" data-price="100" onclick="updateShares(100)">+100$</button>
-                        <button class="shares-price" data-price="-10" onclick="updateShares(-10)">-10$</button>
-                        <button class="shares-price" data-price="-100" onclick="updateShares(-100)">-100$</button>
-                    </div>
-
-                    <div class="trade-summary">
-                        <div class="summary-row">
-                            <span>Total</span>
-                            <span class="summary-value" id="totalCost">$0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>To Win</span>
-                            <span class="summary-value" id="potentialWin">$0</span>
-                        </div>
-                    </div>
-                    <button class="trade-btn" id="executeTrade">Bay Yes</button>
-                    <!-- <div class="related-markets">
-                            <div class="market-tags">
-                                <div class="market-tag active">All</div>
-                                <div class="market-tag">Politics</div>
-                                <div class="market-tag">Trump</div>
-                                <div class="market-tag">Gov Shutdown</div>
-                            </div>
-                            <div class="related-item">
-                                <div class="related-icon">
-                                    <i class="fas fa-calendar-check"></i>
-                                </div>
-                                <div class="related-info">
-                                    <div class="related-title">Will the Government shutdown end by December 31?</div>
-                                </div>
-                                <div class="related-percent">100%</div>
-                            </div>
-                            <div class="related-item">
-                                <div class="related-icon">
-                                    <i class="fas fa-redo"></i>
-                                </div>
-                                <div class="related-info">
-                                    <div class="related-title">Will there be another US government shutdown by...</div>
-                                </div>
-                                <div class="related-percent">2%</div>
-                            </div>
-                            <div class="related-item">
-                                <div class="related-icon">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </div>
-                                <div class="related-info">
-                                    <div class="related-title">Will federal employees receive back pay after the
-                                        government...
-                                    </div>
-                                </div>
-                                <div class="related-percent">97%</div>
-                            </div>
-                        </div> -->
-                </div>
-            </div>
+            <livewire:market-details.trading-panel :event="$event" />
         </div>
     </main>
 
     @push('scripts')
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-        <script></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"
+            integrity="sha512-Ih4vqKQylvR5pDYxJ3H3OXHAMvNjl54hYDo6Ur5cDIrS+Fft+QrbVGnL3e2vBwpu7VQqGQDjCYXyCEhPLrM1EA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const container = document.getElementById('chart-container');
+                if (!container) {
+                    console.warn('Chart container element not found.');
+                    return;
+                }
+                if (typeof echarts === 'undefined') {
+                    console.error('ECharts library failed to load.');
+                    return;
+                }
+
+                const chart = echarts.init(container, null, {
+                    renderer: 'canvas',
+                    useDirtyRect: false
+                });
+                const DATA_URL =
+                    'https://fastly.jsdelivr.net/gh/apache/echarts-website@gh-pages/data/asset/data/life-expectancy-table.json';
+
+                fetch(DATA_URL)
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error('Unable to load chart data');
+                        }
+                        return response.json();
+                    })
+                    .then((rawData) => {
+                        const option = {
+                            dataset: [{
+                                    id: 'dataset_raw',
+                                    source: rawData
+                                },
+                                {
+                                    id: 'dataset_since_1950_of_germany',
+                                    fromDatasetId: 'dataset_raw',
+                                    transform: {
+                                        type: 'filter',
+                                        config: {
+                                            and: [{
+                                                    dimension: 'Year',
+                                                    gte: 1950
+                                                },
+                                                {
+                                                    dimension: 'Country',
+                                                    '=': 'Germany'
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    id: 'dataset_since_1950_of_france',
+                                    fromDatasetId: 'dataset_raw',
+                                    transform: {
+                                        type: 'filter',
+                                        config: {
+                                            and: [{
+                                                    dimension: 'Year',
+                                                    gte: 1950
+                                                },
+                                                {
+                                                    dimension: 'Country',
+                                                    '=': 'France'
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            title: {
+                                text: 'Income of Germany and France since 1950'
+                            },
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            xAxis: {
+                                type: 'category',
+                                nameLocation: 'middle'
+                            },
+                            yAxis: {
+                                name: 'Income'
+                            },
+                            series: [{
+                                    type: 'line',
+                                    datasetId: 'dataset_since_1950_of_germany',
+                                    showSymbol: false,
+                                    encode: {
+                                        x: 'Year',
+                                        y: 'Income',
+                                        itemName: 'Year',
+                                        tooltip: ['Income']
+                                    }
+                                },
+                                {
+                                    type: 'line',
+                                    datasetId: 'dataset_since_1950_of_france',
+                                    showSymbol: false,
+                                    encode: {
+                                        x: 'Year',
+                                        y: 'Income',
+                                        itemName: 'Year',
+                                        tooltip: ['Income']
+                                    }
+                                }
+                            ]
+                        };
+
+                        chart.setOption(option);
+                    })
+                    .catch((error) => {
+                        console.error('Chart init failed:', error);
+                    });
+
+                window.addEventListener('resize', function() {
+                    chart.resize();
+                });
+            });
+        </script>
     @endpush
 @endsection
