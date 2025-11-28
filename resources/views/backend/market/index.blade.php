@@ -1,381 +1,199 @@
 @extends('backend.layouts.master')
+@section('title', 'Events List')
 @section('content')
     <div class="content-wrapper">
         <div class="container-full">
-            <!-- Search Section -->
             <section class="content">
                 <div class="row">
                     <div class="col-12">
-                        <div class="box search-header-box">
+                        <!-- Header Section -->
+                        <div class="box list-header-box">
                             <div class="box-body">
                                 <div class="row align-items-center">
                                     <div class="col-md-8">
-                                        <h2 class="search-title">
-                                            <i class="fa fa-search"></i> Market Search
+                                        <h2 class="list-title">
+                                            <i class="fa fa-list"></i> Events List
                                         </h2>
-                                        <p class="search-subtitle">Search for markets by slug, title or keyword</p>
+                                        <p class="list-subtitle">Manage all your events and markets</p>
                                     </div>
                                     <div class="col-md-4 text-end">
-                                        <div class="d-flex align-items-center gap-3 justify-content-end">
-                                            <a href="{{ route('admin.market.list') }}" class="btn btn-light">
-                                                <i class="fa fa-list"></i> View All Events
-                                            </a>
-                                            @if (isset($data))
-                                                <span class="badge badge-success">
-                                                    <i class="fa fa-check-circle"></i> Results Found
-                                                </span>
-                                            @endif
-                                        </div>
+                                        <a href="{{ route('admin.market.index') }}" class="btn btn-primary">
+                                            <i class="fa fa-plus"></i> Add New Event
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-
-
-                        <div class="box modern-search-box">
-                            <div class="box-body">
-                                <form action="{{ route('admin.market.search') }}" method="post" id="searchForm">
-                                    @csrf
-                                    <div class="row">
-                                        <div class="col-md-10">
-                                            <div class="form-group modern-form-group">
-                                                <label for="search" class="modern-label">
-                                                    <i class="fa fa-search"></i> Search Market
-                                                </label>
-                                                <div class="input-group modern-input-group">
-                                                    <span class="input-group-text">
-                                                        <i class="fa fa-link"></i>
-                                                    </span>
-                                                    <input type="text" name="search" id="search"
-                                                        class="form-control modern-input"
-                                                        placeholder="Enter market slug or keyword..."
-                                                        value="{{ old('search') }}" autocomplete="off">
-                                                </div>
-                                                <small class="form-text text-muted">
-                                                    <i class="fa fa-info-circle"></i> Enter the market slug from Polymarket
-                                                </small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group modern-form-group">
-                                                <label class="modern-label">&nbsp;</label>
-                                                <button type="submit" class="btn btn-primary btn-block btn-modern-search">
-                                                    <i class="fa fa-search"></i> Search
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Results Section -->
-            @if (isset($data))
-                <section class="content">
-                    <div class="row">
-                        <div class="col-12">
-                            <!-- Main Market Header -->
-                            <div class="box market-header-box">
-                                <div class="box-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-3">
-                                            <div class="market-main-image">
-                                                <img src="{{ $data->image ?? asset('backend/assets/images/avatar.png') }}"
-                                                    alt="{{ $data->title ?? 'Market' }}"
+                        <!-- Events Grid -->
+                        <div class="row events-grid">
+                            @forelse ($events as $event)
+                                <div class="col-lg-6 col-xl-4 event-card-wrapper">
+                                    <div class="box event-card">
+                                        <!-- Card Header -->
+                                        <div class="event-card-header">
+                                            <div class="event-image-wrapper">
+                                                <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('backend/assets/images/avatar.png') }}"
+                                                    alt="{{ $event->title }}"
                                                     onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-7">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h2 class="market-main-title">{{ $data->title ?? 'Market Title' }}
-                                                    </h2>
-                                                    <p class="market-main-description">
-                                                        {{ $data->description ?? 'No description available' }}
-                                                    </p>
-                                                    <div class="market-dates">
-                                                        @if (isset($data->startDate))
-                                                            <span class="badge badge-primary">
-                                                                <i class="fa fa-calendar-check"></i> Start:
-                                                                {{ format_date($data->startDate) }}
-                                                            </span>
+                                                <div class="event-overlay">
+                                                    <div class="event-status-badges">
+                                                        @if ($event->active)
+                                                            <span class="badge badge-success badge-pulse">Active</span>
                                                         @endif
-                                                        @if (isset($data->endDate))
-                                                            <span class="badge badge-danger ml-2">
-                                                                <i class="fa fa-calendar-times"></i> End:
-                                                                {{ format_date($data->endDate) }}
-                                                            </span>
+                                                        @if ($event->featured)
+                                                            <span class="badge badge-warning">Featured</span>
+                                                        @endif
+                                                        @if ($event->new)
+                                                            <span class="badge badge-info">New</span>
                                                         @endif
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <!-- Save Button -->
-                                        <div class="text-end col-md-2">
-                                            <a href="{{ route('admin.market.save', $data->slug ?? '#') }}"
-                                                class="btn btn-primary btn-lg btn-modern">
-                                                <i class="fa fa-save"></i> Save Market
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- Markets Grid -->
-                            <div class="row market-grid" id="marketsGrid">
-                                @foreach ($data->markets ?? [] as $index => $item)
-                                    <div class="col-lg-6 col-xl-4 market-card-wrapper" data-market-index="{{ $index }}">
-                                        <div class="box market-card modern-market-card">
-                                            <!-- Card Header with Image -->
-                                            <div class="market-card-header-modern">
-                                                <div class="market-card-image-wrapper">
-                                                    <div class="market-card-image">
-                                                        <img src="{{ $item->icon ?? asset('backend/assets/images/avatar.png') }}"
-                                                            alt="{{ $item->question ?? 'Market' }}"
-                                                            onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
+                                        <!-- Card Body -->
+                                        <div class="event-card-body">
+                                            <h4 class="event-title">
+                                                <i class="fa fa-calendar"></i>
+                                                {{ Str::limit($event->title, 60) }}
+                                            </h4>
+                                            <p class="event-description">
+                                                {{ Str::limit($event->description ?? 'No description', 100) }}
+                                            </p>
+
+                                            <!-- Key Metrics -->
+                                            <div class="event-metrics">
+                                                <div class="metric-item">
+                                                    <div class="metric-icon">
+                                                        <i class="fa fa-dollar-sign"></i>
                                                     </div>
-                                                    <div class="market-card-overlay">
-                                                        <div class="market-status-badge">
-                                                            @if (isset($item->active) && $item->active)
-                                                                <span class="badge badge-success badge-pulse">Active</span>
-                                                            @else
-                                                                <span class="badge badge-secondary">Inactive</span>
-                                                            @endif
-                                                        </div>
+                                                    <div class="metric-info">
+                                                        <span class="metric-label">Liquidity</span>
+                                                        <span class="metric-value">
+                                                            ${{ number_format($event->liquidity ?? 0, 2) }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="metric-item">
+                                                    <div class="metric-icon">
+                                                        <i class="fa fa-chart-bar"></i>
+                                                    </div>
+                                                    <div class="metric-info">
+                                                        <span class="metric-label">Volume</span>
+                                                        <span class="metric-value">
+                                                            ${{ number_format($event->volume ?? 0, 2) }}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Card Body -->
-                                            <div class="market-card-body-modern">
-                                                <!-- Question Section -->
-                                                <div class="market-question-section">
-                                                    <h4 class="market-question">
-                                                        <i class="fa fa-question-circle"></i>
-                                                        {{ $item->question ?? 'Market Question' }}
-                                                    </h4>
-                                                </div>
+                                            <!-- Markets Count -->
+                                            <div class="markets-count">
+                                                <i class="fa fa-list"></i>
+                                                <span>{{ $event->markets->count() }} Markets</span>
+                                            </div>
 
-                                                <!-- Key Metrics - Modern Design -->
-                                                <div class="market-metrics-modern">
-                                                    <div class="metric-card">
-                                                        <div class="metric-icon">
-                                                            <i class="fa fa-dollar-sign"></i>
-                                                        </div>
-                                                        <div class="metric-content">
-                                                            <span class="metric-label-modern">Liquidity</span>
-                                                            <span class="metric-value-modern">
-                                                                ${{ number_format($item->liquidity ?? 0, 2) }}
-                                                            </span>
-                                                        </div>
+                                            <!-- Dates -->
+                                            <div class="event-dates">
+                                                @if ($event->start_date)
+                                                    <div class="date-item">
+                                                        <i class="fa fa-calendar-check"></i>
+                                                        <span>{{ format_date($event->start_date) }}</span>
                                                     </div>
-                                                    <div class="metric-card">
-                                                        <div class="metric-icon">
-                                                            <i class="fa fa-chart-bar"></i>
-                                                        </div>
-                                                        <div class="metric-content">
-                                                            <span class="metric-label-modern">Volume</span>
-                                                            <span class="metric-value-modern">
-                                                                ${{ number_format($item->volume ?? 0, 2) }}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Volume Chart -->
-                                                <div class="volume-chart-container">
-                                                    <canvas id="volumeChart{{ $index }}" height="120"></canvas>
-                                                </div>
-
-                                                <!-- Outcome Prices -->
-                                                @if (isset($item->outcomePrices))
-                                                    @php
-                                                        $prices = json_decode($item->outcomePrices, true);
-
-                                                        if ($prices && is_array($prices) && count($prices) >= 2) {
-                                                            $yesPercent = format_number($prices[0] * 100, 2);
-                                                            $noPercent = format_number($prices[1] * 100, 2);
-                                                        } else {
-                                                            $yesPercent = 'N/A';
-                                                            $noPercent = 'N/A';
-                                                        }
-                                                    @endphp
-
-                                                    <div class="outcome-prices mt-3">
-                                                        <div class="outcome-cards">
-                                                            <div class="outcome-card outcome-yes">
-                                                                <div class="outcome-label">YES</div>
-                                                                <div class="outcome-percent">{{ $yesPercent }}%
-                                                                </div>
-                                                            </div>
-                                                            <div class="outcome-card outcome-no">
-                                                                <div class="outcome-label">NO</div>
-                                                                <div class="outcome-percent">{{ $noPercent }}%
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                @endif
+                                                @if ($event->end_date)
+                                                    <div class="date-item">
+                                                        <i class="fa fa-calendar-times"></i>
+                                                        <span>{{ format_date($event->end_date) }}</span>
                                                     </div>
                                                 @endif
                                             </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="event-actions">
+                                                <a href="{{ route('admin.market.edit', $event->id) }}"
+                                                    class="btn btn-sm btn-primary">
+                                                    <i class="fa fa-edit"></i> Edit
+                                                </a>
+                                                <a href="{{ route('admin.market.save', $event->slug) }}"
+                                                    class="btn btn-sm btn-info">
+                                                    <i class="fa fa-eye"></i> View
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                @endforeach
-                            </div>
-
-
+                                </div>
+                            @empty
+                                <div class="col-12">
+                                    <div class="box empty-state-box">
+                                        <div class="box-body text-center py-5">
+                                            <i class="fa fa-inbox fa-4x text-muted mb-3"></i>
+                                            <h4>No Events Found</h4>
+                                            <p class="text-muted">Start by adding your first event</p>
+                                            <a href="{{ route('admin.market.index') }}" class="btn btn-primary">
+                                                <i class="fa fa-plus"></i> Add New Event
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforelse
                         </div>
+
+                        <!-- Pagination -->
+                        @if ($events->hasPages())
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-center">
+                                        {{ $events->links() }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
-                </section>
-            @endif
+                </div>
+            </section>
         </div>
     </div>
 
     @push('styles')
         <style>
-            /* Search Header */
-            .search-header-box {
+            /* Header */
+            .list-header-box {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
-                margin-bottom: 25px;
+                margin-bottom: 30px;
                 border-radius: 15px;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             }
 
-            .search-title {
+            .list-title {
                 font-size: 28px;
                 font-weight: 700;
                 margin: 0;
                 color: white;
             }
 
-            .search-title i {
+            .list-title i {
                 margin-right: 10px;
             }
 
-            .search-subtitle {
+            .list-subtitle {
                 margin: 5px 0 0 0;
                 opacity: 0.9;
                 font-size: 14px;
             }
 
-            /* Modern Search Box */
-            .modern-search-box {
-                border-radius: 12px;
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-                border: none;
+            /* Events Grid */
+            .events-grid {
+                margin-top: 20px;
+            }
+
+            .event-card-wrapper {
                 margin-bottom: 30px;
             }
 
-            .modern-form-group {
-                margin-bottom: 0;
-            }
-
-            .modern-label {
-                font-weight: 600;
-                color: #495057;
-                margin-bottom: 8px;
-                display: block;
-                font-size: 14px;
-            }
-
-            .modern-label i {
-                margin-right: 8px;
-                color: #667eea;
-            }
-
-            .modern-input-group {
-                position: relative;
-            }
-
-            .modern-input-group .input-group-text {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                border-radius: 8px 0 0 8px;
-            }
-
-            .modern-input {
-                border-radius: 0 8px 8px 0;
-                border: 2px solid #e9ecef;
-                padding: 12px 15px;
-                transition: all 0.3s ease;
-                font-size: 14px;
-            }
-
-            .modern-input:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-                outline: none;
-            }
-
-            .btn-modern-search {
-                border-radius: 8px;
-                padding: 12px 20px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            }
-
-            .btn-modern-search:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            }
-
-            /* Market Header */
-            .market-header-box {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                margin-bottom: 30px;
-                border-radius: 15px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            }
-
-            .market-main-image {
-                border-radius: 10px;
-                overflow: hidden;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
-
-            .market-main-image img {
-                width: 100%;
-                height: 200px;
-                object-fit: cover;
-            }
-
-            .market-main-title {
-                font-size: 32px;
-                font-weight: 700;
-                margin-bottom: 15px;
-                color: white;
-            }
-
-            .market-main-description {
-                font-size: 16px;
-                margin-bottom: 20px;
-                opacity: 0.95;
-            }
-
-            .market-dates .badge {
-                font-size: 14px;
-                padding: 8px 15px;
-                border-radius: 20px;
-            }
-
-            /* Market Cards - Modern Design */
-            .market-grid {
-                margin-top: 30px;
-            }
-
-            .market-card-wrapper {
-                position: relative;
-                margin-bottom: 30px;
-            }
-
-            .modern-market-card {
+            .event-card {
                 border-radius: 16px;
                 overflow: hidden;
                 transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -383,50 +201,42 @@
                 height: 100%;
                 display: flex;
                 flex-direction: column;
-                position: relative;
                 background: #ffffff;
                 border: 1px solid rgba(0, 0, 0, 0.05);
             }
 
-            .modern-market-card:hover {
+            .event-card:hover {
                 transform: translateY(-8px) scale(1.02);
                 box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
                 border-color: rgba(102, 126, 234, 0.3);
             }
 
             /* Card Header */
-            .market-card-header-modern {
+            .event-card-header {
                 position: relative;
                 overflow: hidden;
             }
 
-            .market-card-image-wrapper {
+            .event-image-wrapper {
                 position: relative;
                 width: 100%;
-                height: 140px;
-                overflow: hidden;
-            }
-
-            .market-card-image {
-                width: 100%;
-                height: 100%;
+                height: 180px;
                 overflow: hidden;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                position: relative;
             }
 
-            .market-card-image img {
+            .event-image-wrapper img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
                 transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
 
-            .modern-market-card:hover .market-card-image img {
+            .event-card:hover .event-image-wrapper img {
                 transform: scale(1.15);
             }
 
-            .market-card-overlay {
+            .event-overlay {
                 position: absolute;
                 top: 0;
                 left: 0;
@@ -436,10 +246,13 @@
                 display: flex;
                 align-items: flex-start;
                 justify-content: flex-end;
-                padding: 10px;
+                padding: 15px;
             }
 
-            .market-status-badge {
+            .event-status-badges {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
                 z-index: 2;
             }
 
@@ -460,43 +273,47 @@
             }
 
             /* Card Body */
-            .market-card-body-modern {
-                padding: 15px;
+            .event-card-body {
+                padding: 20px;
                 flex: 1;
                 display: flex;
                 flex-direction: column;
             }
 
-            .market-question-section {
-                margin-bottom: 15px;
-            }
-
-            .market-question {
-                font-size: 16px;
+            .event-title {
+                font-size: 18px;
                 font-weight: 700;
                 color: #2c3e50;
-                margin-bottom: 0;
+                margin-bottom: 12px;
                 line-height: 1.4;
                 display: flex;
                 align-items: flex-start;
-                gap: 8px;
+                gap: 10px;
             }
 
-            .market-question i {
+            .event-title i {
                 color: #667eea;
                 margin-top: 3px;
-                font-size: 14px;
+                font-size: 16px;
             }
 
-            /* Modern Metrics */
-            .market-metrics-modern {
+            .event-description {
+                color: #6c757d;
+                font-size: 14px;
+                line-height: 1.6;
+                margin-bottom: 20px;
+                flex: 1;
+            }
+
+            /* Metrics */
+            .event-metrics {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 10px;
+                gap: 12px;
                 margin-bottom: 15px;
             }
 
-            .metric-card {
+            .metric-item {
                 background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
                 border-radius: 10px;
                 padding: 12px;
@@ -504,56 +321,51 @@
                 align-items: center;
                 gap: 10px;
                 transition: all 0.3s ease;
-                border: 1px solid rgba(0, 0, 0, 0.05);
             }
 
-            .metric-card:hover {
+            .metric-item:hover {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             }
 
-            .metric-card:hover .metric-icon {
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-            }
-
-            .metric-card:hover .metric-label-modern,
-            .metric-card:hover .metric-value-modern {
+            .metric-item:hover .metric-icon,
+            .metric-item:hover .metric-label,
+            .metric-item:hover .metric-value {
                 color: white;
             }
 
             .metric-icon {
-                width: 38px;
-                height: 38px;
+                width: 35px;
+                height: 35px;
                 border-radius: 8px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-size: 16px;
+                font-size: 14px;
                 transition: all 0.3s ease;
                 flex-shrink: 0;
             }
 
-            .metric-content {
+            .metric-info {
                 flex: 1;
                 min-width: 0;
             }
 
-            .metric-label-modern {
+            .metric-label {
                 display: block;
-                font-size: 11px;
+                font-size: 10px;
                 color: #6c757d;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 font-weight: 600;
                 transition: color 0.3s ease;
             }
 
-            .metric-value-modern {
+            .metric-value {
                 display: block;
                 font-size: 14px;
                 font-weight: 700;
@@ -564,373 +376,119 @@
                 text-overflow: ellipsis;
             }
 
-            .volume-chart-container {
-                margin: 15px 0;
-                padding: 12px;
-                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                border-radius: 10px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                position: relative;
-                overflow: hidden;
-            }
-
-            .volume-chart-container::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-                pointer-events: none;
-            }
-
-            .volume-chart-container canvas {
-                position: relative;
-                z-index: 1;
-            }
-
-            /* Outcome Prices */
-            .outcome-prices {
-                margin-top: 15px;
-            }
-
-            .outcome-cards {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                margin-top: 0;
-            }
-
-            .outcome-card {
-                padding: 10px;
+            /* Markets Count */
+            .markets-count {
+                background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+                padding: 10px 15px;
                 border-radius: 8px;
-                text-align: center;
-                transition: transform 0.2s ease;
-            }
-
-            .outcome-card:hover {
-                transform: translateY(-2px);
-            }
-
-            .outcome-yes {
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                color: white;
-            }
-
-            .outcome-no {
-                background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-                color: white;
-            }
-
-            .outcome-label {
-                font-size: 11px;
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
                 font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                opacity: 0.9;
-                margin-bottom: 5px;
+                color: #1976d2;
             }
 
-            .outcome-percent {
-                font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 2px;
+            .markets-count i {
+                font-size: 16px;
             }
 
-            .outcome-tokens {
-                font-size: 10px;
-                opacity: 0.85;
-                margin-top: 3px;
+            /* Dates */
+            .event-dates {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 15px;
+                padding: 12px;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border-radius: 8px;
             }
 
-            .btn-modern {
-                border-radius: 10px;
-                padding: 12px 30px;
+            .date-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: #495057;
+            }
+
+            .date-item i {
+                color: #667eea;
+                width: 16px;
+            }
+
+            /* Actions */
+            .event-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: auto;
+            }
+
+            .event-actions .btn {
+                flex: 1;
+                border-radius: 8px;
                 font-weight: 600;
                 transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
             }
 
-            .btn-modern:hover {
+            .event-actions .btn:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
 
-            /* Animations */
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+            /* Empty State */
+            .empty-state-box {
+                border-radius: 12px;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
             }
 
-            .market-card-wrapper {
-                animation: fadeIn 0.5s ease-out;
+            /* Pagination */
+            .pagination {
+                justify-content: center;
+            }
+
+            .page-link {
+                border-radius: 8px;
+                margin: 0 4px;
+                border: 2px solid #e9ecef;
+                color: #667eea;
+                transition: all 0.3s ease;
+            }
+
+            .page-link:hover {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-color: #667eea;
+                transform: translateY(-2px);
+            }
+
+            .page-item.active .page-link {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-color: #667eea;
             }
 
             @media (max-width: 768px) {
-                .search-title {
+                .list-title {
                     font-size: 22px;
                 }
 
-                .market-main-title {
-                    font-size: 24px;
-                }
-
-                .market-metrics-modern {
+                .event-metrics {
                     grid-template-columns: 1fr;
                 }
 
-                .metric-card {
-                    padding: 12px;
+                .event-image-wrapper {
+                    height: 150px;
                 }
 
-                .metric-icon {
-                    width: 40px;
-                    height: 40px;
-                    font-size: 16px;
-                }
-
-                .market-card-image-wrapper {
-                    height: 160px;
-                }
-
-                .market-card-body-modern {
+                .event-card-body {
                     padding: 15px;
                 }
 
-                .outcome-cards {
-                    grid-template-columns: 1fr;
-                }
-
-                .modern-market-card:hover {
+                .event-card:hover {
                     transform: translateY(-4px) scale(1.01);
                 }
             }
         </style>
-    @endpush
-
-    @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.min.js"></script>
-        <script>
-            const MERCHANT_ADDRESS = "0xYOUR_MERCHANT_ADDRESS";
-            const TOKEN_ADDRESS = "0xUSDT_OR_USDC_CONTRACT"; // network অনুযায়ী ঠিক করা লাগবে
-            const TOKEN_DECIMALS = 6; // USDT অনেক সময় 6, USDC 6; কিছু token 18 হতে পারে
-
-            const ERC20_ABI = [
-                "function transfer(address to, uint256 amount) public returns (bool)",
-                "function decimals() view returns (uint8)"
-            ];
-
-            async function payWithMetaMask(amountHuman) {
-                if (!window.ethereum) {
-                    alert("Please install MetaMask.");
-                    return;
-                }
-
-                try {
-                    // 1. connect
-                    const provider = new ethers.BrowserProvider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    const signer = await provider.getSigner();
-
-                    // 2. parse amount
-                    const decimals = TOKEN_DECIMALS; // চাইলে contract.decimals() দিয়ে dynamic নাও করতে পারো
-                    const amount = ethers.parseUnits(amountHuman.toString(), decimals); // big int
-
-                    // 3. contract transfer
-                    const token = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-                    const tx = await token.transfer(MERCHANT_ADDRESS, amount);
-
-                    console.log("txHash:", tx.hash);
-
-                    // 4. notify backend for verification & record
-                    const res = await fetch('/api/metamask/notify', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({
-                            txHash: tx.hash,
-                            expectedAmount: amount.toString(),
-                            token: TOKEN_ADDRESS
-                        })
-                    });
-                    const body = await res.json();
-                    alert(body.message || 'Payment sent. Waiting verification.');
-
-                    // optionally wait for confirmation locally:
-                    // await tx.wait(); // blocks until mined
-                } catch (e) {
-                    console.error(e);
-                    alert('Payment failed or rejected by user.');
-                }
-            }
-
-            document.getElementById('payBtn').addEventListener('click', () => payWithMetaMask(10)); // 10 USDT
-        </script>
-
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            $('#payBtn').click(function () {
-                $.ajax({
-                    url: "/binance-pay",
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                    },
-                    success: function (res) {
-                        if (res.code === 'SUCCESS') {
-                            window.location.href = res.data.qrLink;
-
-                        } else {
-                            alert("Payment init failed.");
-                        }
-                    },
-                    error: function (err) {
-                        console.log(err);
-                        alert("Server error.");
-                    }
-                });
-            });
-        </script>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Initialize tooltips
-                $('[data-toggle="tooltip"]').tooltip();
-
-                // Chart initialization
-                @if (isset($data))
-                    @foreach ($data->markets ?? [] as $index => $item)
-                        const ctx{{ $index }} = document.getElementById('volumeChart{{ $index }}');
-                        if (ctx{{ $index }}) {
-                            const gradient = ctx{{ $index }}.getContext('2d').createLinearGradient(0, 0, 0, 120);
-                            gradient.addColorStop(0, 'rgba(40, 167, 69, 0.4)');
-                            gradient.addColorStop(0.5, 'rgba(40, 167, 69, 0.2)');
-                            gradient.addColorStop(1, 'rgba(40, 167, 69, 0)');
-
-                            new Chart(ctx{{ $index }}.getContext('2d'), {
-                                type: 'line',
-                                data: {
-                                    labels: ['24hr', '1wk', '1mo', '1yr'],
-                                    datasets: [{
-                                        label: 'Volume',
-                                        data: [
-                                                            {{ $item->volume24hr ?? 0 }},
-                                                            {{ $item->volume1wk ?? 0 }},
-                                                            {{ $item->volume1mo ?? 0 }},
-                                            {{ $item->volume1yr ?? 0 }}
-                                        ],
-                                        borderColor: 'rgba(40, 167, 69, 1)',
-                                        backgroundColor: gradient,
-                                        borderWidth: 3,
-                                        fill: true,
-                                        tension: 0.4,
-                                        pointRadius: 5,
-                                        pointHoverRadius: 7,
-                                        pointBackgroundColor: 'rgba(40, 167, 69, 1)',
-                                        pointBorderColor: '#ffffff',
-                                        pointBorderWidth: 2,
-                                        pointHoverBackgroundColor: 'rgba(40, 167, 69, 1)',
-                                        pointHoverBorderColor: '#ffffff',
-                                        pointHoverBorderWidth: 3
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            display: false
-                                        },
-                                        tooltip: {
-                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                            padding: 12,
-                                            titleFont: {
-                                                size: 14,
-                                                weight: 'bold'
-                                            },
-                                            bodyFont: {
-                                                size: 13
-                                            },
-                                            callbacks: {
-                                                label: function (context) {
-                                                    return '$' + context.parsed.y.toLocaleString();
-                                                }
-                                            },
-                                            displayColors: false,
-                                            cornerRadius: 8
-                                        }
-                                    },
-                                    scales: {
-                                        x: {
-                                            display: true,
-                                            grid: {
-                                                display: false
-                                            },
-                                            ticks: {
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                font: {
-                                                    size: 11,
-                                                    weight: '500'
-                                                }
-                                            }
-                                        },
-                                        y: {
-                                            beginAtZero: true,
-                                            grid: {
-                                                color: 'rgba(255, 255, 255, 0.1)',
-                                                lineWidth: 1
-                                            },
-                                            ticks: {
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                font: {
-                                                    size: 11,
-                                                    weight: '500'
-                                                },
-                                                callback: function (value) {
-                                                    if (value >= 1000000) {
-                                                        return '$' + (value / 1000000).toFixed(1) + 'M';
-                                                    } else if (value >= 1000) {
-                                                        return '$' + (value / 1000).toFixed(1) + 'K';
-                                                    }
-                                                    return '$' + value.toLocaleString();
-                                                }
-                                            }
-                                        }
-                                    },
-                                    elements: {
-                                        line: {
-                                            borderJoinStyle: 'round'
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    @endforeach
-                @endif
-
-                        // Form validation
-                        const searchForm = document.getElementById('searchForm');
-                if (searchForm) {
-                    searchForm.addEventListener('submit', function (e) {
-                        const searchInput = document.getElementById('search');
-                        if (!searchInput.value.trim()) {
-                            e.preventDefault();
-                            alert('Please enter a search term');
-                            searchInput.focus();
-                        }
-                    });
-                }
-            });
-        </script>
     @endpush
 @endsection

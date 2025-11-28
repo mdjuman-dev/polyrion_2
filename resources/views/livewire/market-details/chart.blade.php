@@ -22,11 +22,10 @@
                 </button>
             </div>
         </div>
-
     </div>
 
     <div class="chart-container">
-        <div id="chart-container" style="width: 100%; height: 360px;"></div>
+        <div id="chart-container" style="width: 100%; max-height: 360px;"></div>
         <div class="chart-controls">
             <button class="chart-btn">1H</button>
             <button class="chart-btn">6H</button>

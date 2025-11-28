@@ -1,4 +1,4 @@
-<div wire:poll.3s>
+<div wire:poll.5s="refreshEvents" data-component="markets-grid">
     <!-- Markets Grid -->
     <div class="markets-grid mt-3 mt-lg-0">
         <!-- Market Card 2 -->
@@ -41,12 +41,11 @@
                             ${{ formatVolume($event->volume) }} Vol.
                         </span>
                         <div class="market-actions d-flex gap-2">
-                            <button class="market-card-action-btn"><i class="fas fa-bookmark"></i></button>
+                            <livewire:save-event :event="$event" :key="'grid-' . $event->id" />
                         </div>
                     </div>
                 </div>
             @else
-                {{-- Type 1: Single Market (Ukraine ceasefire style) --}}
                 @php
                     $market = $event->markets->first();
                     if ($market) {
@@ -57,23 +56,28 @@
                 @endphp
 
                 <div class="market-card single-market">
-                    <div class="market-card-header">
-                        <div class="market-profile-img">
-                            <img src="{{ $event->image }}" alt="{{ $event->title }}">
-                        </div>
-                        <div class="market-title-section">
-                            <a href="{{ route('market.details', $event->slug) }}"
-                                class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 30) }}</a>
-                            <div class="market-chance">
-                                <span class="chance-arrow">↓</span>
-                                <span class="chance-value">{{ $yesProb }}%</span>
+                    <div class="d-flex">
+                        <div class="market-card-header me-3">
+                            <div class="market-profile-img">
+                                <img src="{{ $event->image }}" alt="{{ $event->title }}">
                             </div>
+                            <div class="market-title-section">
+                                <a href="{{ route('market.details', $event->slug) }}"
+                                    class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 100) }}</a>
+                            </div>
+                        </div>
+                        <div class="market-chance">
+                            <span
+                                class="chance-value {{ $yesProb <= 30 ? 'danger' : ($yesProb <= 50 ? 'warning' : 'success') }}">
+                                {{ $yesProb }}%
+                            </span>
+                            <div class="chance-label">chance</div>
                         </div>
                     </div>
 
                     <div class="market-card-body-single">
-                        <button class="market-card-yes-btn-large">{{ $outcomes[0] ?? 'Yes' }}</button>
-                        <button class="market-card-no-btn-large">{{ $outcomes[1] ?? 'No' }}</button>
+                        <button class="market-card-yes-btn-large">{{ 'Up' }}</button>
+                        <button class="market-card-no-btn-large">{{ 'Down' }}</button>
                     </div>
 
                     <div class="market-footer">
@@ -82,7 +86,7 @@
                             ${{ formatVolume($event->volume) }} Vol.
                         </span>
                         <div class="market-actions d-flex gap-2">
-                            <button class="market-card-action-btn"><i class="fas fa-bookmark"></i></button>
+                            <livewire:save-event :event="$event" :key="'grid-single-' . $event->id" />
                         </div>
                     </div>
                 </div>
@@ -90,7 +94,12 @@
         @endforeach
     </div>
 
-    <div class="text-center">
-        {{ $events->links('pagination::bootstrap-5') }}
-    </div>
+    @if ($hasMore)
+        <div x-intersect.threshold.10="$wire.loadMore()" class="text-center">
+            <div wire:loading wire:target="loadMore" class="d-flex align-items-center justify-content-center gap-2">
+                <span class="loader"></span>
+            </div>
+        </div>
+    @endif
+
 </div>

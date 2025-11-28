@@ -6,203 +6,45 @@
     <main>
         <div class="main-layout">
             <div class="main-content">
-                <livewire:market-details.chart :event="$event" />
+                <div class="market-detail-header">
+                    <div class="market-header-top">
+                        <div class="market-header-left">
+                            <div class="market-profile-img">
+                                <img src="{{ $event->image }}" alt="Profile">
+                            </div>
+                            <div class="market-header-info">
+                                <h1 class="market-title">{{ $event->title }}</h1>
+                                <div class="market-header-meta">
+                                    <span class="market-volume">${{ number_format($event->volume) }} Vol.</span>
+                                    <span class="market-date">{{ format_date($event->start_date) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="market-header-actions">
+                            <livewire:save-event :event="$event" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div id="chart-container" style="width: 100%; height: 360px;"></div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" data-period="1h">1H</button>
+                        <button class="chart-btn" data-period="6h">6H</button>
+                        <button class="chart-btn" data-period="1d">1D</button>
+                        <button class="chart-btn" data-period="1w">1W</button>
+                        <button class="chart-btn" data-period="1m">1M</button>
+                        <button class="chart-btn active" data-period="all">ALL</button>
+                    </div>
+                </div>
                 <livewire:market-details.markets :event="$event" />
                 <div class="tab-container">
                     <div class="tab-nav">
-                        <div class="tab-item active" data-tab="comments">Comments (214)</div>
-                        <div class="tab-item" data-tab="holders">Top Holders</div>
-                        <div class="tab-item" data-tab="activity">Activity</div>
+                        <livewire:market-details.comments-count :event="$event" />
                     </div>
 
                     <div class="tab-content active" id="comments">
-                        <div class="comments-section">
-                            <div class="comment-input-container">
-                                <div class="comment-input-wrapper">
-                                    <input class="comment-input" type="text" placeholder="Write a comment...">
-                                    <button class="comment-submit-btn">
-                                        <i class="fas fa-paper-plane"></i>
-                                        <span>Post</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="comment-section">
-                            <div class="comment-header">
-                                <a href="">
-                                    <div class="comment-avatar">
-                                        <img class="comment-avatar-img" src="assets/images/user.webp" alt="Zyns">
-                                    </div>
-                                </a>
-                                <div class="comment-meta">
-                                    <div class="comment-author"><a href="">Zyns</a></div>
-                                    <div class="comment-date">November 12, 2025 at 11:45 PM</div>
-                                </div>
-                            </div>
-                            <div class="comment-body">
-                                If all goes smoothly, we could see the government reopen by the end of the day.
-                            </div>
-                            <div class="comment-actions">
-                                <div class="comment-action">
-                                    <i class="far fa-thumbs-up"></i> 42
-                                </div>
-                                <div class="comment-action reply-btn">
-                                    <i class="far fa-comment-dots"></i> Reply
-                                </div>
-                            </div>
-                            <div class="comment-reply-wrapper" style="display: none;">
-                                <div class="comment-reply-input-wrapper">
-                                    <input class="comment-reply-input" type="text" placeholder="Write a reply...">
-                                    <button class="comment-reply-submit-btn">Post</button>
-                                    <button class="comment-reply-cancel-btn">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="comment-section">
-                            <div class="comment-header">
-                                <div class="comment-avatar">M</div>
-                                <div class="comment-meta">
-                                    <div class="comment-author">MarketWatcher</div>
-                                    <div class="comment-date">November 12, 2025 at 10:30 PM</div>
-                                </div>
-                            </div>
-                            <div class="comment-body">
-                                I'm skeptical about a resolution by tomorrow. The sticking points haven't been
-                                resolved
-                                yet,
-                                and both sides seem entrenched. My money is on November 13 or later.
-                            </div>
-                            <div class="comment-actions">
-                                <div class="comment-action">
-                                    <i class="far fa-thumbs-up"></i> 28
-                                </div>
-                                <div class="comment-action reply-btn">
-                                    <i class="far fa-comment-dots"></i> Reply
-                                </div>
-                            </div>
-                            <div class="comment-reply-wrapper" style="display: none;">
-                                <div class="comment-reply-input-wrapper">
-                                    <input class="comment-reply-input" type="text" placeholder="Write a reply...">
-                                    <button class="comment-reply-submit-btn">Post</button>
-                                    <button class="comment-reply-cancel-btn">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-content" id="holders">
-                        <div class="holders-section">
-                            <div class="holders-title">Top Holders</div>
-                            <div class="holders-tabs">
-                                <button class="holders-tab active" data-holders="yes">Yes Holders</button>
-                                <button class="holders-tab" data-holders="no">No Holders</button>
-                            </div>
-                            <div class="holder-list" id="yes-holders">
-                                <div class="holder-item">
-                                    <div class="holder-rank">1</div>
-                                    <div class="holder-name">Halfapound</div>
-                                    <div class="holder-shares yes">197,407 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">2</div>
-                                    <div class="holder-name">Melody626</div>
-                                    <div class="holder-shares yes">40,604 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">3</div>
-                                    <div class="holder-name">CryptoKing</div>
-                                    <div class="holder-shares yes">35,821 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">4</div>
-                                    <div class="holder-name">PoliticalProphet</div>
-                                    <div class="holder-shares yes">28,945 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">5</div>
-                                    <div class="holder-name">BetMaster</div>
-                                    <div class="holder-shares yes">21,736 shares</div>
-                                </div>
-                            </div>
-                            <div class="holder-list" id="no-holders" style="display: none;">
-                                <div class="holder-item">
-                                    <div class="holder-rank">1</div>
-                                    <div class="holder-name">ltotheog</div>
-                                    <div class="holder-shares no">36,080 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">2</div>
-                                    <div class="holder-name">baderflyyyy</div>
-                                    <div class="holder-shares no">15,612 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">3</div>
-                                    <div class="holder-name">SkepticSam</div>
-                                    <div class="holder-shares no">12,445 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">4</div>
-                                    <div class="holder-name">DoubterDave</div>
-                                    <div class="holder-shares no">9,876 shares</div>
-                                </div>
-                                <div class="holder-item">
-                                    <div class="holder-rank">5</div>
-                                    <div class="holder-name">NoWayJose</div>
-                                    <div class="holder-shares no">7,654 shares</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-content" id="activity">
-                        <div class="activity-section">
-                            <div class="activity-title">Recent Activity</div>
-                            <div class="activity-filters">
-                                <button class="activity-filter active">All</button>
-                                <button class="activity-filter">Min amount</button>
-                            </div>
-                            <div class="activity-list">
-                                <div class="activity-item">
-                                    <div class="activity-avatar">S</div>
-                                    <div class="activity-details">
-                                        <div class="activity-action">stompychan sold 20 No for November 12</div>
-                                        <div class="activity-meta">2 minutes ago</div>
-                                    </div>
-                                    <div class="activity-value sell">22.0¢ ($4)</div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-avatar">C</div>
-                                    <div class="activity-details">
-                                        <div class="activity-action">coinfun sold 1,000 Yes for November 17</div>
-                                        <div class="activity-meta">15 minutes ago</div>
-                                    </div>
-                                    <div class="activity-value sell">0.3¢ ($3)</div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-avatar">P</div>
-                                    <div class="activity-details">
-                                        <div class="activity-action">Prophet99 bought 500 Yes for November 12</div>
-                                        <div class="activity-meta">32 minutes ago</div>
-                                    </div>
-                                    <div class="activity-value buy">78.0¢ ($390)</div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-avatar">B</div>
-                                    <div class="activity-details">
-                                        <div class="activity-action">BigBets bought 100 No for November 13</div>
-                                        <div class="activity-meta">1 hour ago</div>
-                                    </div>
-                                    <div class="activity-value buy">21.0¢ ($21)</div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-avatar">T</div>
-                                    <div class="activity-details">
-                                        <div class="activity-action">TraderJoe sold 50 Yes for November 12</div>
-                                        <div class="activity-meta">2 hours ago</div>
-                                    </div>
-                                    <div class="activity-value sell">75.0¢ ($37.5)</div>
-                                </div>
-                            </div>
-                        </div>
+                        <livewire:market-details.comments :event="$event" />
                     </div>
                 </div>
             </div>
@@ -233,103 +75,217 @@
                     renderer: 'canvas',
                     useDirtyRect: false
                 });
-                const DATA_URL =
-                    'https://fastly.jsdelivr.net/gh/apache/echarts-website@gh-pages/data/asset/data/life-expectancy-table.json';
 
-                fetch(DATA_URL)
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error('Unable to load chart data');
+                let currentPeriod = 'all';
+                const chartBtns = document.querySelectorAll('.chart-btn');
+
+                // Generate sample data based on period
+                function generateChartData(period) {
+                    const now = new Date();
+                    const data = [];
+                    let points = 50;
+                    let interval = 1;
+
+                    switch (period) {
+                        case '1h':
+                            points = 60;
+                            interval = 1; // 1 minute intervals
+                            break;
+                        case '6h':
+                            points = 72;
+                            interval = 5; // 5 minute intervals
+                            break;
+                        case '1d':
+                            points = 96;
+                            interval = 15; // 15 minute intervals
+                            break;
+                        case '1w':
+                            points = 168;
+                            interval = 60; // 1 hour intervals
+                            break;
+                        case '1m':
+                            points = 30;
+                            interval = 1440; // 1 day intervals
+                            break;
+                        case 'all':
+                            points = 100;
+                            interval = 1440; // 1 day intervals
+                            break;
+                    }
+
+                    // Get base price from event data (if available)
+                    @php
+                        $basePrice = 50;
+                        if ($event->markets && $event->markets->count() > 0) {
+                            $firstMarket = $event->markets->first();
+                            if ($firstMarket->outcome_prices) {
+                                $prices = json_decode($firstMarket->outcome_prices, true);
+                                if (is_array($prices) && isset($prices[0])) {
+                                    $basePrice = $prices[0] * 100;
+                                }
+                            }
                         }
-                        return response.json();
-                    })
-                    .then((rawData) => {
-                        const option = {
-                            dataset: [{
-                                    id: 'dataset_raw',
-                                    source: rawData
-                                },
-                                {
-                                    id: 'dataset_since_1950_of_germany',
-                                    fromDatasetId: 'dataset_raw',
-                                    transform: {
-                                        type: 'filter',
-                                        config: {
-                                            and: [{
-                                                    dimension: 'Year',
-                                                    gte: 1950
-                                                },
-                                                {
-                                                    dimension: 'Country',
-                                                    '=': 'Germany'
-                                                }
-                                            ]
-                                        }
-                                    }
-                                },
-                                {
-                                    id: 'dataset_since_1950_of_france',
-                                    fromDatasetId: 'dataset_raw',
-                                    transform: {
-                                        type: 'filter',
-                                        config: {
-                                            and: [{
-                                                    dimension: 'Year',
-                                                    gte: 1950
-                                                },
-                                                {
-                                                    dimension: 'Country',
-                                                    '=': 'France'
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ],
-                            title: {
-                                text: 'Income of Germany and France since 1950'
-                            },
-                            tooltip: {
-                                trigger: 'axis'
-                            },
-                            xAxis: {
-                                type: 'category',
-                                nameLocation: 'middle'
-                            },
-                            yAxis: {
-                                name: 'Income'
-                            },
-                            series: [{
-                                    type: 'line',
-                                    datasetId: 'dataset_since_1950_of_germany',
-                                    showSymbol: false,
-                                    encode: {
-                                        x: 'Year',
-                                        y: 'Income',
-                                        itemName: 'Year',
-                                        tooltip: ['Income']
-                                    }
-                                },
-                                {
-                                    type: 'line',
-                                    datasetId: 'dataset_since_1950_of_france',
-                                    showSymbol: false,
-                                    encode: {
-                                        x: 'Year',
-                                        y: 'Income',
-                                        itemName: 'Year',
-                                        tooltip: ['Income']
-                                    }
-                                }
-                            ]
-                        };
+                    @endphp
+                    const basePrice = {{ $basePrice }};
 
-                        chart.setOption(option);
-                    })
-                    .catch((error) => {
-                        console.error('Chart init failed:', error);
+                    for (let i = points; i >= 0; i--) {
+                        const time = new Date(now.getTime() - i * interval * 60 * 1000);
+                        const price = basePrice + (Math.random() * 20 - 10); // Random variation
+                        const volume = Math.random() * 1000000 + 100000;
+
+                        data.push([
+                            time.toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                month: period === '1m' || period === 'all' ? 'short' : undefined,
+                                day: period === '1m' || period === 'all' ? 'numeric' : undefined
+                            }),
+                            parseFloat(price.toFixed(2)),
+                            parseFloat(volume.toFixed(2))
+                        ]);
+                    }
+
+                    return data;
+                }
+
+                function updateChart(period) {
+                    const data = generateChartData(period);
+                    const dates = data.map(item => item[0]);
+                    const prices = data.map(item => item[1]);
+                    const volumes = data.map(item => item[2]);
+
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'cross'
+                            },
+                            formatter: function(params) {
+                                let result = params[0].name + '<br/>';
+                                params.forEach(function(item) {
+                                    if (item.seriesName === 'Price') {
+                                        result += item.marker + ' ' + item.seriesName + ': $' + item
+                                            .value + '<br/>';
+                                    } else {
+                                        result += item.marker + ' ' + item.seriesName + ': $' +
+                                            parseFloat(item.value).toLocaleString() + '<br/>';
+                                    }
+                                });
+                                return result;
+                            }
+                        },
+                        legend: {
+                            data: ['Price', 'Volume'],
+                            top: 10
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            top: '15%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: dates,
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        yAxis: [{
+                                type: 'value',
+                                name: 'Price (%)',
+                                position: 'left',
+                                axisLine: {
+                                    lineStyle: {
+                                        color: '#5470c6'
+                                    }
+                                },
+                                axisLabel: {
+                                    formatter: '{value}%'
+                                }
+                            },
+                            {
+                                type: 'value',
+                                name: 'Volume ($)',
+                                position: 'right',
+                                axisLine: {
+                                    lineStyle: {
+                                        color: '#91cc75'
+                                    }
+                                },
+                                axisLabel: {
+                                    formatter: function(value) {
+                                        if (value >= 1000000) {
+                                            return (value / 1000000).toFixed(1) + 'M';
+                                        } else if (value >= 1000) {
+                                            return (value / 1000).toFixed(1) + 'K';
+                                        }
+                                        return value;
+                                    }
+                                }
+                            }
+                        ],
+                        series: [{
+                                name: 'Price',
+                                type: 'line',
+                                smooth: true,
+                                data: prices,
+                                itemStyle: {
+                                    color: '#5470c6'
+                                },
+                                areaStyle: {
+                                    color: {
+                                        type: 'linear',
+                                        x: 0,
+                                        y: 0,
+                                        x2: 0,
+                                        y2: 1,
+                                        colorStops: [{
+                                                offset: 0,
+                                                color: 'rgba(84, 112, 198, 0.3)'
+                                            },
+                                            {
+                                                offset: 1,
+                                                color: 'rgba(84, 112, 198, 0.1)'
+                                            }
+                                        ]
+                                    }
+                                },
+                                yAxisIndex: 0
+                            },
+                            {
+                                name: 'Volume',
+                                type: 'bar',
+                                data: volumes,
+                                itemStyle: {
+                                    color: 'rgba(145, 204, 117, 0.6)'
+                                },
+                                yAxisIndex: 1
+                            }
+                        ]
+                    };
+
+                    chart.setOption(option, true);
+                }
+
+                // Chart button click handlers
+                chartBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        chartBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentPeriod = this.getAttribute('data-period');
+                        updateChart(currentPeriod);
                     });
+                });
 
+                // Initial chart load
+                updateChart(currentPeriod);
+
+                // Handle window resize
                 window.addEventListener('resize', function() {
                     chart.resize();
                 });

@@ -1,4 +1,5 @@
 @extends('backend.layouts.master')
+@section('title', 'Edit Market')
 @section('content')
     <div class="content-wrapper">
         <div class="container-full">

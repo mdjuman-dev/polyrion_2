@@ -12,44 +12,24 @@
                     <div class="row align-items-center justify-content-between">
                         <div class="secondary-search-bar">
                             <i class="fas fa-search search-icon"></i>
-                            <input type="text" placeholder="Search" class="secondary-search-input">
+                            <input type="text" placeholder="Search" class="secondary-search-input" id="marketSearchInput"
+                                style="width: 100%;">
+                            <button type="button" id="clearSearchBtn"
+                                style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px;">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                         <button class="filter-icon-btn mx-2" id="filterToggleBtn"><i class="fas fa-sliders-h"></i></button>
-                        <button class="bookmark-icon-btn"><i class="fas fa-bookmark"></i></button>
+                        <a href="{{ route('saved.events') }}" class="bookmark-icon-btn" title="Saved Events">
+                            <i class="fas fa-bookmark"></i>
+                        </a>
                     </div>
                     <!-- Category Filters - Same Line -->
                     <div class="filters-section-wrapper ms-lg-4">
                         <button class="filter-scroll-btn filter-scroll-left" id="filterScrollLeft" aria-label="Scroll left">
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <div class="filters-section mt-lg-0 mt-3" id="filtersSection">
-                            <button class="filter-btn active">All</button>
-                            <button class="filter-btn">Trump</button>
-                            <button class="filter-btn">Chile Election</button>
-                            <button class="filter-btn">Epstein</button>
-                            <button class="filter-btn">Venezuela</button>
-                            <button class="filter-btn">Ukraine</button>
-                            <button class="filter-btn">Best of 2025</button>
-                            <button class="filter-btn">Mamdani</button>
-                            <button class="filter-btn">Gemini 3</button>
-                            <button class="filter-btn">China</button>
-                            <button class="filter-btn">Google Search</button>
-                            <button class="filter-btn">Gaza</button>
-                            <button class="filter-btn">Earnings</button>
-                            <button class="filter-btn">Global Elections</button>
-                            <button class="filter-btn">Israel</button>
-                            <button class="filter-btn">Fed</button>
-                            <button class="filter-btn">Trade War</button>
-                            <button class="filter-btn">India-Pakistan</button>
-                            <button class="filter-btn">AI</button>
-                            <button class="filter-btn">Parlays</button>
-                            <button class="filter-btn">Earn 4%</button>
-                            <button class="filter-btn">US Election</button>
-                            <button class="filter-btn">Crypto Prices</button>
-                            <button class="filter-btn">Bitcoin</button>
-                            <button class="filter-btn">Weather</button>
-                            <button class="filter-btn">Movies</button>
-                        </div>
+                        <livewire:tag-filters />
                         <button class="filter-scroll-btn filter-scroll-right" id="filterScrollRight"
                             aria-label="Scroll right">
                             <i class="fas fa-chevron-right"></i>
@@ -61,33 +41,37 @@
                     <div class="filter-buttons-group">
                         <div class="filter-dropdown-wrapper sort-by-wrapper">
                             <button class="filter-option-btn sort-by-btn">
-                                Sort by: <span class="filter-option-text">24hr Volume</span>
+                                Sort by: <span class="filter-option-text" id="sortByText">24hr Volume</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="sort-dropdown-menu">
                                 <ul>
-                                    <li class="sort-option active" data-sort="24hr-volume">
+                                    <li class="sort-option" data-sort="24hr-volume"
+                                        onclick="setSortBy('24hr-volume', '24hr Volume')">
                                         <i class="fas fa-chart-line"></i>
                                         <span>24hr Volume</span>
-                                        <span class="sort-dot"></span>
                                     </li>
-                                    <li class="sort-option" data-sort="total-volume">
+                                    <li class="sort-option" data-sort="total-volume"
+                                        onclick="setSortBy('total-volume', 'Total Volume')">
                                         <i class="fas fa-fire"></i>
                                         <span>Total Volume</span>
                                     </li>
-                                    <li class="sort-option" data-sort="liquidity">
+                                    <li class="sort-option" data-sort="liquidity"
+                                        onclick="setSortBy('liquidity', 'Liquidity')">
                                         <i class="fas fa-tint"></i>
                                         <span>Liquidity</span>
                                     </li>
-                                    <li class="sort-option" data-sort="newest">
+                                    <li class="sort-option" data-sort="newest" onclick="setSortBy('newest', 'Newest')">
                                         <i class="fas fa-sparkles"></i>
                                         <span>Newest</span>
                                     </li>
-                                    <li class="sort-option" data-sort="ending-soon">
+                                    <li class="sort-option" data-sort="ending-soon"
+                                        onclick="setSortBy('ending-soon', 'Ending Soon')">
                                         <i class="fas fa-clock"></i>
                                         <span>Ending Soon</span>
                                     </li>
-                                    <li class="sort-option" data-sort="competitive">
+                                    <li class="sort-option" data-sort="competitive"
+                                        onclick="setSortBy('competitive', 'Competitive')">
                                         <i class="fas fa-trophy"></i>
                                         <span>Competitive</span>
                                     </li>
@@ -96,43 +80,53 @@
                         </div>
                         <div class="filter-dropdown-wrapper frequency-wrapper">
                             <button class="filter-option-btn frequency-btn">
-                                Frequency: <span class="filter-option-text">All</span>
+                                Frequency: <span class="filter-option-text" id="frequencyText">All</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="frequency-dropdown-menu">
                                 <ul>
-                                    <li class="frequency-option active" data-frequency="all">All</li>
-                                    <li class="frequency-option" data-frequency="daily">Daily</li>
-                                    <li class="frequency-option" data-frequency="weekly">Weekly</li>
-                                    <li class="frequency-option" data-frequency="monthly">Monthly</li>
+                                    <li class="frequency-option" data-frequency="all" onclick="setFrequency('all', 'All')">
+                                        All</li>
+                                    <li class="frequency-option" data-frequency="daily"
+                                        onclick="setFrequency('daily', 'Daily')">Daily</li>
+                                    <li class="frequency-option" data-frequency="weekly"
+                                        onclick="setFrequency('weekly', 'Weekly')">Weekly</li>
+                                    <li class="frequency-option" data-frequency="monthly"
+                                        onclick="setFrequency('monthly', 'Monthly')">Monthly</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="filter-dropdown-wrapper status-wrapper">
                             <button class="filter-option-btn status-btn">
-                                Status: <span class="filter-option-text">Active</span>
+                                Status: <span class="filter-option-text" id="statusText">Active</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="status-dropdown-menu">
                                 <ul>
-                                    <li class="status-option active" data-status="active">Active</li>
-                                    <li class="status-option" data-status="closed">Closed</li>
-                                    <li class="status-option" data-status="pending">Pending</li>
+                                    <li class="status-option" data-status="active" onclick="setStatus('active', 'Active')">
+                                        Active</li>
+                                    <li class="status-option" data-status="closed" onclick="setStatus('closed', 'Closed')">
+                                        Closed</li>
+                                    <li class="status-option" data-status="pending"
+                                        onclick="setStatus('pending', 'Pending')">Pending</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="filter-checkboxes">
                             <label class="filter-checkbox">
                                 <span>Hide sports?</span>
-                                <input class="filter-checkbox-input" type="checkbox" id="hideSports">
+                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideSports"
+                                    id="hideSports">
                             </label>
                             <label class="filter-checkbox">
                                 <span>Hide crypto?</span>
-                                <input class="filter-checkbox-input" type="checkbox" id="hideCrypto">
+                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideCrypto"
+                                    id="hideCrypto">
                             </label>
                             <label class="filter-checkbox">
                                 <span>Hide earnings?</span>
-                                <input class="filter-checkbox-input" type="checkbox" id="hideEarnings">
+                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideEarnings"
+                                    id="hideEarnings">
                             </label>
                         </div>
                     </div>
@@ -191,12 +185,47 @@
             }
 
             .market-chance {
+                text-align: center;
+            }
+
+            .chance-value {
+                font-size: 22px;
+                font-weight: 700;
+                display: block;
+                margin-bottom: 2px;
+                transition: 0.3s ease;
+            }
+
+            .chance-label {
+                font-size: 12px;
+                color: #83899f;
+                text-transform: uppercase;
+                letter-spacing: .5px;
+            }
+
+            /* Colors similar to Polymarket */
+            .chance-value.danger {
+                color: #ff4d4f;
+                /* red */
+            }
+
+            .chance-value.warning {
+                color: #f4c430;
+                /* yellow */
+            }
+
+            .chance-value.success {
+                color: #32d296;
+                /* green */
+            }
+
+            .market-chance {
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 gap: 4px;
-                background: var(--hover);
-                padding: 4px 12px;
                 border-radius: 6px;
+                text-align: center;
             }
 
             .chance-arrow {
@@ -373,6 +402,140 @@
                     grid-column: span 1;
                 }
             }
+
+            .loader,
+            .loader:before,
+            .loader:after {
+                border-radius: 50%;
+                width: 2.5em;
+                height: 2.5em;
+                animation-fill-mode: both;
+                animation: bblFadInOut 1.8s infinite ease-in-out;
+            }
+
+            .loader {
+                color: #FFF;
+                font-size: 7px;
+                position: relative;
+                text-indent: -9999em;
+                transform: translateZ(0);
+                animation-delay: -0.16s;
+            }
+
+            .loader:before,
+            .loader:after {
+                content: '';
+                position: absolute;
+                top: 0;
+            }
+
+            .loader:before {
+                left: -3.5em;
+                animation-delay: -0.32s;
+            }
+
+            .loader:after {
+                left: 3.5em;
+            }
+
+            @keyframes bblFadInOut {
+
+                0%,
+                80%,
+                100% {
+                    box-shadow: 0 2.5em 0 -1.3em
+                }
+
+                40% {
+                    box-shadow: 0 2.5em 0 0
+                }
+            }
         </style>
+    @endpush
+    @push('script')
+        <script>
+            document.addEventListener('livewire:init', function() {
+                const searchInput = document.getElementById('marketSearchInput');
+                const clearBtn = document.getElementById('clearSearchBtn');
+                let searchTimeout;
+
+                function findMarketsGridComponent() {
+                    // Find MarketsGrid component by data attribute
+                    const marketsGridElement = document.querySelector('[data-component="markets-grid"]');
+                    if (marketsGridElement) {
+                        const wireId = marketsGridElement.getAttribute('wire:id');
+                        if (wireId) {
+                            return Livewire.find(wireId);
+                        }
+                    }
+                    return null;
+                }
+
+                if (searchInput && clearBtn) {
+                    // Sync input with Livewire MarketsGrid component
+                    searchInput.addEventListener('input', function() {
+                        const value = this.value;
+
+                        // Show/hide clear button
+                        if (value.length > 0) {
+                            clearBtn.style.display = 'block';
+                        } else {
+                            clearBtn.style.display = 'none';
+                        }
+
+                        // Debounce search
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(function() {
+                            const component = findMarketsGridComponent();
+                            if (component && component.set) {
+                                component.set('search', value);
+                            }
+                        }, 300);
+                    });
+
+                    // Clear search
+                    clearBtn.addEventListener('click', function() {
+                        searchInput.value = '';
+                        this.style.display = 'none';
+
+                        // Clear Livewire search
+                        const component = findMarketsGridComponent();
+                        if (component && component.set) {
+                            component.set('search', '');
+                        }
+                    });
+                }
+
+                // Filter functions
+                function setSortBy(sort, label) {
+                    const component = findMarketsGridComponent();
+                    if (component && component.call) {
+                        component.call('setSortBy', sort);
+                        document.getElementById('sortByText').textContent = label;
+                    }
+                }
+
+                function setFrequency(frequency, label) {
+                    const component = findMarketsGridComponent();
+                    if (component && component.call) {
+                        component.call('setFrequency', frequency);
+                        document.getElementById('frequencyText').textContent = label;
+                    }
+                }
+
+                function setStatus(status, label) {
+                    const component = findMarketsGridComponent();
+                    if (component && component.call) {
+                        component.call('setStatus', status);
+                        document.getElementById('statusText').textContent = label;
+                    }
+                }
+
+                // Make functions globally available
+                window.setSortBy = setSortBy;
+                window.setFrequency = setFrequency;
+                window.setStatus = setStatus;
+            });
+        </script>
     @endpush
 @endsection

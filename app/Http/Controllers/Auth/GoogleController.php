@@ -47,7 +47,7 @@ class GoogleController extends Controller
                 }
             }
 
-            return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended(route('profile.index', absolute: false));
         } catch (\Exception $e) {
             Log::error('Google login failed: ' . $e->getMessage());
             return redirect()->route('login')->with('error', 'Google login failed. Please try again.');

@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <link rel="icon" href="{{ asset('backend/assets/images/favicon.ico') }}">
 
-    <title>Polymarkets</title>
+    <title>@yield('title') || Polymarkets</title>
 
     <!-- Vendors Style-->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/vendors_css.css') }}">
@@ -171,7 +171,8 @@
                             </a>
                             <ul class="dropdown-menu animated flipInX">
                                 <li class="user-body">
-                                    <a class="dropdown-item" href="index.html#"><i class="ti-user text-muted me-2"></i>
+                                    <a class="dropdown-item" href="index.html#"><i
+                                            class="ti-user text-muted me-2"></i>
                                         Profile</a>
                                     <a class="dropdown-item" href="index.html#"><i
                                             class="ti-wallet text-muted me-2"></i> My Wallet</a>
@@ -190,7 +191,8 @@
 
                         <!-- Control Sidebar Toggle Button -->
                         <li>
-                            <a href="{{ route('admin.setting') }}" class="waves-effect waves-light btn-primary-light">
+                            <a href="{{ route('admin.setting') }}"
+                                class="waves-effect waves-light btn-primary-light">
                                 <i data-feather="settings"></i>
                             </a>
                         </li>
@@ -527,15 +529,15 @@
 
     <script>
         // Ensure menu links work properly
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Fix menu links navigation
             const menuLinks = document.querySelectorAll('.sidebar-menu a[href]');
-            menuLinks.forEach(function (link) {
+            menuLinks.forEach(function(link) {
                 const href = link.getAttribute('href');
                 // Only prevent if it's a hash link or empty
                 if (href && href !== '#' && !href.includes('index.html#')) {
                     // Ensure link navigates properly
-                    link.addEventListener('click', function (e) {
+                    link.addEventListener('click', function(e) {
                         // Don't prevent default for valid links
                         if (href && href !== '#' && !href.includes('index.html#')) {
                             // Allow normal navigation

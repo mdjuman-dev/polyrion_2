@@ -39,4 +39,16 @@ class Event extends Model
     {
         return $this->hasMany(MarketComment::class);
     }
+
+    public function savedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'saved_events', 'event_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'event_tags', 'event_id', 'tag_id')
+            ->withTimestamps();
+    }
 }

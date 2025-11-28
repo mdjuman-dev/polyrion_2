@@ -5,6 +5,7 @@ use App\Http\Controllers\Backend\Auth\LoginController;
 use App\Http\Controllers\Backend\GlobalSettingsController;
 use App\Http\Controllers\Backend\HomeController;
 use App\Http\Controllers\Backend\MarketController;
+use App\Http\Controllers\Backend\BinancePayController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -34,10 +35,14 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
         //Global Setting Management Routes
         Route::controller(GlobalSettingsController::class)->group(function () {
-            
+
             Route::get('/setting', 'setting')->name('setting');
             Route::post('/setting/update', 'settingUpdate')->name('setting.update');
         });
 
+        // Binance Pay Management Routes
+        Route::controller(BinancePayController::class)->group(function () {
+            Route::post('/deposit/{depositId}/process', 'manualProcess')->name('deposit.manual.process');
+        });
     });
 });

@@ -3,39 +3,57 @@ $(function () {
     const $html = $("html");
     const $body = $("body");
 
+    function setHeaderThemeSwitch(theme) {
+        const $switch = $(".header-menu-switch");
+        if (!$switch.length) return;
+
+        // Dark theme = toggle ON (blue), Light theme = OFF (gray)
+        if (theme === "dark") {
+            $switch.addClass("header-menu-switch--on");
+        } else {
+            $switch.removeClass("header-menu-switch--on");
+        }
+    }
+
     // Load saved theme
-    function initTheme() {
-        const savedTheme = localStorage.getItem("theme") || "dark";
-        if (savedTheme === "light") {
+    function applyTheme(theme) {
+        if (theme === "light") {
             $html.addClass("light-mode");
             $body.addClass("light-theme").removeClass("dark-theme");
             $themeToggle.html('<i class="fas fa-sun"></i>');
-            $("#themeToggleMobile").html('<i class="fas fa-moon"></i>');
+            setHeaderThemeSwitch("light");
         } else {
             $html.removeClass("light-mode");
             $body.addClass("dark-theme").removeClass("light-theme");
             $themeToggle.html('<i class="fas fa-moon"></i>');
-            $("#themeToggleMobile").html('<i class="fas fa-sun"></i>');
+            setHeaderThemeSwitch("dark");
         }
+        localStorage.setItem("theme", theme);
+    }
+
+    function initTheme() {
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        applyTheme(savedTheme);
     }
 
     initTheme();
 
     // Toggle theme
-    $themeToggle.on("click", function () {
+    $themeToggle.on("click", function (e) {
+        e.preventDefault();
         if ($html.hasClass("light-mode")) {
-            $html.removeClass("light-mode");
-            $body.removeClass("light-theme").addClass("dark-theme");
-            $themeToggle.html('<i class="fas fa-moon"></i>');
-            $("#themeToggleMobile").html('<i class="fas fa-sun"></i>');
-            localStorage.setItem("theme", "dark");
+            applyTheme("dark");
         } else {
-            $html.addClass("light-mode");
-            $body.removeClass("dark-theme").addClass("light-theme");
-            $themeToggle.html('<i class="fas fa-sun"></i>');
-            $("#themeToggleMobile").html('<i class="fas fa-moon"></i>');
-            localStorage.setItem("theme", "light");
+            applyTheme("light");
         }
+    });
+
+    // Dark mode row in header dropdown also toggles theme + switch
+    $(document).on("click", ".header-menu-toggle", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Reuse main header toggle logic so everything stays in sync
+        $("#themeToggle").trigger("click");
     });
 
     // Filter icon button functionality
@@ -697,20 +715,12 @@ $(function () {
         }
     });
 
-    // Mobile theme toggle in More menu
+    // Mobile theme toggle in More menu (same as header switch)
     $("#themeToggleMobile").on("click", function () {
         if ($html.hasClass("light-mode")) {
-            $html.removeClass("light-mode");
-            $body.removeClass("light-theme").addClass("dark-theme");
-            $(this).html('<i class="fas fa-sun"></i>');
-            $("#themeToggle").html('<i class="fas fa-moon"></i>');
-            localStorage.setItem("theme", "dark");
+            applyTheme("dark");
         } else {
-            $html.addClass("light-mode");
-            $body.removeClass("dark-theme").addClass("light-theme");
-            $(this).html('<i class="fas fa-moon"></i>');
-            $("#themeToggle").html('<i class="fas fa-sun"></i>');
-            localStorage.setItem("theme", "light");
+            applyTheme("light");
         }
     });
 
@@ -1573,6 +1583,40 @@ $(document).ready(function () {
     $(document).on("click", ".shares-price", function () {
         const price = parseInt($(this).data("price"));
         updateShares(price);
+    });
+});
+// ********** Header menu (Log In / Sign Up / burger) **********
+
+$(function () {
+    const $trigger = $("#headerMenuTrigger");
+    const $dropdown = $("#headerMenuDropdown");
+
+    if (!$trigger.length || !$dropdown.length) {
+        return;
+    }
+
+    function closeHeaderMenu() {
+        $dropdown.removeClass("active");
+    }
+
+    $trigger.on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $dropdown.toggleClass("active");
+    });
+
+    $(document).on("click", function () {
+        closeHeaderMenu();
+    });
+
+    $dropdown.on("click", function (e) {
+        e.stopPropagation();
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape") {
+            closeHeaderMenu();
+        }
     });
 });
 // ********** profile Detail Page **********

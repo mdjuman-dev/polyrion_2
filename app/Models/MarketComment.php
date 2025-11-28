@@ -29,4 +29,10 @@ class MarketComment extends Model
     {
         return $this->belongsTo(Event::class, 'market_id');
     }
+
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'comment_likes', 'comment_id', 'user_id')
+            ->withTimestamps();
+    }
 }
