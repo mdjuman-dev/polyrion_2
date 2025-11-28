@@ -24,10 +24,8 @@
                         <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
                         <span>Polyrion</span>
                     </a>
-                    <div class="search-bar">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" placeholder="Search polymarket">
-                        <span class="search-shortcut">/</span>
+                    <div class="search-bar" style="position: relative;">
+                        <livewire:header-search />
                     </div>
                     <div class="header-actions d-flex align-items-center justify-content-end">
                         @if (auth()->check())
@@ -299,7 +297,7 @@
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav d-lg-none d-flex">
-        <a href="index.html" class="mobile-nav-item active">
+        <a href="{{ route('home') }}    " class="mobile-nav-item active">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
@@ -307,11 +305,11 @@
             <i class="fas fa-search"></i>
             <span>Search</span>
         </a>
-        <a href="breaking.html" class="mobile-nav-item">
+        <a href="{{ route('breaking') }}" class="mobile-nav-item">
             <i class="fas fa-sync-alt"></i>
             <span>Breaking</span>
         </a>
-        <a href="#" class="mobile-nav-item">
+        <a href="{{ route('profile.index') }}" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>${{ auth()->user()->wallet->balance ?? '0.00' }}</span>
         </a>
@@ -320,32 +318,7 @@
     <!-- Mobile Search Popup -->
     <div class="mobile-search-overlay" id="mobileSearchOverlay"></div>
     <div class="mobile-search-popup" id="mobileSearchPopup">
-        <div class="mobile-search-header">
-            <div class="mobile-search-bar">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" placeholder="Search polymarket" id="mobileSearchInput" autocomplete="off">
-
-                <button class="mobile-search-close" id="mobileSearchClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="mobile-search-tabs">
-                <button class="mobile-search-tab active" data-tab="markets">Markets</button>
-                <button class="mobile-search-tab" data-tab="profiles">Profiles</button>
-            </div>
-        </div>
-        <div class="mobile-search-content">
-            <div class="mobile-search-tab-content active" id="marketsTab">
-                <div class="mobile-search-results" id="mobileSearchResults">
-                    <!-- Search results will appear here -->
-                </div>
-            </div>
-            <div class="mobile-search-tab-content" id="profilesTab">
-                <div class="mobile-search-profiles" id="mobileSearchProfiles">
-                    <!-- Profile results will appear here -->
-                </div>
-            </div>
-        </div>
+        <livewire:mobile-search />
     </div>
 
     <!-- More Menu Sidebar -->
@@ -784,23 +757,31 @@
                 };
 
                 $doc.on('click', '.mobile-nav-item', function(e) {
-                    e.preventDefault();
-                    const text = $(this).find('span').text();
-                    $('.mobile-nav-item').removeClass('active');
-                    $(this).addClass('active');
+                    const text = $(this).find('span').text().trim();
 
                     if (text === 'Search') {
-                        $('#moreMenuSidebar, #moreMenuOverlay').removeClass('active');
-                        $('#mobileSearchPopup, #mobileSearchOverlay').addClass('active');
-                        $body.css('overflow', 'hidden');
-                        setTimeout(() => $('#mobileSearchInput').focus(), 300);
-                    } else if (text === 'Breaking') {
-                        $('.filter-btn, .nav-item').removeClass('active');
-                        $('.nav-item:contains("Breaking")').addClass('active');
+                        e.preventDefault();
+                        const isOpen = $('#mobileSearchPopup').hasClass('active');
+                        if (isOpen) {
+                            // Close if already open
+                            $('#mobileSearchPopup, #mobileSearchOverlay').removeClass('active');
+                            $body.css('overflow', '');
+                            $('.mobile-nav-item').removeClass('active');
+                            $('.mobile-nav-item:has(span:contains("Home"))').addClass('active');
+                        } else {
+                            // Open search popup
+                            $('.mobile-nav-item').removeClass('active');
+                            $(this).addClass('active');
+                            $('#moreMenuSidebar, #moreMenuOverlay').removeClass('active');
+                            $('#mobileSearchPopup, #mobileSearchOverlay').addClass('active');
+                            $body.css('overflow', 'hidden');
+                            setTimeout(() => $('#mobileSearchInput').focus(), 300);
+                        }
                     } else if (text === 'More') {
+                        e.preventDefault();
+                        $('.mobile-nav-item').removeClass('active');
+                        $(this).addClass('active');
                         $('#mobileSearchPopup, #mobileSearchOverlay').removeClass('active');
-                        $('#mobileSearchInput').val('');
-                        $('#mobileSearchResults, #mobileSearchProfiles').html('');
                         $('#moreMenuSidebar, #moreMenuOverlay').addClass('active');
                         $body.css('overflow', 'hidden');
                     }
@@ -810,8 +791,6 @@
                     if ($(this).attr('id') === 'moreMenuBtn') {
                         e.preventDefault();
                         $('#mobileSearchPopup, #mobileSearchOverlay').removeClass('active');
-                        $('#mobileSearchInput').val('');
-                        $('#mobileSearchResults, #mobileSearchProfiles').html('');
                         $('.mobile-nav-item').removeClass('active');
                         $('#moreMenuSidebar, #moreMenuOverlay').addClass('active');
                         $body.css('overflow', 'hidden');
@@ -825,8 +804,6 @@
                     e.preventDefault();
                     $('#mobileSearchPopup, #mobileSearchOverlay').removeClass('active');
                     $body.css('overflow', '');
-                    $('#mobileSearchInput').val('');
-                    $('#mobileSearchResults, #mobileSearchProfiles').html('');
                     $('.mobile-nav-item').removeClass('active');
                     $('.mobile-nav-item:has(span:contains("Home"))').addClass('active');
                 });
@@ -932,6 +909,11 @@
             (function() {
                 if (!$('#marketChart').length && !$('.outcome-row').length) return;
 
+                // Ensure trading panel is closed on page load
+                $('#tradingPanel').removeClass('active');
+                $('#mobilePanelOverlay').removeClass('active');
+                $body.css('overflow', '');
+
                 let currentShares = 0,
                     isBuy = true,
                     isYes = true,
@@ -1001,10 +983,6 @@
                     limitPrice = isYesSelected ? yesPrice : noPrice;
                     updateSummary();
                 };
-
-                $('#tradingPanel').removeClass('active');
-                $('#mobilePanelOverlay').removeClass('active');
-                $body.css('overflow', '');
 
                 $doc.on('click', '.tab-item', function() {
                     $('.tab-item').removeClass('active');
@@ -1124,6 +1102,18 @@
                             scrollTop: $panel.offset().top - 100
                         }, 500);
                     }
+                });
+
+                // Close trading panel handlers
+                function closeTradingPanel() {
+                    $('#tradingPanel, #mobilePanelOverlay').removeClass('active');
+                    $body.css('overflow', '');
+                }
+
+                $doc.on('click', '#panelCloseBtn, #mobilePanelOverlay', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeTradingPanel();
                 });
 
                 $doc.on('click', '.show-more-btn', function() {

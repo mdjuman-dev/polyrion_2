@@ -17,17 +17,51 @@ class MarketsGrid extends Component
     public $hideCrypto = false;
     public $hideEarnings = false;
 
-    protected $listeners = ['tag-selected' => 'filterByTag'];
+    protected $listeners = [
+        'tag-selected' => 'filterByTag',
+        'filter-selected' => 'handleBrowseFilter'
+    ];
 
     public function mount()
     {
         // Listen for tag selection from TagFilters component
+        // Check if filter is passed via query parameter
+        if (request()->has('filter')) {
+            $this->handleBrowseFilter(request()->get('filter'));
+        }
     }
 
     public function filterByTag($tagSlug)
     {
         $this->selectedTag = $tagSlug;
         $this->perPage = 20; // Reset pagination when filter changes
+    }
+
+    public function handleBrowseFilter($filter)
+    {
+        $this->perPage = 20; // Reset pagination when filter changes
+        
+        // Map filter to sortBy
+        switch ($filter) {
+            case 'new':
+                $this->sortBy = 'newest';
+                break;
+            case 'trending':
+                $this->sortBy = '24hr-volume';
+                break;
+            case 'popular':
+                $this->sortBy = 'total-volume';
+                break;
+            case 'liquid':
+                $this->sortBy = 'liquidity';
+                break;
+            case 'ending-soon':
+                $this->sortBy = 'ending-soon';
+                break;
+            case 'competitive':
+                $this->sortBy = 'competitive';
+                break;
+        }
     }
 
     public function setSortBy($sort)

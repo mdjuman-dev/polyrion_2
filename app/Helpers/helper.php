@@ -83,19 +83,22 @@ if (!function_exists('format_time_ago')) {
         try {
             $carbonDate = $date instanceof Carbon ? $date : Carbon::parse($date);
             $diff = $carbonDate->diffInSeconds(now());
-            
+            $diff = (int) $diff;
+
             if ($diff < 60) {
-                return $diff . 's';
+                return $diff . 's'; // seconds
             } elseif ($diff < 3600) {
-                return floor($diff / 60) . 'm';
+                return floor($diff / 60) . 'm'; // minutes
+            } elseif ($diff < 86400) {
+                return floor($diff / 3600) . 'h'; // hours
             } elseif ($diff < 604800) {
-                return floor($diff / 3600) . 'h';
+                return floor($diff / 86400) . 'd'; // days
             } elseif ($diff < 2592000) {
-                return floor($diff / 604800) . 'w';
+                return floor($diff / 604800) . 'w'; // weeks
             } elseif ($diff < 31536000) {
-                return floor($diff / 2592000) . 'm';
+                return floor($diff / 2592000) . 'mo'; // months
             } else {
-                return floor($diff / 31536000) . 'y';
+                return floor($diff / 31536000) . 'y'; // years
             }
         } catch (\Exception $e) {
             return 'N/A';

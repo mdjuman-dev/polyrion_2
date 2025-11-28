@@ -95,12 +95,6 @@
                                             <i class="{{ $this->isLiked($reply->id) ? 'fas' : 'far' }} fa-heart"></i>
                                             {{ $reply->likes_count }}
                                         </button>
-                                        @auth
-                                            <button wire:click="toggleReply({{ $comment->id }})"
-                                                class="comment-action reply-btn">
-                                                Reply
-                                            </button>
-                                        @endauth
                                     </div>
                                 </div>
                             @endforeach
