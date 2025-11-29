@@ -62,7 +62,7 @@
                             </div>
                             <div class="market-title-section">
                                 <a href="{{ route('market.details', $event->slug) }}"
-                                    class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 100) }}</a>
+                                    class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, 90) }}</a>
                             </div>
                         </div>
                         <div class="market-chance">

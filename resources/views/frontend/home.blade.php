@@ -9,14 +9,15 @@
             <!-- Secondary Search and Filter Bar -->
             <div class="secondary-filters">
                 <div class="filter-top-bar d-lg-flex d-block">
-                    <div class="row align-items-center justify-content-between">
+                    <div class="row align-items-center ">
                         <div class="secondary-search-bar">
                             <i class="fas fa-search search-icon"></i>
                             <input type="text" placeholder="Search" class="secondary-search-input" id="marketSearchInput"
                                 style="width: 100%;">
                             <button type="button" id="clearSearchBtn"
-                                style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px;">
+                                style="display: none; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px;">
                                 <i class="fas fa-times"></i>
+
                             </button>
                         </div>
                         <button class="filter-icon-btn mx-2" id="filterToggleBtn"><i class="fas fa-sliders-h"></i></button>
@@ -388,7 +389,7 @@
             /* Responsive */
             @media (max-width: 768px) {
                 .market-card-outcome-row {
-                    grid-template-columns: 1fr auto;
+                    /* grid-template-columns: 1fr auto; */
                     gap: 8px;
                 }
 

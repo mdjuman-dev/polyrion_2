@@ -23,6 +23,7 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/trending', 'trending')->name('trending');
     Route::get('/breaking', 'breaking')->name('breaking');
     Route::get('/new', 'newEvents')->name('new');
+    Route::get('/category/{category}', 'eventsByCategory')->name('events.by.category');
     Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
     Route::get('/tag/{slug}', 'eventsByTag')->name('events.by.tag');
     Route::get('/saved-events', 'savedEvents')->name('saved.events')->middleware(['auth']);

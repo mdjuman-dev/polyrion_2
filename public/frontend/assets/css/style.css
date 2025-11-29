@@ -663,8 +663,10 @@ nav {
     border-bottom: 1px solid var(--border);
     z-index: 100;
     overflow-x: auto;
+    overflow-y: visible;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    position: relative;
 }
 
 nav::-webkit-scrollbar {
@@ -680,6 +682,8 @@ nav::-webkit-scrollbar {
     align-items: center;
     padding: 12px 20px;
     position: relative;
+    overflow: visible;
+    z-index: 100;
 }
 
 .nav-item {
@@ -701,6 +705,16 @@ nav::-webkit-scrollbar {
     font-size: 0.85rem;
 }
 
+.nav-item i.fa-chevron-down {
+    font-size: 0.7rem;
+    margin-left: 4px;
+    transition: transform 0.3s ease;
+}
+
+.nav-item-dropdown.active .nav-item i.fa-chevron-down {
+    transform: rotate(180deg);
+}
+
 .nav-item:hover {
     color: var(--accent);
     border-bottom-color: var(--accent);
@@ -718,28 +732,44 @@ nav::-webkit-scrollbar {
     margin: 0 4px;
 }
 
+.nav-items-wrapper {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    overflow: visible;
+    position: relative;
+}
+
 /* ===== DROPDOWN MENUS ===== */
 .nav-item-dropdown {
     position: relative;
     z-index: 1001;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .more-dropdown-menu {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
+    right: auto;
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 8px;
     min-width: 200px;
+    max-width: 300px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.3s ease;
-    z-index: 1002;
+    z-index: 9999;
     pointer-events: none;
+    margin-top: 0;
 }
 
 .more-dropdown-menu.active {
@@ -845,6 +875,11 @@ nav::-webkit-scrollbar {
 }
 
 @media (max-width: 575.99px) {
+    .nav-container {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
     .logo span {
         font-size: 1.1rem;
     }
@@ -856,6 +891,9 @@ nav::-webkit-scrollbar {
 
     .nav-content {
         gap: 16px;
+         overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
 
     .nav-item {
@@ -875,8 +913,8 @@ nav::-webkit-scrollbar {
 .secondary-search-bar {
     position: relative;
     flex: 1;
-    min-width: 200px;
-    max-width: 300px;
+    /* min-width: 200px; */
+    /* max-width: 300px; */
 }
 
 .secondary-search-input {
@@ -968,8 +1006,8 @@ nav::-webkit-scrollbar {
 .secondary-search-bar {
     position: relative;
     flex: 1;
-    min-width: 200px;
-    max-width: 180px;
+    /* min-width: 200px; */
+    /* max-width: 180px; */
     padding-left: 10px;
 }
 
@@ -2036,6 +2074,9 @@ nav::-webkit-scrollbar {
 
     .nav-content {
         gap: 15px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
 }
 

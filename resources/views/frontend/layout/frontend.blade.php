@@ -257,42 +257,11 @@
             </div>
         </header>
         <!-- Navigation -->
-        <nav>
-            <div class="container">
-                <div class="nav-content">
-                    <a href="{{ route('trending') }}"
-                        class="nav-item {{ request()->routeIs('trending') ? 'active' : '' }}"><i
-                            class="fas fa-arrow-trend-up"></i> Trending</a>
-                    <a href="{{ route('breaking') }}"
-                        class="nav-item {{ request()->routeIs('breaking') ? 'active' : '' }}">Breaking</a>
-                    <a href="{{ route('new') }}"
-                        class="nav-item {{ request()->routeIs('new') ? 'active' : '' }}">New</a>
-                    <div class="nav-item-divider"></div>
-                    <a href="index.html" class="nav-item">Politics</a>
-                    <a href="index.html" class="nav-item">Sports</a>
-                    <a href="index.html" class="nav-item">Finance</a>
-                    <a href="index.html" class="nav-item">Crypto</a>
-                    <a href="index.html" class="nav-item">Geopolitics</a>
-                    <a href="index.html" class="nav-item">Earnings</a>
-                    <a href="index.html" class="nav-item">Tech</a>
-                    <a href="index.html" class="nav-item">Culture</a>
-                    <a href="index.html" class="nav-item">World</a>
-                    <a href="index.html" class="nav-item">Mentions</a>
-                    <div class="nav-item-dropdown d-none d-lg-block">
-                        <a href="#" class="nav-item" id="moreNavBtn">
-                            <i class="fas fa-chevron-down"></i>
-                            More
-                        </a>
-                        <div class="more-dropdown-menu" id="moreDropdownMenu">
-                            <a href="#" class="dropdown-item"><i class="fas fa-chart-line"></i> Activity</a>
-                            <a href="#" class="dropdown-item"><i class="fas fa-trophy"></i> Leaderboard</a>
-                            <a href="#" class="dropdown-item"><i class="fas fa-chart-bar"></i> Dashboards</a>
-                            <a href="#" class="dropdown-item"><i class="fas fa-gift"></i> Rewards</a>
-                        </div>
-                    </div>
-                </div>
+        <div class="container nav-container">
+            <div class="nav-content">
+                <livewire:category-navigation :category="request()->route('category')" />
             </div>
-        </nav>
+        </div>
     </div>
 
     <!-- Mobile Bottom Navigation -->
@@ -710,9 +679,166 @@
             })();
 
             // ============================================
-            // NAVIGATION (Optimized)
+            // NAVIGATION (Optimized with Overflow Detection)
             // ============================================
             (function() {
+                const $navContent = $('.nav-content');
+                const $navItemsWrapper = $('.nav-items-wrapper');
+                const $moreDropdown = $('#moreNavDropdown');
+                const $moreDropdownMenu = $('#moreDropdownMenu');
+                const $moreBtn = $('#moreNavBtn');
+
+                function handleNavOverflow() {
+                    // Only handle overflow on desktop (lg and above)
+                    if ($win.width() < 992) {
+                        // On mobile, restore all items and hide "More" button
+                        $moreDropdown.hide();
+                        $navItemsWrapper.find('.nav-item').each(function() {
+                            const $item = $(this);
+                            if ($item.data('moved-to-dropdown')) {
+                                $item.data('moved-to-dropdown', false);
+                            }
+                        });
+                        return;
+                    }
+
+                    // Show "More" button on desktop
+                    $moreDropdown.show();
+
+                    // Reset: move all items back to main nav (before More button)
+                    const $moreDropdownInWrapper = $navItemsWrapper.find('#moreNavDropdown');
+                    $moreDropdownMenu.find('.dropdown-item').each(function() {
+                        const $item = $(this);
+                        const originalItem = $item.data('original-item');
+                        if (originalItem) {
+                            $item.remove();
+                            // Insert before More button if it exists, otherwise append
+                            if ($moreDropdownInWrapper.length) {
+                                originalItem.show().insertBefore($moreDropdownInWrapper);
+                            } else {
+                                originalItem.show().appendTo($navItemsWrapper);
+                            }
+                            originalItem.removeData('moved-to-dropdown');
+                        }
+                    });
+
+                    // Also handle any nav-items that might be directly in dropdown
+                    $moreDropdownMenu.find('.nav-item').each(function() {
+                        const $item = $(this);
+                        if (!$item.closest('.nav-items-wrapper').length) {
+                            if ($moreDropdownInWrapper.length) {
+                                $item.insertBefore($moreDropdownInWrapper);
+                            } else {
+                                $item.appendTo($navItemsWrapper);
+                            }
+                            $item.removeData('moved-to-dropdown');
+                        }
+                    });
+
+                    // Ensure "More" button is inside nav-items-wrapper
+                    if (!$moreDropdown.closest('.nav-items-wrapper').length) {
+                        $moreDropdown.appendTo($navItemsWrapper);
+                    }
+
+                    // Get all nav items (excluding Trending, New, divider, and More button)
+                    const $allNavItems = $navItemsWrapper.find('.nav-item').filter(function() {
+                        const href = $(this).attr('href') || '';
+                        const isMoreBtn = $(this).attr('id') === 'moreNavBtn';
+                        return !href.includes('trending') && !href.includes('new') && !isMoreBtn;
+                    });
+
+                    const totalItems = $allNavItems.length;
+                    const maxVisibleItems = 12; // Show first 12 items, rest go to "More"
+
+                    // If we have more than 12 items, move the rest to dropdown
+                    if (totalItems > maxVisibleItems) {
+                        let visibleCount = 0;
+                        let movedCount = 0;
+                        let $lastVisibleItem = null;
+
+                        $allNavItems.each(function() {
+                            const $item = $(this);
+
+                            if ($item.data('moved-to-dropdown')) {
+                                // Already moved, skip
+                                return;
+                            }
+
+                            visibleCount++;
+
+                            if (visibleCount > maxVisibleItems) {
+                                // Create dropdown item
+                                const $dropdownItem = $('<a>')
+                                    .addClass('dropdown-item')
+                                    .attr('href', $item.attr('href'))
+                                    .html($item.html())
+                                    .data('original-item', $item);
+
+                                // Copy active class
+                                if ($item.hasClass('active')) {
+                                    $dropdownItem.addClass('active');
+                                }
+
+                                // Add click handler
+                                $dropdownItem.on('click', function(e) {
+                                    const href = $(this).attr('href');
+                                    if (href && href !== '#' && href !== 'index.html') {
+                                        $('.nav-item, .dropdown-item').removeClass('active');
+                                        $(this).addClass('active');
+                                        $moreDropdownMenu.removeClass('active');
+                                        $moreDropdown.removeClass('active');
+                                    }
+                                });
+
+                                $moreDropdownMenu.append($dropdownItem);
+                                $item.hide().data('moved-to-dropdown', true);
+                                movedCount++;
+                            } else {
+                                // Track the last visible item
+                                $lastVisibleItem = $item;
+                            }
+                        });
+
+                        // Position "More" button after the last visible item
+                        if (movedCount > 0 && $lastVisibleItem && $lastVisibleItem.length) {
+                            $moreDropdown.insertAfter($lastVisibleItem);
+                            $moreBtn.show();
+                        } else {
+                            $moreBtn.hide();
+                        }
+                    } else {
+                        // Less than 12 items, hide "More" button
+                        $moreBtn.hide();
+                    }
+                }
+
+                // Function to adjust dropdown position
+                function adjustDropdownPosition() {
+                    if (!$moreDropdownMenu.hasClass('active')) return;
+
+                    const $dropdown = $moreDropdownMenu;
+                    const dropdownWidth = $dropdown.outerWidth();
+                    const dropdownLeft = $moreDropdown.offset().left;
+                    const windowWidth = $win.width();
+
+                    // Reset positioning
+                    $dropdown.css({
+                        left: '0',
+                        right: 'auto'
+                    });
+
+                    // Check if dropdown goes off-screen to the right
+                    if (dropdownLeft + dropdownWidth > windowWidth - 20) {
+                        // Position from right edge
+                        const rightPosition = windowWidth - dropdownLeft - $moreDropdown.outerWidth();
+                        $dropdown.css({
+                            left: 'auto',
+                            right: rightPosition + 'px'
+                        });
+                    }
+                }
+
+                // Handle navigation clicks
                 $doc.on('click', '.nav-item', function(e) {
                     const $this = $(this);
                     const href = $this.attr('href');
@@ -722,28 +848,47 @@
                     if (isMoreBtn || isProfileBtn) {
                         e.preventDefault();
                         if (isMoreBtn) {
-                            $('#moreDropdownMenu').toggleClass('active');
+                            $moreDropdownMenu.toggleClass('active');
+                            $moreDropdown.toggleClass('active');
                             $('#profileNavDropdownMenu').removeClass('active');
+
+                            // Adjust position when opening
+                            if ($moreDropdownMenu.hasClass('active')) {
+                                setTimeout(adjustDropdownPosition, 10);
+                            }
                         } else {
                             $('#profileNavDropdownMenu').toggleClass('active');
-                            $('#moreDropdownMenu').removeClass('active');
+                            $moreDropdownMenu.removeClass('active');
+                            $moreDropdown.removeClass('active');
                         }
                         return;
                     }
 
                     if (!href || href === '' || href === '#') e.preventDefault();
                     if (!$this.closest('.more-dropdown-menu, .profile-nav-dropdown-menu').length) {
-                        $('.nav-item').removeClass('active');
+                        $('.nav-item, .dropdown-item').removeClass('active');
                         $this.addClass('active');
-                        $('#moreDropdownMenu, #profileNavDropdownMenu').removeClass('active');
+                        $moreDropdownMenu.removeClass('active');
                     }
                 });
 
                 $doc.on('click', e => {
                     if (!$(e.target).closest('.nav-item-dropdown').length) {
-                        $('#moreDropdownMenu, #profileNavDropdownMenu').removeClass('active');
+                        $moreDropdownMenu.removeClass('active');
+                        $moreDropdown.removeClass('active');
                     }
                 });
+
+                // Handle overflow on load and resize
+                $win.on('resize', () => {
+                    setTimeout(() => {
+                        handleNavOverflow();
+                        adjustDropdownPosition();
+                    }, 100);
+                });
+
+                // Initial check
+                setTimeout(handleNavOverflow, 100);
             })();
 
             // ============================================

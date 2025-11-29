@@ -20,3 +20,12 @@ Schedule::call(function () {
     ->name('store-events')
     ->everyMinute()
     ->withoutOverlapping(1);
+
+// Schedule category detection for events
+// Runs daily at 2 AM to detect/update categories for new events
+Schedule::command('events:detect-categories')
+    ->name('detect-event-categories')
+    ->dailyAt('02:00')
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/category-detection.log'));

@@ -44,4 +44,9 @@ class HomeController extends Controller
     {
         return view('frontend.new');
     }
+
+    function eventsByCategory($category)
+    {
+        return view('frontend.events_by_category', compact('category'));
+    }
 }
