@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class MarketComment extends Model
 {
-    protected $fillable = ['market_id', 'user_id', 'comment_text', 'parent_comment_id'];
+    protected $fillable = ['market_id', 'user_id', 'comment_text', 'parent_comment_id', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function replies()
     {

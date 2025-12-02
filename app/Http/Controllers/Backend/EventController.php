@@ -24,12 +24,23 @@ class EventController extends Controller
     {
         $query = Event::query();
 
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('slug', 'like', "%{$searchTerm}%")
+                    ->orWhere('category', 'like', "%{$searchTerm}%");
+            });
+        }
+
         // Filter by category if provided
-        if ($request->has('category') && $request->category !== 'all') {
+        if ($request->has('category') && $request->category !== 'all' && $request->category !== '') {
             $query->byCategory($request->category);
         }
 
-        $events = $query->with('markets')->latest()->paginate(20);
+        $events = $query->with('markets')->orderBy('volume', 'desc')->paginate(20)->withQueryString();
         $categories = $this->categoryDetector->getAvailableCategories();
 
         return view('backend.events.index', compact('events', 'categories'));
@@ -69,7 +80,7 @@ class EventController extends Controller
         $event = Event::create($validated);
 
         return redirect()
-            ->route('backend.events.index')
+            ->route('admin.events.index')
             ->with('success', "Event created successfully. Category: {$event->category}");
     }
 
@@ -78,8 +89,31 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load('markets', 'tags');
-        return view('backend.events.show', compact('event'));
+        // In admin panel, show ALL comments (both active and inactive)
+        $event->load([
+            'markets',
+            'tags',
+            'comments' => function ($query) {
+                $query->whereNull('parent_comment_id')
+                    ->with(['user', 'replies' => function ($replyQuery) {
+                        $replyQuery->with('user', 'likes');
+                    }, 'replies.likes'])
+                    ->latest();
+            }
+        ]);
+
+        // Get all comments count (including replies) - both active and inactive
+        $totalCommentsCount = \App\Models\MarketComment::where('market_id', $event->id)->count();
+
+        // Get active comments count for display
+        $activeCommentsCount = \App\Models\MarketComment::where('market_id', $event->id)
+            ->where(function ($q) {
+                $q->where('is_active', true)
+                    ->orWhereNull('is_active'); // For backward compatibility
+            })
+            ->count();
+
+        return view('backend.events.show', compact('event', 'totalCommentsCount', 'activeCommentsCount'));
     }
 
     /**
@@ -111,7 +145,7 @@ class EventController extends Controller
         $event->update($validated);
 
         return redirect()
-            ->route('backend.events.index')
+            ->route('admin.events.index')
             ->with('success', 'Event updated successfully.');
     }
 
@@ -123,7 +157,7 @@ class EventController extends Controller
         $event->delete();
 
         return redirect()
-            ->route('backend.events.index')
+            ->route('admin.events.index')
             ->with('success', 'Event deleted successfully.');
     }
 
@@ -155,7 +189,7 @@ class EventController extends Controller
         foreach ($events as $event) {
             $oldCategory = $event->category;
             $event->detectCategory();
-            
+
             if ($oldCategory !== $event->category) {
                 $event->save();
                 $updated++;
@@ -170,4 +204,3 @@ class EventController extends Controller
         ]);
     }
 }
-

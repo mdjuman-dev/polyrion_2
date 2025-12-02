@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/responsive.css') }}">
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
     @livewireStyles
     @stack('style')
 </head>
@@ -89,6 +91,13 @@
                                         <div class="header-menu-divider">
                                         </div>
                                     @endif
+
+                                    @auth
+                                        <a href="{{ route('trades.my.page') }}">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>My Trades History</span>
+                                        </a>
+                                    @endauth
 
                                     <a href="#">
                                         <div
@@ -387,40 +396,45 @@
             </button>
         </div>
         <div class="deposit-modal-content">
-            <div class="deposit-form-container">
-                <div class="deposit-balance-info">
-                    <div class="balance-item">
-                        <span class="balance-label">Current Balance</span>
-                        <span
-                            class="balance-value">${{ number_format(auth()->user()->wallet->balance ?? 0, 2) }}</span>
+            <form id="depositForm" action="{{ route('binance.create') }}" method="POST">
+                @csrf
+                <div class="deposit-form-container">
+                    <div class="deposit-balance-info">
+                        <div class="balance-item">
+                            <span class="balance-label">Current Balance</span>
+                            <span
+                                class="balance-value">${{ number_format(auth()->user()->wallet->balance ?? 0, 2) }}</span>
+                        </div>
                     </div>
+
+                    <div class="deposit-input-group">
+                        <label class="deposit-input-label">Amount</label>
+                        <div class="deposit-input-wrapper">
+                            <span class="deposit-currency">$</span>
+                            <input type="number" name="amount" class="deposit-input" id="depositAmount"
+                                placeholder="0.00" min="0" step="0.01">
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="deposit-input-group">
-                    <label class="deposit-input-label">Amount</label>
-                    <div class="deposit-input-wrapper">
-                        <span class="deposit-currency">$</span>
-                        <input type="number" class="deposit-input" id="depositAmount" placeholder="0.00"
-                            min="0" step="0.01">
-                    </div>
-                </div>
-
-                <div class="deposit-quick-amounts">
-                    <button class="quick-amount-btn" data-amount="10">$10</button>
+                {{-- <div class="deposit-quick-amounts">
+                    <button type="bu    " class="quick-amount-btn" data-amount="10">$10</button>
                     <button class="quick-amount-btn" data-amount="50">$50</button>
                     <button class="quick-amount-btn" data-amount="100">$100</button>
                     <button class="quick-amount-btn" data-amount="500">$500</button>
-                </div>
+                </div> --}}
 
-                <div class="deposit-method-section">
+                {{-- <div class="deposit-method-section">
                     <label class="deposit-method-label">Payment Method</label>
                     <div class="deposit-methods">
-                        <button type="button" class="deposit-method-btn active" data-method="binancepay">
-                            <i class="fas fa-coins"></i>
-                            <span>Binance Pay</span>
-                        </button>
+                        <!-- Binance Pay - Temporarily disabled for testing -->
+                        <!-- <button type="button" class="deposit-method-btn active" data-method="binancepay">
+                                <i class="fas fa-coins"></i>
+                                <span>Binance Pay</span>
+                            </button> -->
 
-                        <button type="button" class="deposit-method-btn" data-method="manual">
+                        <button type="button" class="deposit-method-btn active" data-method="manual">
                             <i class="fas fa-keyboard"></i>
                             <span>Manual Payment</span>
                         </button>
@@ -435,9 +449,10 @@
                             <span>Trust Wallet</span>
                         </button>
                     </div>
-                </div>
+                </div> --}}
 
-                <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
+                <!-- Query Code Field - Hidden for testing -->
+                {{-- <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
                     <label class="deposit-input-label">Transaction/Query Code</label>
                     <div class="deposit-input-wrapper">
                         <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
@@ -445,10 +460,11 @@
                             placeholder="Enter transaction or merchant trade number">
                     </div>
                     <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant trade
+                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
+                        trade
                         number
                     </small>
-                </div>
+                </div> --}}
 
                 <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
                     <i class="fas fa-arrow-right"></i>
@@ -456,13 +472,14 @@
                 </button>
 
                 <div class="deposit-footer">
-                    <p class="deposit-note">
-                        <i class="fas fa-info-circle"></i>
-                        Deposits are processed securely. Minimum deposit: $10
+                    <p class="deposit-note" style="color: #10b981; font-weight: 600;">
+                        <i class="fas fa-flask"></i>
+                        Test Mode: Fake deposits enabled for testing. No real payment required.
                     </p>
                 </div>
-            </div>
+            </form>
         </div>
+    </div>
     </div>
 
 
@@ -512,9 +529,7 @@
     <script src="{{ asset('frontend/assets/js/bootstrap.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script>
-        // ============================================
-        // OPTIMIZED FRONTEND JAVASCRIPT
-        // ============================================
+        // FRONTEND JAVASCRIPT
         (function($) {
             'use strict';
 
@@ -527,9 +542,7 @@
             const $headerMenuTrigger = $('#headerMenuTrigger');
             const $headerMenuDropdown = $('#headerMenuDropdown');
 
-            // ============================================
-            // THEME TOGGLE (Optimized)
-            // ============================================
+            // THEME TOGGLE 
             (function() {
                 function setHeaderThemeSwitch(theme) {
                     const $switch = $('.header-menu-switch');
@@ -1052,19 +1065,27 @@
             // MARKET DETAIL PAGE (Optimized)
             // ============================================
             (function() {
-                if (!$('#marketChart').length && !$('.outcome-row').length) return;
+                    if (!$('#marketChart').length && !$('.outcome-row').length) return;
 
-                // Ensure trading panel is closed on page load
-                $('#tradingPanel').removeClass('active');
-                $('#mobilePanelOverlay').removeClass('active');
-                $body.css('overflow', '');
+                    // Ensure trading panel is closed on page load
+                    $('#tradingPanel').removeClass('active');
+                    $('#mobilePanelOverlay').removeClass('active');
+                    $body.css('overflow', '');
 
-                let currentShares = 0,
-                    isBuy = true,
-                    isYes = true,
-                    isLimitOrder = false,
-                    limitPrice = 0,
-                    userBalance = 1000;
+                    let currentShares = 0,
+                        isBuy = true,
+                        isYes = true,
+                        isLimitOrder = false,
+                        limitPrice = 0,
+                        @auth
+                    @php
+                        $userWallet = auth()->user()->wallet;
+                        $userBalance = $userWallet ? $userWallet->balance : 0;
+                    @endphp
+                    userBalance = {{ $userBalance }};
+                @else
+                    userBalance = 0;
+                @endauth
 
                 const updateSummary = () => {
                     let price;
@@ -1098,6 +1119,8 @@
                     }
                 };
 
+                let currentMarketId = null;
+
                 const populateTradingPanel = ($row, isYesSelected, isMobile) => {
                     $('.outcome-row').removeClass('active selected');
                     $row.addClass('active selected');
@@ -1107,6 +1130,10 @@
                     const $noBtn = $row.find('.btn-no');
                     const yesPrice = parseFloat($yesBtn.text().match(/([\d.]+)¢/)?.[1] || 0);
                     const noPrice = parseFloat($noBtn.text().match(/([\d.]+)¢/)?.[1] || 0);
+
+                    // Get market ID from row or panel
+                    currentMarketId = $row.data('market-id') || $('#tradingPanel').data('market-id');
+
                     $('#panelMarketTitle').text(marketTitle);
                     $('#panelOutcomeTitle').text(outcomeName);
                     if (isMobile) {
@@ -1118,10 +1145,14 @@
                         $('#yesBtn').addClass('active');
                         $('#noBtn').removeClass('active');
                         $('#limitPrice').val(yesPrice);
+                        isYes = true;
+                        $('#executeTrade').text('Buy Yes');
                     } else {
                         $('#noBtn').addClass('active');
                         $('#yesBtn').removeClass('active');
                         $('#limitPrice').val(noPrice);
+                        isYes = false;
+                        $('#executeTrade').text('Buy No');
                     }
                     window.currentYesPrice = yesPrice;
                     window.currentNoPrice = noPrice;
@@ -1154,50 +1185,44 @@
                     isBuy = true;
                     updateOutcomePrice();
                     updateSummary();
-                });
-                $('#sellTab').on('click', () => {
+                }); $('#sellTab').on('click', () => {
                     $('.action-tab').removeClass('active');
                     $('#sellTab').addClass('active');
                     isBuy = false;
                     updateOutcomePrice();
                     updateSummary();
-                });
-                $('#orderType').on('change', function() {
+                }); $('#orderType').on('change', function() {
                     isLimitOrder = $(this).val() === 'limit';
                     $('#limitOrderFields').toggleClass('active', isLimitOrder);
                     updateSummary();
-                });
-                $('#limitPrice').on('input', function() {
+                }); $('#limitPrice').on('input', function() {
                     limitPrice = parseFloat($(this).val()) || 0;
                     updateSummary();
-                });
-                $('#yesBtn').on('click', function() {
+                }); $('#yesBtn').on('click', function() {
                     $('.outcome-btn-yes, .outcome-btn-no').removeClass('active');
                     $(this).addClass('active');
                     isYes = true;
+                    $('#executeTrade').text('Buy Yes');
                     if (window.currentYesPrice !== undefined) $('#limitPrice').val(window.currentYesPrice);
                     updateOutcomePrice();
                     updateSummary();
-                });
-                $('#noBtn').on('click', function() {
+                }); $('#noBtn').on('click', function() {
                     $('.outcome-btn-yes, .outcome-btn-no').removeClass('active');
                     $(this).addClass('active');
                     isYes = false;
+                    $('#executeTrade').text('Buy No');
                     if (window.currentNoPrice !== undefined) $('#limitPrice').val(window.currentNoPrice);
                     updateOutcomePrice();
                     updateSummary();
-                });
-                $('#decrease-100, #decrease-10, #increase-10, #increase-100').on('click', function() {
+                }); $('#decrease-100, #decrease-10, #increase-10, #increase-100').on('click', function() {
                     updateShares(parseInt($(this).data('amount') || $(this).attr('id').includes(
                         'decrease') ? -parseInt($(this).attr('id').match(/\d+/)[0]) : parseInt(
                         $(
                             this).attr('id').match(/\d+/)[0])));
-                });
-                $('#sharesInput').on('input', function() {
+                }); $('#sharesInput').on('input', function() {
                     currentShares = parseInt($(this).val()) || 0;
                     updateSummary();
-                });
-                $doc.on('click', '.quick-btn', function() {
+                }); $doc.on('click', '.quick-btn', function() {
                     if (this.id === 'maxShares') currentShares = Math.floor(userBalance / 0.01);
                     else {
                         const percent = parseInt($(this).data('percent'));
@@ -1205,326 +1230,490 @@
                     }
                     $('#sharesInput').val(currentShares);
                     updateSummary();
-                });
-                $doc.on('click', '.shares-price', function() {
+                }); $doc.on('click', '.shares-price', function() {
                     updateShares(parseInt($(this).data('price')));
                 });
 
                 $('#executeTrade').on('click', function() {
-                    if (currentShares <= 0) return alert('Enter valid shares');
-                    if (isLimitOrder && limitPrice <= 0) return alert('Enter valid limit price');
-                    // Trade execution logic here
-                });
+                        if (currentShares <= 0) {
+                            showWarning('Please enter a valid amount', 'Invalid Amount');
+                            return;
+                        }
 
-                $doc.on('click', '.btn-yes, .btn-no', function(e) {
-                    e.stopPropagation();
-                    const $row = $(this).closest('.outcome-row');
-                    const isMobile = $win.width() <= 768;
-                    populateTradingPanel($row, $(this).hasClass('btn-yes'), isMobile);
-                    if (isMobile) {
-                        $('#tradingPanel, #mobilePanelOverlay').addClass('active');
-                        $body.css('overflow', 'hidden');
-                        setTimeout(() => $('#tradingPanel').scrollTop(0), 100);
-                    } else {
-                        const $panel = $('#tradingPanel');
-                        if ($panel.length) $('html, body').animate({
-                            scrollTop: $panel.offset().top - 100
-                        }, 500);
-                    }
-                });
+                        if (!currentMarketId) {
+                            showWarning('Market not selected', 'Selection Required');
+                            return;
+                        }
 
-                $doc.on('click', '.outcome-row', function(e) {
-                    if ($(e.target).closest('.btn-yes, .btn-no').length) return;
-                    const $row = $(this);
-                    const isMobile = $win.width() <= 768;
-                    populateTradingPanel($row, true, isMobile);
-                    if (isMobile) {
-                        $('#tradingPanel, #mobilePanelOverlay').addClass('active');
-                        $body.css('overflow', 'hidden');
-                    } else {
-                        const $panel = $('#tradingPanel');
-                        if ($panel.length) $('html, body').animate({
-                            scrollTop: $panel.offset().top - 100
-                        }, 500);
-                    }
-                });
+                        // Check if user is logged in
+                        @auth
+                        // Calculate required amount
+                        let price = null;
+                        if (isLimitOrder && limitPrice > 0) {
+                            price = limitPrice / 100;
+                        } else {
+                            if (isYes && window.currentYesPrice !== undefined) {
+                                price = window.currentYesPrice / 100;
+                            } else if (!isYes && window.currentNoPrice !== undefined) {
+                                price = window.currentNoPrice / 100;
+                            } else {
+                                price = 0.5; // Default
+                            }
+                        }
+                        price = Math.max(0.0001, Math.min(0.9999, price));
+                        const requiredAmount = currentShares * price;
 
-                // Close trading panel handlers
-                function closeTradingPanel() {
-                    $('#tradingPanel, #mobilePanelOverlay').removeClass('active');
-                    $body.css('overflow', '');
-                }
-
-                $doc.on('click', '#panelCloseBtn, #mobilePanelOverlay', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeTradingPanel();
-                });
-
-                $doc.on('click', '.show-more-btn', function() {
-                    $(this).toggleClass('expanded');
-                });
-                $doc.on('click', '.reply-btn', function() {
-                    $(this).closest('.comment-section').find('.comment-reply-wrapper').slideToggle(200);
-                });
-                $doc.on('click', '.comment-reply-cancel-btn', function() {
-                    $(this).closest('.comment-reply-wrapper').slideUp(200).find('.comment-reply-input').val(
-                        '');
-                });
-                $doc.on('click', '.comment-reply-submit-btn', function() {
-                    const replyText = $(this).siblings('.comment-reply-input').val().trim();
-                    if (replyText === '') return alert('Please enter a reply');
-                    alert('Reply posted: ' + replyText);
-                    $(this).siblings('.comment-reply-input').val('');
-                    $(this).closest('.comment-reply-wrapper').slideUp(200);
-                });
-                $doc.on('keypress', '.comment-reply-input', function(e) {
-                    if (e.which === 13) $(this).siblings('.comment-reply-submit-btn').click();
-                });
-
-                $doc.on('click', '.chart-btn', function() {
-                    $('.chart-btn').removeClass('active');
-                    $(this).addClass('active');
-                    if (window.marketChart) {
-                        window.marketChart.data.datasets[0].data = generateChartData(50, 100);
-                        window.marketChart.data.datasets[1].data = generateChartData(48, 100);
-                        window.marketChart.data.datasets[2].data = generateChartData(1.9, 100);
-                        window.marketChart.data.datasets[3].data = generateChartData(0.5, 100);
-                        window.marketChart.update();
-                    }
-                });
-
-                const generateChartData = (target, length) => {
-                    const data = [];
-                    let current = Math.random() * 20 + 10;
-                    for (let i = 0; i < length; i++) {
-                        current = current + (Math.random() - 0.5) * 10 + (target - current) * 0.02;
-                        data.push(Math.max(0, Math.min(100, current)));
-                    }
-                    return data;
-                };
-
-                const initMarketChart = () => {
-                    const ctx = $('#marketChart')[0];
-                    if (ctx && typeof Chart !== 'undefined') {
-                        window.marketChart = new Chart(ctx.getContext('2d'), {
-                            type: 'line',
-                            data: {
-                                labels: Array.from({
-                                    length: 100
-                                }, (_, i) => i),
-                                datasets: [{
-                                        label: 'No change',
-                                        data: generateChartData(50, 100),
-                                        borderColor: '#f97316',
-                                        borderWidth: 2,
-                                        tension: 0.1,
-                                        pointRadius: 0
-                                    },
-                                    {
-                                        label: '25 bps decrease',
-                                        data: generateChartData(48, 100),
-                                        borderColor: '#3b82f6',
-                                        borderWidth: 2,
-                                        tension: 0.1,
-                                        pointRadius: 0
-                                    },
-                                    {
-                                        label: '50+ bps decrease',
-                                        data: generateChartData(1.9, 100),
-                                        borderColor: '#06b6d4',
-                                        borderWidth: 2,
-                                        tension: 0.1,
-                                        pointRadius: 0
-                                    },
-                                    {
-                                        label: '25+ bps increase',
-                                        data: generateChartData(0.5, 100),
-                                        borderColor: '#eab308',
-                                        borderWidth: 2,
-                                        tension: 0.1,
-                                        pointRadius: 0
-                                    }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    },
-                                    tooltip: {
-                                        mode: 'index',
-                                        intersect: false
-                                    }
+                        // Check balance
+                        if (userBalance < requiredAmount) {
+                            const shortfall = requiredAmount - userBalance;
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Insufficient Balance',
+                                html: `You need $${requiredAmount.toFixed(2)} to place this trade.<br>Your current balance is $${userBalance.toFixed(2)}.<br><br>You need to deposit $${shortfall.toFixed(2)} more.`,
+                                showCancelButton: true,
+                                confirmButtonText: 'Deposit Now',
+                                cancelButtonText: 'Cancel',
+                                confirmButtonColor: getThemeColor('--accent'),
+                                cancelButtonColor: getThemeColor('--secondary'),
+                                background: getThemeColor('--card-bg'),
+                                color: getThemeColor('--text-primary'),
+                                customClass: {
+                                    popup: 'swal2-theme',
+                                    title: 'swal2-title-theme',
+                                    content: 'swal2-content-theme'
                                 },
-                                scales: {
-                                    y: {
-                                        grid: {
-                                            color: '#374151'
-                                        },
-                                        position: 'right',
-                                        ticks: {
-                                            callback: v => v + '%'
-                                        }
-                                    }
-                                },
-                                interaction: {
-                                    mode: 'nearest',
-                                    axis: 'x',
-                                    intersect: false
+                                didClose: () => {
+                                    cleanupSwal();
                                 }
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Open deposit modal
+                                    if (typeof window.openDepositModal === 'function') {
+                                        window.openDepositModal();
+                                    } else {
+                                        // Fallback: trigger deposit button click
+                                        $('#depositBtn').trigger('click');
+                                    }
+                                }
+                            });
+                            return;
+                        }
+
+                        // Balance is sufficient, proceed with trade
+                        executeTrade();
+                    @else
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Login Required',
+                            text: 'Please login to place a trade',
+                            showCancelButton: true,
+                            confirmButtonText: 'Go to Login',
+                            confirmButtonColor: getThemeColor('--accent'),
+                            cancelButtonColor: getThemeColor('--secondary'),
+                            cancelButtonText: 'Cancel',
+                            background: getThemeColor('--card-bg'),
+                            color: getThemeColor('--text-primary'),
+                            customClass: {
+                                popup: 'swal2-theme',
+                                title: 'swal2-title-theme',
+                                content: 'swal2-content-theme'
+                            },
+                            didClose: () => {
+                                cleanupSwal();
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '{{ route('login') }}';
                             }
                         });
+                    @endauth
+                });
+
+            function executeTrade() {
+                const $btn = $('#executeTrade');
+                const originalText = $btn.text();
+                $btn.prop('disabled', true).text('Processing...');
+
+                // Calculate price (convert from cents to decimal, or use percentage)
+                let price = null;
+                if (isLimitOrder && limitPrice > 0) {
+                    // Limit price is in cents, convert to decimal (0.01 to 0.99)
+                    price = limitPrice / 100;
+                } else {
+                    // Use current market price (already in percentage, convert to decimal)
+                    if (isYes && window.currentYesPrice !== undefined) {
+                        price = window.currentYesPrice / 100;
+                    } else if (!isYes && window.currentNoPrice !== undefined) {
+                        price = window.currentNoPrice / 100;
+                    } else {
+                        // Fallback: use price from button text
+                        const priceText = isYes ?
+                            $('.btn-yes').text().match(/([\d.]+)\$/)?.[1] :
+                            $('.btn-no').text().match(/([\d.]+)\$/)?.[1];
+                        price = priceText ? (parseFloat(priceText) / 100) : 0.5;
                     }
+                }
+
+                // Ensure price is between 0.0001 and 0.9999
+                price = Math.max(0.0001, Math.min(0.9999, price));
+
+                // Prepare trade data
+                const tradeData = {
+                    option: isYes ? 'yes' : 'no',
+                    amount: currentShares,
+                    price: price
                 };
 
-                const checkChartJS = () => {
-                    if (typeof Chart !== 'undefined') initMarketChart();
-                    else setTimeout(checkChartJS, 50);
-                };
-                checkChartJS();
-                updateOutcomePrice();
-                updateSummary();
-            })();
+                // Make API call
+                fetch(`/trades/market/${currentMarketId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                                'content') || '',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(tradeData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            showSuccess('Trade placed successfully!', 'Trade Executed');
 
-            // ============================================
-            // PROFILE PAGE (Optimized)
-            // ============================================
-            (function() {
-                const handleHashNavigation = () => {
-                    const hash = window.location.hash.replace('#', '');
-                    const validHashes = ['profile', 'account', 'trading', 'notifications', 'builder', 'export'];
-                    if (hash && validHashes.includes(hash)) {
-                        $('.settings-tab, .mobile-profile-dropdown-item, .profile-nav-dropdown-menu .dropdown-item')
-                            .removeClass('active');
-                        $(`.settings-tab[data-tab="${hash}"], .mobile-profile-dropdown-item[data-tab="${hash}"], .profile-nav-dropdown-menu .dropdown-item[href*="${hash}"]`)
-                            .addClass('active');
-                        $('.tab-content').removeClass('active');
-                        $(`#${hash}-tab`).addClass('active');
-                        setTimeout(() => $('html, body').animate({
-                            scrollTop: $('.settings-container').offset().top - 20
-                        }, 300), 100);
-                    }
-                };
+                            // Reset form
+                            currentShares = 0;
+                            $('#sharesInput').val(0);
+                            updateSummary();
 
-                $doc.on('click', '.content-tab', function() {
-                    const tab = $(this).data('tab');
-                    $('.content-tab').removeClass('active');
-                    $(this).addClass('active');
-                    $('.tab-content-wrapper').addClass('d-none');
-                    $(`#${tab}-tab`).removeClass('d-none');
-                });
+                            // Close panel on mobile
+                            if (window.innerWidth <= 768) {
+                                closeTradingPanel();
+                            }
 
-                $doc.on('click', '.subtab-btn', function() {
-                    const subtab = $(this).data('subtab');
-                    $('.subtab-btn').removeClass('active');
-                    $(this).addClass('active');
-                    $('.active-headers').toggleClass('d-none', subtab !== 'active');
-                    $('.closed-headers').toggleClass('d-none', subtab === 'active');
-                    $('#sortFilterBtn span').text(subtab === 'active' ? 'Value' : 'Profit/Loss');
-                });
-
-                $doc.on('click', '.time-filter-btn', function() {
-                    $('.time-filter-btn').removeClass('active');
-                    $(this).addClass('active');
-                    const time = $(this).data('time');
-                    const timeframes = {
-                        'ALL': 'All-Time',
-                        '1D': 'Past Day',
-                        '1W': 'Past Week',
-                        '1M': 'Past Month'
-                    };
-                    $('#profitLossTimeframe').text(timeframes[time] || 'All-Time');
-                });
-
-                $doc.on('click', '#sortFilterBtn, #amountFilterBtn', function(e) {
-                    e.stopPropagation();
-                    const $wrapper = $(this).closest('.filter-dropdown-wrapper');
-                    $('.filter-dropdown-wrapper').not($wrapper).removeClass('active');
-                    $wrapper.toggleClass('active');
-                });
-
-                $doc.on('click', '#sortFilterMenu .filter-dropdown-item, #amountFilterMenu .filter-dropdown-item',
-                    function(e) {
-                        e.preventDefault();
-                        const $this = $(this);
-                        const text = $this.text();
-                        $this.siblings().removeClass('active');
-                        $this.addClass('active');
-                        $this.closest('.filter-dropdown-wrapper').find('span').text(text);
-                        $this.closest('.filter-dropdown-wrapper').removeClass('active');
+                            // Reload page after a short delay to show updated balance
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showError(data.message || 'Failed to place trade', 'Trade Failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Trade error:', error);
+                        showError('An error occurred. Please try again.', 'Error');
+                    })
+                    .finally(() => {
+                        $btn.prop('disabled', false).text(originalText);
                     });
+            }
 
-                $doc.on('input', '.search-input', function() {
-                    const term = $(this).val().toLowerCase().trim();
-                    $('.positions-table tbody tr').each(function() {
-                        $(this).toggle($(this).text().toLowerCase().includes(term));
-                    });
-                });
+            $doc.on('click', '.btn-yes, .btn-no', function(e) {
+                e.stopPropagation();
+                const $row = $(this).closest('.outcome-row');
+                const isMobile = $win.width() <= 768;
+                populateTradingPanel($row, $(this).hasClass('btn-yes'), isMobile);
+                if (isMobile) {
+                    $('#tradingPanel, #mobilePanelOverlay').addClass('active');
+                    $body.css('overflow', 'hidden');
+                    setTimeout(() => $('#tradingPanel').scrollTop(0), 100);
+                } else {
+                    const $panel = $('#tradingPanel');
+                    if ($panel.length) $('html, body').animate({
+                        scrollTop: $panel.offset().top - 100
+                    }, 500);
+                }
+            });
 
-                $doc.on('click', '.settings-tab', function(e) {
-                    e.preventDefault();
-                    $('.settings-tab').removeClass('active');
-                    $(this).addClass('active');
-                    $('.tab-content').removeClass('active');
-                    const tabId = $(this).data('tab');
-                    $(`#${tabId}-tab`).addClass('active');
-                    $('.mobile-profile-dropdown-item').removeClass('active');
-                    $(`.mobile-profile-dropdown-item[data-tab="${tabId}"]`).addClass('active');
-                });
+            $doc.on('click', '.outcome-row', function(e) {
+                if ($(e.target).closest('.btn-yes, .btn-no').length) return;
+                const $row = $(this);
+                const isMobile = $win.width() <= 768;
+                populateTradingPanel($row, true, isMobile);
+                if (isMobile) {
+                    $('#tradingPanel, #mobilePanelOverlay').addClass('active');
+                    $body.css('overflow', 'hidden');
+                } else {
+                    const $panel = $('#tradingPanel');
+                    if ($panel.length) $('html, body').animate({
+                        scrollTop: $panel.offset().top - 100
+                    }, 500);
+                }
+            });
 
-                $('#mobileProfileDropdownBtn').on('click', function(e) {
-                    e.stopPropagation();
-                    $('.mobile-profile-dropdown').toggleClass('active');
-                });
+            // Close trading panel handlers
+            function closeTradingPanel() {
+                $('#tradingPanel, #mobilePanelOverlay').removeClass('active');
+                $body.css('overflow', '');
+            }
 
-                $doc.on('click', '.mobile-profile-dropdown-item', function(e) {
-                    e.preventDefault();
-                    const tabId = $(this).data('tab');
-                    $('.mobile-profile-dropdown-item, .settings-tab').removeClass('active');
-                    $(this).addClass('active');
-                    $(`.settings-tab[data-tab="${tabId}"]`).addClass('active');
-                    $('.tab-content').removeClass('active');
-                    $(`#${tabId}-tab`).addClass('active');
-                    $('.mobile-profile-dropdown').removeClass('active');
-                    $('html, body').animate({
-                        scrollTop: $('.settings-container').offset().top - 20
-                    }, 300);
-                });
+            $doc.on('click', '#panelCloseBtn, #mobilePanelOverlay', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeTradingPanel();
+            });
 
-                $doc.on('click', e => {
-                    if (!$(e.target).closest('.mobile-profile-dropdown').length) {
-                        $('.mobile-profile-dropdown').removeClass('active');
-                    }
-                });
+            $doc.on('click', '.show-more-btn', function() {
+                $(this).toggleClass('expanded');
+            });
+            $doc.on('click', '.reply-btn', function() {
+                $(this).closest('.comment-section').find('.comment-reply-wrapper').slideToggle(200);
+            });
+            $doc.on('click', '.comment-reply-cancel-btn', function() {
+                $(this).closest('.comment-reply-wrapper').slideUp(200).find('.comment-reply-input').val(
+                    '');
+            });
+            $doc.on('click', '.comment-reply-submit-btn', function() {
+                const replyText = $(this).siblings('.comment-reply-input').val().trim();
+                if (replyText === '') {
+                    showWarning('Please enter a reply', 'Reply Required');
+                    return;
+                }
+                showSuccess('Reply posted: ' + replyText, 'Reply Posted');
+                $(this).siblings('.comment-reply-input').val('');
+                $(this).closest('.comment-reply-wrapper').slideUp(200);
+            });
+            $doc.on('keypress', '.comment-reply-input', function(e) {
+                if (e.which === 13) $(this).siblings('.comment-reply-submit-btn').click();
+            });
 
-                handleHashNavigation();
-                $win.on('hashchange', handleHashNavigation);
-            })();
+            $doc.on('click', '.chart-btn', function() {
+                $('.chart-btn').removeClass('active');
+                $(this).addClass('active');
+                if (window.marketChart) {
+                    window.marketChart.data.datasets[0].data = generateChartData(50, 100);
+                    window.marketChart.data.datasets[1].data = generateChartData(48, 100);
+                    window.marketChart.data.datasets[2].data = generateChartData(1.9, 100);
+                    window.marketChart.data.datasets[3].data = generateChartData(0.5, 100);
+                    window.marketChart.update();
+                }
+            });
 
-            // ============================================
-            // LAZY LOAD & ANIMATIONS (Optimized)
-            // ============================================
-            (function() {
-                const observer = new IntersectionObserver(entries => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            $(entry.target).css('animation', 'fadeIn 0.5s ease');
+            const generateChartData = (target, length) => {
+                const data = [];
+                let current = Math.random() * 20 + 10;
+                for (let i = 0; i < length; i++) {
+                    current = current + (Math.random() - 0.5) * 10 + (target - current) * 0.02;
+                    data.push(Math.max(0, Math.min(100, current)));
+                }
+                return data;
+            };
+
+            const initMarketChart = () => {
+                const ctx = $('#marketChart')[0];
+                if (ctx && typeof Chart !== 'undefined') {
+                    window.marketChart = new Chart(ctx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({
+                                length: 100
+                            }, (_, i) => i),
+                            datasets: [{
+                                    label: 'No change',
+                                    data: generateChartData(50, 100),
+                                    borderColor: '#f97316',
+                                    borderWidth: 2,
+                                    tension: 0.1,
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: '25 bps decrease',
+                                    data: generateChartData(48, 100),
+                                    borderColor: '#3b82f6',
+                                    borderWidth: 2,
+                                    tension: 0.1,
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: '50+ bps decrease',
+                                    data: generateChartData(1.9, 100),
+                                    borderColor: '#06b6d4',
+                                    borderWidth: 2,
+                                    tension: 0.1,
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: '25+ bps increase',
+                                    data: generateChartData(0.5, 100),
+                                    borderColor: '#eab308',
+                                    borderWidth: 2,
+                                    tension: 0.1,
+                                    pointRadius: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    grid: {
+                                        color: '#374151'
+                                    },
+                                    position: 'right',
+                                    ticks: {
+                                        callback: v => v + '%'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            }
                         }
                     });
+                }
+            };
+
+            const checkChartJS = () => {
+                if (typeof Chart !== 'undefined') initMarketChart();
+                else setTimeout(checkChartJS, 50);
+            };
+            checkChartJS();
+            updateOutcomePrice();
+            updateSummary();
+        })();
+
+        // PROFILE PAGE 
+        (function() {
+            const handleHashNavigation = () => {
+                const hash = window.location.hash.replace('#', '');
+                const validHashes = ['profile', 'account', 'trading', 'notifications', 'builder', 'export'];
+                if (hash && validHashes.includes(hash)) {
+                    $('.settings-tab, .mobile-profile-dropdown-item, .profile-nav-dropdown-menu .dropdown-item')
+                        .removeClass('active');
+                    $(`.settings-tab[data-tab="${hash}"], .mobile-profile-dropdown-item[data-tab="${hash}"], .profile-nav-dropdown-menu .dropdown-item[href*="${hash}"]`)
+                        .addClass('active');
+                    $('.tab-content').removeClass('active');
+                    $(`#${hash}-tab`).addClass('active');
+                    setTimeout(() => $('html, body').animate({
+                        scrollTop: $('.settings-container').offset().top - 20
+                    }, 300), 100);
+                }
+            };
+
+            $doc.on('click', '.content-tab', function() {
+                const tab = $(this).data('tab');
+                $('.content-tab').removeClass('active');
+                $(this).addClass('active');
+                $('.tab-content-wrapper').addClass('d-none');
+                $(`#${tab}-tab`).removeClass('d-none');
+            });
+
+            $doc.on('click', '.subtab-btn', function() {
+                const subtab = $(this).data('subtab');
+                $('.subtab-btn').removeClass('active');
+                $(this).addClass('active');
+                $('.active-headers').toggleClass('d-none', subtab !== 'active');
+                $('.closed-headers').toggleClass('d-none', subtab === 'active');
+                $('#sortFilterBtn span').text(subtab === 'active' ? 'Value' : 'Profit/Loss');
+            });
+
+            $doc.on('click', '.time-filter-btn', function() {
+                $('.time-filter-btn').removeClass('active');
+                $(this).addClass('active');
+                const time = $(this).data('time');
+                const timeframes = {
+                    'ALL': 'All-Time',
+                    '1D': 'Past Day',
+                    '1W': 'Past Week',
+                    '1M': 'Past Month'
+                };
+                $('#profitLossTimeframe').text(timeframes[time] || 'All-Time');
+            });
+
+            $doc.on('click', '#sortFilterBtn, #amountFilterBtn', function(e) {
+                e.stopPropagation();
+                const $wrapper = $(this).closest('.filter-dropdown-wrapper');
+                $('.filter-dropdown-wrapper').not($wrapper).removeClass('active');
+                $wrapper.toggleClass('active');
+            });
+
+            $doc.on('click', '#sortFilterMenu .filter-dropdown-item, #amountFilterMenu .filter-dropdown-item',
+                function(e) {
+                    e.preventDefault();
+                    const $this = $(this);
+                    const text = $this.text();
+                    $this.siblings().removeClass('active');
+                    $this.addClass('active');
+                    $this.closest('.filter-dropdown-wrapper').find('span').text(text);
+                    $this.closest('.filter-dropdown-wrapper').removeClass('active');
                 });
-                $('.market-card').each(function() {
-                    observer.observe(this);
+
+            $doc.on('input', '.search-input', function() {
+                const term = $(this).val().toLowerCase().trim();
+                $('.positions-table tbody tr').each(function() {
+                    $(this).toggle($(this).text().toLowerCase().includes(term));
                 });
-            })();
+            });
+
+            $doc.on('click', '.settings-tab', function(e) {
+                e.preventDefault();
+                $('.settings-tab').removeClass('active');
+                $(this).addClass('active');
+                $('.tab-content').removeClass('active');
+                const tabId = $(this).data('tab');
+                $(`#${tabId}-tab`).addClass('active');
+                $('.mobile-profile-dropdown-item').removeClass('active');
+                $(`.mobile-profile-dropdown-item[data-tab="${tabId}"]`).addClass('active');
+            });
+
+            $('#mobileProfileDropdownBtn').on('click', function(e) {
+                e.stopPropagation();
+                $('.mobile-profile-dropdown').toggleClass('active');
+            });
+
+            $doc.on('click', '.mobile-profile-dropdown-item', function(e) {
+                e.preventDefault();
+                const tabId = $(this).data('tab');
+                $('.mobile-profile-dropdown-item, .settings-tab').removeClass('active');
+                $(this).addClass('active');
+                $(`.settings-tab[data-tab="${tabId}"]`).addClass('active');
+                $('.tab-content').removeClass('active');
+                $(`#${tabId}-tab`).addClass('active');
+                $('.mobile-profile-dropdown').removeClass('active');
+                $('html, body').animate({
+                    scrollTop: $('.settings-container').offset().top - 20
+                }, 300);
+            });
+
+            $doc.on('click', e => {
+                if (!$(e.target).closest('.mobile-profile-dropdown').length) {
+                    $('.mobile-profile-dropdown').removeClass('active');
+                }
+            });
+
+            handleHashNavigation();
+            $win.on('hashchange', handleHashNavigation);
+        })();
+
+        // LAZY LOAD & ANIMATIONS 
+        (function() {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        $(entry.target).css('animation', 'fadeIn 0.5s ease');
+                    }
+                });
+            });
+            $('.market-card').each(function() {
+                observer.observe(this);
+            });
+        })();
 
         })(jQuery);
 
-        // ============================================
-        // DEPOSIT MODAL (Already optimized)
-        // ============================================
+        // DEPOSIT MODAL 
         $(function() {
             const $depositBtn = $("#depositBtn");
             const $depositModal = $("#depositModalPopup");
@@ -1547,6 +1736,16 @@
                 $("body").css("overflow", "");
             }
 
+            // Make functions globally accessible
+            window.openDepositModal = openDepositModal;
+            window.closeDepositModal = closeDepositModal;
+
+            // Prevent form default submit
+            $('#depositForm').on('submit', function(e) {
+                e.preventDefault();
+                $('#depositSubmitBtn').trigger('click');
+            });
+
             // Open modal
             $depositBtn.on("click", function(e) {
                 e.preventDefault();
@@ -1559,6 +1758,7 @@
                 closeDepositModal();
             });
 
+            // Close modal on overlay click
             $depositOverlay.on("click", function(e) {
                 if ($(e.target).is($depositOverlay)) {
                     closeDepositModal();
@@ -1579,170 +1779,62 @@
                 $methodBtns.removeClass("active");
                 $(this).addClass("active");
 
-                // Show/hide query code field for manual payment
-                const method = $(this).data("method");
-                if (method === 'manual') {
-                    $("#queryCodeGroup").slideDown(200);
-                } else {
-                    $("#queryCodeGroup").slideUp(200);
-                    $("#queryCode").val("");
-                }
+                // Query code field hidden for testing - always keep it hidden
+                // const method = $(this).data("method");
+                // if (method === 'manual') {
+                //     $("#queryCodeGroup").slideDown(200);
+                // } else {
+                //     $("#queryCodeGroup").slideUp(200);
+                //     $("#queryCode").val("");
+                // }
             });
 
             // Submit deposit
             $depositSubmit.on("click", function(e) {
                 e.preventDefault();
                 const amount = parseFloat($depositAmount.val());
-                const method = $methodBtns.filter(".active").data("method");
+                // Default method for testing - manual deposit
+                const method = 'manual';
+                const currency = 'USDT';
 
                 if (!amount || amount <= 0) {
-                    alert("Please enter a valid amount");
+                    showWarning('Please enter a valid amount', 'Invalid Amount');
                     return;
                 }
 
-                if (amount < 10) {
-                    alert("Minimum deposit amount is $10");
-                    return;
-                }
-
-                if (!method) {
-                    alert("Please select a payment method");
-                    return;
-                }
+                // Minimum amount check disabled for testing
+                // if (amount < 10) {
+                //     showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                //     return;
+                // }
 
                 // Disable submit button
                 const $btn = $(this);
                 const originalText = $btn.html();
-                $btn.prop("disabled", true).html(
-                    '<i class="fas fa-spinner fa-spin"></i> Processing...');
+                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
-                // Handle Binance Pay differently
-                if (method === 'binancepay') {
-                    // Create Binance Pay order
-                    $.ajax({
-                        url: '{{ route('binance.create') }}',
-                        method: 'POST',
-                        data: {
-                            amount: amount,
-                            currency: 'USDT',
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success && response.checkoutUrl) {
-                                // Redirect to Binance Pay checkout
-                                window.location.href = response.checkoutUrl;
-                            } else {
-                                alert(response.message ||
-                                    "Failed to create payment. Please try again.");
-                                $btn.prop("disabled", false).html(originalText);
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMessage = "Failed to create payment. Please try again.";
-
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                                const errors = Object.values(xhr.responseJSON.errors).flat();
-                                errorMessage = errors.join('\n');
-                            }
-
-                            alert(errorMessage);
-                            $btn.prop("disabled", false).html(originalText);
-                        }
-                    });
-                    return;
-                }
-
-                // Handle Manual Payment
-                if (method === 'manual') {
-                    const queryCode = $("#queryCode").val().trim();
-
-                    if (!queryCode) {
-                        alert("Please enter transaction/query code");
-                        $btn.prop("disabled", false).html(originalText);
-                        return;
-                    }
-
-                    // Verify and process manual payment
-                    $.ajax({
-                        url: '{{ route('binance.manual.verify') }}',
-                        method: 'POST',
-                        data: {
-                            query_code: queryCode,
-                            amount: amount,
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                // Show success message
-                                alert(
-                                    `Payment verified successfully! Deposit of $${response.amount} processed. Your new balance is $${response.balance}`
-                                );
-
-                                // Update balance display if exists
-                                $('.wallet-value').each(function() {
-                                    if ($(this).closest('.wallet-item').find(
-                                            '.wallet-label')
-                                        .text().trim() === 'Cash') {
-                                        $(this).text('$' + response.balance);
-                                    }
-                                });
-
-                                // Update balance in modal
-                                $('.balance-value').text('$' + response.balance);
-
-                                // Close modal and reset form
-                                closeDepositModal();
-                                $depositAmount.val("");
-                                $("#queryCode").val("");
-                                $quickAmountBtns.removeClass("active");
-                            } else {
-                                alert(response.message ||
-                                    "Payment verification failed. Please try again.");
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMessage = "Payment verification failed. Please try again.";
-
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                                const errors = Object.values(xhr.responseJSON.errors).flat();
-                                errorMessage = errors.join('\n');
-                            }
-
-                            alert(errorMessage);
-                        },
-                        complete: function() {
-                            // Re-enable submit button
-                            $btn.prop("disabled", false).html(originalText);
-                        }
-                    });
-                    return;
-                }
-
-                // Handle other payment methods (MetaMask, Trust Wallet, etc.)
+                // Direct deposit - simplified for testing (just amount needed)
                 $.ajax({
                     url: '{{ route('wallet.deposit') }}',
                     method: 'POST',
                     data: {
                         amount: amount,
                         method: method,
+                        currency: currency,
                         _token: $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
                         if (response.success) {
                             // Show success message
-                            alert(
-                                `Deposit of $${response.amount} successful! Your new balance is $${response.balance}`
+                            showSuccess(
+                                `Deposit of $${response.amount} successful! Your new balance is $${response.balance}`,
+                                'Deposit Successful'
                             );
 
                             // Update balance display if exists
                             $('.wallet-value').each(function() {
                                 if ($(this).closest('.wallet-item').find(
-                                        '.wallet-label')
-                                    .text().trim() === 'Cash') {
+                                        '.wallet-label').text().trim() === 'Cash') {
                                     $(this).text('$' + response.balance);
                                 }
                             });
@@ -1753,9 +1845,14 @@
                             // Close modal and reset form
                             closeDepositModal();
                             $depositAmount.val("");
-                            $quickAmountBtns.removeClass("active");
+
+                            // Reload page to update balance everywhere
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
                         } else {
-                            alert(response.message || "Deposit failed. Please try again.");
+                            showError(response.message || "Deposit failed. Please try again.",
+                                'Deposit Failed');
                         }
                     },
                     error: function(xhr) {
@@ -1768,7 +1865,7 @@
                             errorMessage = errors.join('\n');
                         }
 
-                        alert(errorMessage);
+                        showError(errorMessage, 'Deposit Failed');
                     },
                     complete: function() {
                         // Re-enable submit button
@@ -1785,17 +1882,610 @@
             });
         });
     </script>
+    <!-- SweetAlert2 -->
+    <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
+    <!-- Toastr JS -->
+    <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
+
+    <style>
+        /* Custom SweetAlert2 Theme */
+        .swal2-popup {
+            background: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-radius: 12px !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+            animation: swalFadeIn 0.3s ease-out !important;
+        }
+
+        /* Toast style for top right alerts */
+        .swal2-toast-theme {
+            background: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-radius: 8px !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+            padding: 1rem 1.5rem !important;
+            min-width: 300px !important;
+            max-width: 400px !important;
+            animation: swalSlideInRight 0.3s ease-out !important;
+        }
+
+        .swal2-toast-theme .swal2-title {
+            font-size: 1rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        .swal2-toast-theme .swal2-html-container {
+            font-size: 0.9rem !important;
+            margin: 0 !important;
+        }
+
+        .swal2-toast-theme .swal2-icon {
+            width: 2rem !important;
+            height: 2rem !important;
+            margin: 0 0.75rem 0 0 !important;
+        }
+
+        .swal2-toast-theme .swal2-timer-progress-bar {
+            background: var(--accent) !important;
+        }
+
+        /* Top right container positioning */
+        .swal2-container.swal2-top-end {
+            top: 20px !important;
+            right: 20px !important;
+            left: auto !important;
+            bottom: auto !important;
+            padding: 0 !important;
+        }
+
+        .swal2-container.swal2-top-end>.swal2-popup {
+            margin: 0 !important;
+        }
+
+        @keyframes swalSlideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .swal2-title {
+            color: var(--text-primary) !important;
+            font-weight: 600 !important;
+            font-size: 1.5rem !important;
+        }
+
+        .swal2-content {
+            color: var(--text-secondary) !important;
+        }
+
+        .swal2-confirm {
+            background: var(--accent) !important;
+            color: var(--bd-primary) !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 12px 24px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(255, 177, 26, 0.3) !important;
+        }
+
+        .swal2-confirm:hover {
+            background: #ffa000 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(255, 177, 26, 0.4) !important;
+        }
+
+        .swal2-cancel {
+            background: var(--secondary) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            padding: 12px 24px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .swal2-cancel:hover {
+            background: var(--card-bg) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .swal2-timer-progress-bar {
+            background: var(--accent) !important;
+        }
+
+        .swal2-icon.swal2-success {
+            border-color: var(--success) !important;
+        }
+
+        .swal2-icon.swal2-error {
+            border-color: var(--danger) !important;
+        }
+
+        .swal2-icon.swal2-warning {
+            border-color: var(--accent) !important;
+        }
+
+        @keyframes swalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes swalFadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+        }
+
+        /* Ensure complete removal */
+        .swal2-container.swal2-backdrop-show {
+            transition: opacity 0.3s ease !important;
+        }
+
+        .swal2-container.swal2-backdrop-hide {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .swal2-popup.swal2-hide {
+            animation: swalFadeOut 0.3s ease-out forwards !important;
+        }
+
+        /* Remove backdrop and container after animation */
+        .swal2-container:not(.swal2-backdrop-show):not(.swal2-noanimation) {
+            display: none !important;
+        }
+
+        /* Custom Toastr Theme */
+        #toast-container {
+            z-index: 99999 !important;
+        }
+
+        .toast {
+            background: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-radius: 12px !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            padding: 16px 20px !important;
+            min-height: 60px !important;
+            animation: toastSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success) !important;
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--danger) !important;
+        }
+
+        .toast-warning {
+            border-left: 4px solid var(--accent) !important;
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--info) !important;
+        }
+
+        .toast-title {
+            color: var(--text-primary) !important;
+            font-weight: 600 !important;
+            font-size: 15px !important;
+        }
+
+        .toast-message {
+            color: var(--text-secondary) !important;
+            font-size: 14px !important;
+            margin-top: 4px !important;
+        }
+
+        .toast-close-button {
+            color: var(--text-secondary) !important;
+            opacity: 0.7 !important;
+            font-size: 18px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .toast-close-button:hover {
+            opacity: 1 !important;
+            color: var(--text-primary) !important;
+            transform: scale(1.1) !important;
+        }
+
+        .toast-progress {
+            background: var(--accent) !important;
+            opacity: 0.3 !important;
+            height: 3px !important;
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(400px) scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        @keyframes toastSlideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(400px) scale(0.8);
+            }
+        }
+
+        /* Ensure toast is fully removed */
+        .toast.toast-removing {
+            animation: toastSlideOut 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
+        }
+
+        /* Remove toast container when empty */
+        #toast-container:empty {
+            display: none !important;
+        }
+
+        /* Clean up toast elements */
+        .toast {
+            will-change: transform, opacity;
+        }
+
+        .toast.removed {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Light mode adjustments */
+        :root.light-mode .swal2-popup {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        :root.light-mode .toast {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Ensure body scroll is restored when SweetAlert is closed */
+        body:not(.swal2-shown) {
+            overflow: auto !important;
+            padding-right: 0 !important;
+        }
+
+        /* Remove scroll lock when no SweetAlert is active */
+        body.swal2-no-backdrop {
+            overflow: auto !important;
+        }
+    </style>
+
+    <script>
+        // Get theme colors dynamically
+        function getThemeColor(variable) {
+            return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+        }
+
+        // Configure Toastr with theme colors
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "400",
+            "hideDuration": "300",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+            "hideEasing": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+            "showMethod": "slideIn",
+            "hideMethod": "slideOut",
+            "onHidden": function() {
+                // Ensure complete removal
+                $(this).remove();
+                // Clean up empty container
+                if ($('#toast-container').children().length === 0) {
+                    $('#toast-container').remove();
+                }
+            },
+            "onCloseClick": function() {
+                // Force remove on close click
+                $(this).fadeOut(300, function() {
+                    $(this).remove();
+                    if ($('#toast-container').children().length === 0) {
+                        $('#toast-container').remove();
+                    }
+                });
+            }
+        };
+
+        // Helper functions for notifications with theme colors - Top Right Position
+        function showSuccess(message, title = 'Success') {
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    icon: 'success',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    background: getThemeColor('--card-bg'),
+                    color: getThemeColor('--text-primary'),
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    customClass: {
+                        popup: 'swal2-toast-theme',
+                        title: 'swal2-title-theme',
+                        content: 'swal2-content-theme'
+                    },
+                    didClose: () => {
+                        cleanupSwal();
+                    }
+                });
+            } else {
+                toastr.success(message, title);
+            }
+        }
+
+        function showError(message, title = 'Error') {
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    icon: 'error',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    background: getThemeColor('--card-bg'),
+                    color: getThemeColor('--text-primary'),
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    customClass: {
+                        popup: 'swal2-toast-theme',
+                        title: 'swal2-title-theme',
+                        content: 'swal2-content-theme'
+                    },
+                    didClose: () => {
+                        cleanupSwal();
+                    }
+                });
+            } else {
+                toastr.error(message, title);
+            }
+        }
+
+        function showWarning(message, title = 'Warning') {
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3500,
+                    timerProgressBar: true,
+                    toast: true,
+                    background: getThemeColor('--card-bg'),
+                    color: getThemeColor('--text-primary'),
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    customClass: {
+                        popup: 'swal2-toast-theme',
+                        title: 'swal2-title-theme',
+                        content: 'swal2-content-theme'
+                    },
+                    didClose: () => {
+                        cleanupSwal();
+                    }
+                });
+            } else {
+                toastr.warning(message, title);
+            }
+        }
+
+        function showInfo(message, title = 'Info') {
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    icon: 'info',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    background: getThemeColor('--card-bg'),
+                    color: getThemeColor('--text-primary'),
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    customClass: {
+                        popup: 'swal2-toast-theme',
+                        title: 'swal2-title-theme',
+                        content: 'swal2-content-theme'
+                    },
+                    didClose: () => {
+                        cleanupSwal();
+                    }
+                });
+            } else {
+                toastr.info(message, title);
+            }
+        }
+
+        // Confirmation dialog with theme
+        function showConfirm(message, title = 'Confirm', confirmText = 'Yes', cancelText = 'No') {
+            return Swal.fire({
+                title: title,
+                text: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: getThemeColor('--accent'),
+                cancelButtonColor: getThemeColor('--secondary'),
+                confirmButtonText: confirmText,
+                cancelButtonText: cancelText,
+                background: getThemeColor('--card-bg'),
+                color: getThemeColor('--text-primary'),
+                customClass: {
+                    popup: 'swal2-theme',
+                    title: 'swal2-title-theme',
+                    content: 'swal2-content-theme'
+                },
+                didClose: () => {
+                    // Restore body scroll
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    document.documentElement.style.overflow = '';
+
+                    // Remove all SweetAlert containers and backdrops
+                    const containers = document.querySelectorAll('.swal2-container');
+                    containers.forEach(container => {
+                        container.remove();
+                    });
+
+                    // Remove any remaining backdrops
+                    const backdrops = document.querySelectorAll('.swal2-backdrop-show');
+                    backdrops.forEach(backdrop => {
+                        backdrop.remove();
+                    });
+                }
+            });
+        }
+
+        // Cleanup function for SweetAlert
+        function cleanupSwal() {
+            // Restore body scroll
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            document.documentElement.style.overflow = '';
+
+            // Remove all SweetAlert containers
+            const containers = document.querySelectorAll('.swal2-container');
+            containers.forEach(container => {
+                container.remove();
+            });
+
+            // Remove any remaining backdrops
+            const backdrops = document.querySelectorAll('.swal2-backdrop-show');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+        }
+
+        // Ensure scroll is restored when SweetAlert closes
+        if (typeof Swal !== 'undefined') {
+            // Global cleanup function that runs after any SweetAlert closes
+            const originalFire = Swal.fire;
+            Swal.fire = function(options) {
+                const result = originalFire.call(this, options);
+
+                // Add cleanup to the promise
+                if (result && typeof result.then === 'function') {
+                    result.then(() => {
+                        setTimeout(() => {
+                            cleanupSwal();
+                        }, 100);
+                    }).catch(() => {
+                        setTimeout(() => {
+                            cleanupSwal();
+                        }, 100);
+                    });
+                }
+
+                return result;
+            };
+
+            // Monitor for SweetAlert container changes
+            const observer = new MutationObserver(function(mutations) {
+                const hasSwal = document.querySelector('.swal2-container');
+                if (!hasSwal) {
+                    // No SweetAlert active, ensure scroll is restored
+                    cleanupSwal();
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+
+            // Also check periodically (fallback)
+            setInterval(function() {
+                const hasSwal = document.querySelector('.swal2-container.swal2-backdrop-show');
+                if (!hasSwal) {
+                    const bodyOverflow = window.getComputedStyle(document.body).overflow;
+                    if (bodyOverflow === 'hidden') {
+                        cleanupSwal();
+                    }
+                }
+            }, 500);
+        }
+
+        // Cleanup on page visibility change
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                cleanupSwal();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            cleanupSwal();
+        });
+
+        // Handle flash messages
+        @if (Session::has('success'))
+            showSuccess("{{ Session::get('success') }}");
+        @endif
+
+        @if (Session::has('error'))
+            showError("{{ Session::get('error') }}");
+        @endif
+
+        @if (Session::has('warning'))
+            showWarning("{{ Session::get('warning') }}");
+        @endif
+
+        @if (Session::has('info'))
+            showInfo("{{ Session::get('info') }}");
+        @endif
+    </script>
+
     @livewireScripts
     @stack('script')
 
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('event-saved', (data) => {
-                // Notification removed as per user request
-                // Event save/unsave happens silently with visual feedback only
-            });
-        });
-    </script>
 
     <style>
         .market-card-action-btn.saved {

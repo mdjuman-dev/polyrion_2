@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Wallet extends Model
 {
+    public $timestamps = true;
+    
     protected $fillable = ['user_id', 'balance', 'currency', 'locked_balance', 'status'];
 
     protected $casts = [

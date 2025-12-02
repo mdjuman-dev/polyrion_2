@@ -10,30 +10,19 @@
                     </a>
                 </li>
 
-                <li class="treeview">
-                    <a href="javascript:void(0)">
-                        <i data-feather="trending-up"></i>
-                        <span>Markets</span>
-                        <span class="pull-right-container">
-                            <i class="fa fa-angle-right pull-right"></i>
-                        </span>
+                <li class="">
+                    <a href="{{ route('admin.events.index') }}">
+                        <i data-feather="calendar"></i>
+                        <span>Events</span>
                     </a>
-                    <ul class="treeview-menu">
-                        <li>
-                            <a href="{{ route('admin.market.index') }}">
-                                <i class="fa fa-search"></i>
-                                <span>Search Market</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('admin.market.list') }}">
-                                <i class="fa fa-list"></i>
-                                <span>Events List</span>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
 
+                <li class="">
+                    <a href="{{ route('admin.setting') }}">
+                        <i data-feather="settings"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
 
                 <li class="treeview">
                     <a href="index.html#">

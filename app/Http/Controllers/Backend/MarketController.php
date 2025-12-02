@@ -8,14 +8,26 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Event;
 use App\Models\Market;
 use App\Models\Tag;
+use App\Services\SettlementService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class MarketController extends Controller
 {
-    function index()
+
+    /**
+     * Display the specified market
+     */
+    public function show($id)
     {
-        $events = Event::with('markets')->latest()->paginate(20);
-        return view('backend.market.index', compact('events'));
+        $market = Market::with('event')->findOrFail($id);
+
+        // Decode JSON fields
+        $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [];
+        $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
+
+        return view('backend.market.show', compact('market', 'outcomePrices', 'outcomes'));
     }
 
     function toMysqlDate(?string $date): ?string
@@ -34,12 +46,16 @@ class MarketController extends Controller
     function storeEvents()
     {
         $startTime = time();
-        $maxExecutionTime = 25;
+        $maxExecutionTime = 300; // Increased to 5 minutes
         $limit = 100;
         $offset = 0;
-        $maxBatches = 5;
+        $maxBatches = 100; // Increased from 10 to 100 (can fetch up to 10,000 events)
         $batchCount = 0;
         $totalProcessed = 0;
+        $consecutiveEmptyBatches = 0;
+        $maxConsecutiveEmpty = 3; // Stop after 3 consecutive empty batches
+
+        Log::info("=== Starting event fetch process at " . date('Y-m-d H:i:s') . " ===");
 
         while ($batchCount < $maxBatches) {
 
@@ -49,25 +65,68 @@ class MarketController extends Controller
                 break;
             }
 
-            // Fetch events
-            $response = Http::get('https://gamma-api.polymarket.com/events', [
-                'closed' => false,
-                'limit' => $limit,
-                'offset' => $offset,
-                'ascending' => false,
-            ]);
+            // Fetch events with increased timeout and better error handling
+            try {
+                $response = Http::timeout(120) // 2 minutes timeout
+                    ->retry(2, 3000, function ($exception, $request) {
+                        // Only retry on timeout or connection errors
+                        return $exception instanceof \Illuminate\Http\Client\ConnectionException;
+                    })
+                    ->get('https://gamma-api.polymarket.com/events', [
+                        'closed' => false,
+                        'limit' => $limit,
+                        'offset' => $offset,
+                        'ascending' => false,
+                    ]);
 
-            if (!$response->successful()) {
-                Log::error("Error fetching events: status " . $response->status() . " at offset " . $offset);
-                break;
+                if (!$response->successful()) {
+                    Log::error("Error fetching events: status " . $response->status() . " at offset " . $offset);
+                    // Retry logic: wait and try again
+                    if ($consecutiveEmptyBatches < 2) {
+                        sleep(3);
+                        continue;
+                    }
+                    break;
+                }
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::warning("Connection timeout at offset {$offset}. Retrying... Error: " . $e->getMessage());
+                // Retry on timeout
+                if ($consecutiveEmptyBatches < 2) {
+                    sleep(5); // Wait longer before retry
+                    continue;
+                }
+                // Skip this offset and continue
+                $offset += $limit;
+                $batchCount++;
+                continue;
+            } catch (\Exception $e) {
+                Log::error("Unexpected error at offset {$offset}: " . $e->getMessage());
+                // Skip this offset and continue
+                $offset += $limit;
+                $batchCount++;
+                continue;
             }
 
             $events = $response->json();
 
-            if (empty($events)) {
-                Log::info("No more events at offset " . $offset);
-                break;
+            // Check if response is empty or not an array
+            if (empty($events) || !is_array($events)) {
+                $consecutiveEmptyBatches++;
+                Log::info("Empty response at offset {$offset}. Consecutive empty batches: {$consecutiveEmptyBatches}");
+
+                if ($consecutiveEmptyBatches >= $maxConsecutiveEmpty) {
+                    Log::info("No more events found after {$consecutiveEmptyBatches} consecutive empty batches. Total processed: {$totalProcessed}");
+                    break;
+                }
+
+                // Still increment offset to try next batch
+                $offset += $limit;
+                $batchCount++;
+                continue;
             }
+
+            // Reset consecutive empty counter if we got events
+            $consecutiveEmptyBatches = 0;
 
             // Process each event
             foreach ($events as $ev) {
@@ -75,10 +134,9 @@ class MarketController extends Controller
                 // Time check inside loop
                 if ((time() - $startTime) >= $maxExecutionTime) {
                     Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
-                    break 2; // Break outer while + foreach
+                    break 2;
                 }
 
-                // Only save events that have at least one market
                 if (!empty($ev['markets'])) {
 
                     $event = Event::updateOrCreate(
@@ -145,6 +203,7 @@ class MarketController extends Controller
                             ]
                         );
                     }
+
                     // Save Tags
                     $tagIds = [];
                     if (!empty($ev['tags'])) {
@@ -165,7 +224,13 @@ class MarketController extends Controller
                 $totalProcessed++;
             }
 
-            Log::info("Fetched " . count($events) . " events from offset " . $offset);
+            $eventsCount = count($events);
+            Log::info("[Batch #{$batchCount}] Fetched {$eventsCount} events from offset {$offset}. Total processed: {$totalProcessed}");
+
+            // If we got less than the limit, we might be near the end
+            if ($eventsCount < $limit) {
+                Log::info("Received less than limit ({$eventsCount} < {$limit}). May be near end of available events.");
+            }
 
             $offset += $limit;
             $batchCount++;
@@ -176,6 +241,95 @@ class MarketController extends Controller
             }
         }
 
-        return "Processed {$totalProcessed} events. Next batch will continue from offset {$offset}.";
+        $executionTime = time() - $startTime;
+        $message = "=== Event fetch completed ===\n";
+        $message .= "Total processed: {$totalProcessed} events\n";
+        $message .= "Batches completed: {$batchCount}\n";
+        $message .= "Execution time: {$executionTime} seconds\n";
+        if ($batchCount >= $maxBatches) {
+            $message .= "Reached max batches limit ({$maxBatches})\n";
+        }
+        $message .= "Next batch will continue from offset {$offset}";
+
+        Log::info($message);
+        return $message;
+    }
+
+    /**
+     * Set final result for a market and settle trades
+     */
+    public function setResult(Request $request, $id)
+    {
+        $request->validate([
+            'final_result' => ['required', Rule::in(['yes', 'no'])],
+        ]);
+
+        try {
+            $market = Market::findOrFail($id);
+
+            // Set final result
+            $market->final_result = $request->final_result;
+            $market->result_set_at = now();
+            $market->closed = true;
+            $market->save();
+
+            // Settle all pending trades
+            $settlementService = new SettlementService();
+            $settlementResult = $settlementService->settleMarket($market);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Market result set and trades settled successfully',
+                'settlement' => $settlementResult,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to set market result', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to set result: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Manually settle trades for a market (if result already set)
+     */
+    public function settleTrades($id)
+    {
+        try {
+            $market = Market::findOrFail($id);
+
+            if (!$market->hasResult()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Market does not have a final result yet',
+                ], 400);
+            }
+
+            $settlementService = new SettlementService();
+            $result = $settlementService->settleMarket($market);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Trades settled successfully',
+                'settlement' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to settle trades', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to settle trades: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

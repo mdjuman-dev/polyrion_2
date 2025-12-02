@@ -21,9 +21,9 @@ class BinancePayController extends Controller
 
     public function __construct()
     {
-        $this->apiKey = config('services.binance.api_key');
-        $this->secretKey = config('services.binance.secret_key');
-        $this->baseUrl = config('services.binance.base_url', 'https://bpay.binanceapi.com');
+        $this->apiKey = 'jCaL0Y7arCkS75CdRW5WONIaw7wifNf5QP9zA2JM0oqdSwPPIARboHjcq2AOLUva';
+        $this->secretKey = 'nte8RCgMKDoffXI4H5uM9ErrsbQASMDfgmPd6W27oJVW7kTLa0ItiAbMZaShXL34';
+        $this->baseUrl = 'https://bpay.binanceapi.com';
     }
     // signature for Binance Pay API
     private function generateSignature($timestamp, $nonce, $body)

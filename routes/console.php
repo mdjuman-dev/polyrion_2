@@ -19,7 +19,8 @@ Schedule::call(function () {
 })
     ->name('store-events')
     ->everyMinute()
-    ->withoutOverlapping(1);
+    ->withoutOverlapping(10) // Increased to 10 minutes to prevent overlapping
+    ->onOneServer(); // Ensure only one server runs this if using multiple servers
 
 // Schedule category detection for events
 // Runs daily at 2 AM to detect/update categories for new events

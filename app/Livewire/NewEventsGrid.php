@@ -9,6 +9,17 @@ class NewEventsGrid extends Component
 {
     public $search = '';
     public $perPage = 20;
+    public $selectedTag = null;
+
+    protected $listeners = [
+        'tag-selected' => 'filterByTag'
+    ];
+
+    public function filterByTag($tagSlug)
+    {
+        $this->selectedTag = $tagSlug;
+        $this->perPage = 20; // Reset pagination when filter changes
+    }
 
     public function loadMore()
     {
@@ -32,6 +43,13 @@ class NewEventsGrid extends Component
         $query = Event::with('markets')
             ->where('active', true)
             ->where('closed', false);
+
+        // Filter by tag if selected
+        if (!empty($this->selectedTag)) {
+            $query->whereHas('tags', function ($q) {
+                $q->where('tags.slug', $this->selectedTag);
+            });
+        }
 
         if (!empty($this->search)) {
             $query->where(function ($q) {

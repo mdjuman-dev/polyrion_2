@@ -94,4 +94,20 @@ class User extends Authenticatable
         return $this->belongsToMany(Event::class, 'saved_events', 'user_id', 'event_id')
             ->withTimestamps();
     }
+
+    /**
+     * Get all trades made by this user
+     */
+    public function trades()
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    /**
+     * Get pending trades
+     */
+    public function pendingTrades()
+    {
+        return $this->hasMany(Trade::class)->where('status', 'pending');
+    }
 }

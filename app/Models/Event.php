@@ -39,7 +39,7 @@ class Event extends Model
 
     public function comments()
     {
-        return $this->hasMany(MarketComment::class);
+        return $this->hasMany(MarketComment::class, 'market_id');
     }
 
     public function savedByUsers()

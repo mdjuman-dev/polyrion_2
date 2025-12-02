@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\FacebookController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\WalletController;
+use App\Http\Controllers\Frontend\TradeController;
 use App\Http\Controllers\Backend\BinancePayController;
 
 // Google Login
@@ -25,6 +26,7 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/new', 'newEvents')->name('new');
     Route::get('/category/{category}', 'eventsByCategory')->name('events.by.category');
     Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
+    Route::get('/api/market/{slug}/price-data', 'getMarketPriceData')->name('api.market.price.data');
     Route::get('/tag/{slug}', 'eventsByTag')->name('events.by.tag');
     Route::get('/saved-events', 'savedEvents')->name('saved.events')->middleware(['auth']);
     Route::get('/profile', 'profile')->name('profile')->middleware(['auth']);
@@ -37,4 +39,12 @@ Route::controller(ProfileController::class)->prefix('profile')->name('profile.')
 // Wallet routes
 Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->middleware(['auth'])->group(function () {
     Route::post('/deposit', 'deposit')->name('deposit');
+});
+
+// Trading routes
+Route::controller(TradeController::class)->prefix('trades')->name('trades.')->middleware(['auth'])->group(function () {
+    Route::post('/market/{marketId}', 'placeTrade')->name('place');
+    Route::get('/my-trades', 'myTrades')->name('my');
+    Route::get('/my-trades-page', 'myTradesPage')->name('my.page'); // View page
+    Route::get('/market/{marketId}', 'marketTrades')->name('market');
 });

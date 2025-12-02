@@ -11,11 +11,18 @@ use Illuminate\Support\Facades\Log;
 
 class WalletController extends Controller
 {
+    public function showPayment()
+    {
+        return view('frontend.payment');
+    }
+
     public function deposit(Request $request)
     {
+        // Simplified validation for fake/test deposits
         $request->validate([
-            'amount' => 'required|numeric|min:10|max:10000',
-            'method' => 'required|string|in:card,bank,crypto',
+            'amount' => 'required|numeric|min:1|max:1000000', // Increased max for testing
+            // Method validation disabled for testing
+            // 'method' => 'required|string|in:card,bank,crypto',
         ]);
 
         try {
@@ -25,12 +32,14 @@ class WalletController extends Controller
 
             $wallet = Wallet::firstOrCreate(
                 ['user_id' => $user->id],
-                ['balance' => 0, 'status' => 'active']
+                ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
             );
 
             $amount = $request->amount;
-            $method = $request->method;
+            // Method default for testing - fake deposit
+            $method = $request->method ?? 'test';
 
+            // Directly add amount to wallet (fake deposit for testing)
             $wallet->balance += $amount;
             $wallet->save();
 

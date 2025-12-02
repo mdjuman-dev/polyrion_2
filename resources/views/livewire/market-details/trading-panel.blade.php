@@ -1,11 +1,11 @@
-<div class="trading-panel" id="tradingPanel">
+<div class="trading-panel" id="tradingPanel" data-market-id="{{ $event->markets->first()->id ?? '' }}">
     <div class="panel-header">
         <div class="market-profile-img">
             <img src="{{ $event->image }}" alt="Profile">
         </div>
         <div class="panel-title-wrapper">
             <div class="panel-title" id="panelOutcomeTitle">
-                {{ $event->markets[0]->question }}</div>
+                {{ $event->markets->first()->question ?? '' }}</div>
         </div>
         <button class="panel-close-btn hide-desktop" id="panelCloseBtn" aria-label="Close">
             <i class="fas fa-times"></i>
@@ -47,6 +47,6 @@
                 <span class="summary-value" id="potentialWin">$0</span>
             </div>
         </div>
-        <button class="trade-btn" id="executeTrade">Bay Yes</button>
+        <button class="trade-btn" id="executeTrade">Buy Yes</button>
     </div>
 </div>

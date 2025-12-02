@@ -104,7 +104,7 @@
             </div>
         @empty
             <div class="no-comments">
-                <p>No comments yet. Be the first to comment!</p>
+                <p>No comments</p>
             </div>
         @endforelse
     </div>

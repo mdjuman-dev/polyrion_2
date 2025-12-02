@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('wallet_id')->constrained()->onDelete('cascade');
-            $table->enum('type', ['deposit', 'withdraw', 'purchase', 'refund', 'bonus', 'commission']);
+            $table->enum('type', ['deposit', 'withdraw', 'purchase', 'refund', 'bonus', 'commission', 'trade']);
             $table->decimal('amount', 12, 2);
             $table->decimal('balance_before', 12, 2);
             $table->decimal('balance_after', 12, 2);

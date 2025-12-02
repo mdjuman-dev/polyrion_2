@@ -107,14 +107,28 @@ class Comments extends Component
 
     public function render()
     {
+        // Frontend: Only show active comments
         $comments = MarketComment::where('market_id', $this->event->id)
             ->whereNull('parent_comment_id')
-            ->with(['user', 'replies.user', 'replies.likes', 'likes'])
+            ->where(function ($q) {
+                $q->where('is_active', true)
+                    ->orWhereNull('is_active'); // For backward compatibility
+            })
+            ->with(['user', 'replies' => function ($replyQuery) {
+                $replyQuery->where(function ($q) {
+                    $q->where('is_active', true)
+                        ->orWhereNull('is_active');
+                })->with('user', 'likes');
+            }, 'replies.likes', 'likes'])
             ->latest()
             ->get();
 
         $commentsCount = MarketComment::where('market_id', $this->event->id)
             ->whereNull('parent_comment_id')
+            ->where(function ($q) {
+                $q->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
             ->count();
 
         return view('livewire.market-details.comments', [

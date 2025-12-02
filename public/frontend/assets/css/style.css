@@ -891,7 +891,7 @@ nav::-webkit-scrollbar {
 
     .nav-content {
         gap: 16px;
-         overflow-x: auto;
+        overflow-x: auto;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -2775,13 +2775,49 @@ input:checked + .toggle-slider:before {
     border-radius: 12px;
     margin-bottom: 1.5rem;
     position: relative;
-    height: 300px;
+    padding: 1.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.chart-price-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chart-price-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chart-price-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.chart-time-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
 }
 
 .chart-controls {
     display: inline-flex;
     gap: 0.5rem;
     justify-content: start;
+    margin-top: 1rem;
+    padding-top: 1rem;
 }
 
 .chart-btn {

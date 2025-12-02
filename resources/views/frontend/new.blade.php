@@ -5,29 +5,6 @@
 @section('content')
     <main>
         <div class="container">
-            <div class="secondary-filters">
-                <div class="filter-top-bar d-lg-flex d-block">
-                    <div class="row align-items-center justify-content-between">
-                        <div class="secondary-search-bar">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" placeholder="Search" class="secondary-search-input" id="newSearchInput">
-                        </div>
-                        <button class="filter-icon-btn mx-2" id="filterToggleBtn"><i class="fas fa-sliders-h"></i></button>
-                        <a href="{{ route('saved.events') }}" class="bookmark-icon-btn" title="Saved Events">
-                            <i class="fas fa-bookmark"></i>
-                        </a>
-                    </div>
-                    <div class="filters-section-wrapper ms-lg-4">
-                        <button class="filter-scroll-btn filter-scroll-left" id="filterScrollLeft">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <livewire:tag-filters />
-                        <button class="filter-scroll-btn filter-scroll-right" id="filterScrollRight">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
             <livewire:new-events-grid />
         </div>
     </main>
@@ -48,8 +25,8 @@
             }
 
             .market-profile-img {
-                width: 48px;
-                height: 48px;
+                width: 40px;
+                height: 40px;
                 border-radius: 8px;
                 overflow: hidden;
             }
@@ -63,7 +40,7 @@
             .market-card-title {
                 color: var(--text-primary);
                 text-decoration: none;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 600;
             }
 

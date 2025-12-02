@@ -1,4 +1,4 @@
-<div class="outcome-section" wire:poll.3s="refreshEvent">
+<div class="outcome-section">
     <div class="outcome-section-header">
         <span class="outcome-label">OUTCOME</span>
         <div class="outcome-chance-header">
@@ -8,7 +8,7 @@
             </button>
         </div>
     </div>
-    @if ($event->markets->count() > 1)
+    @if ($event->markets->count() > 0)
         @foreach ($event->markets as $market)
             @php
                 $prices = json_decode($market->outcome_prices, true);
@@ -21,7 +21,7 @@
                 $changeClass = $percentChange > 0 ? 'text-success' : 'text-danger';
             @endphp
 
-            <div class="outcome-row">
+            <div class="outcome-row" data-market-id="{{ $market->id }}">
                 <div class="d-flex justify-content-between align-items-center w-100">
 
                     <div class="outcome-info">

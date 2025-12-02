@@ -16,6 +16,8 @@
     <!--amcharts -->
     <link href="https://www.amcharts.com/lib/3/plugins/export/export.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
+    <!-- SweetAlert2 -->
+    <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
     <!-- Style-->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/skin_color.css') }}">
@@ -526,6 +528,173 @@
     <script src="{{ asset('backend/assets/js/pages/widget-flot-charts.js') }}"></script>
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
 
+    <script>
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+
+        // Custom Confirmation Function using SweetAlert2
+        function confirmAction(message, callback) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, proceed!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof callback === 'function') {
+                            callback();
+                        } else {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                return false;
+            } else {
+                // Fallback to default confirm if SweetAlert is not available
+                return confirm(message || 'Are you sure?');
+            }
+        }
+
+        // Delete confirmation with toastr notification
+        function confirmDeleteWithToastr(event, commentId, message) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show info toastr before deletion
+                        toastr.info('Deleting...', 'Please wait', {
+                            timeOut: 2000
+                        });
+
+                        // Find the Livewire component and call delete method
+                        const button = event.target.closest('button');
+                        if (button) {
+                            // Find the parent Livewire component
+                            const livewireComponent = button.closest('[wire\\:id]');
+                            if (livewireComponent) {
+                                const wireId = livewireComponent.getAttribute('wire:id');
+                                // Wait for Livewire to be initialized if needed
+                                if (typeof Livewire !== 'undefined' && Livewire.find) {
+                                    const component = Livewire.find(wireId);
+                                    if (component) {
+                                        component.call('delete');
+                                    }
+                                } else {
+                                    // Fallback: wait for Livewire to be ready
+                                    document.addEventListener('livewire:initialized', () => {
+                                        const component = Livewire.find(wireId);
+                                        if (component) {
+                                            component.call('delete');
+                                        }
+                                    }, {
+                                        once: true
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Fallback to native confirm
+                if (confirm(message || 'Are you sure?')) {
+                    toastr.info('Deleting...', 'Please wait', {
+                        timeOut: 2000
+                    });
+                    const button = event.target.closest('button');
+                    if (button) {
+                        const livewireComponent = button.closest('[wire\\:id]');
+                        if (livewireComponent) {
+                            const wireId = livewireComponent.getAttribute('wire:id');
+                            if (typeof Livewire !== 'undefined' && Livewire.find) {
+                                const component = Livewire.find(wireId);
+                                if (component) {
+                                    component.call('delete');
+                                }
+                            } else {
+                                document.addEventListener('livewire:initialized', () => {
+                                    const component = Livewire.find(wireId);
+                                    if (component) {
+                                        component.call('delete');
+                                    }
+                                }, {
+                                    once: true
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Enhanced form submission with confirmation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle all forms with data-confirm attribute
+            document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const message = form.getAttribute('data-confirm');
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: message || 'This action cannot be undone!',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, proceed!',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    } else {
+                        if (confirm(message || 'Are you sure?')) {
+                            form.submit();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 
     <script>
         // Ensure menu links work properly
@@ -548,6 +717,24 @@
             });
         });
 
+        // Handle flash messages with toastr
+        @if (Session::has('success'))
+            toastr.success("{{ Session::get('success') }}");
+        @endif
+
+        @if (Session::has('error'))
+            toastr.error("{{ Session::get('error') }}");
+        @endif
+
+        @if (Session::has('warning'))
+            toastr.warning("{{ Session::get('warning') }}");
+        @endif
+
+        @if (Session::has('info'))
+            toastr.info("{{ Session::get('info') }}");
+        @endif
+
+        // Also support old format with message and alert-type
         @if (Session::has('message'))
             var type = "{{ Session::get('alert-type', 'info') }}"
             switch (type) {
@@ -565,6 +752,38 @@
                     break;
             }
         @endif
+
+        // Listen for Livewire events to show toastr notifications
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('showToastr', (data) => {
+                const type = data[0].type || 'info';
+                const message = data[0].message || 'Operation completed';
+
+                switch (type) {
+                    case 'success':
+                        toastr.success(message);
+                        break;
+                    case 'error':
+                        toastr.error(message);
+                        break;
+                    case 'warning':
+                        toastr.warning(message);
+                        break;
+                    case 'info':
+                    default:
+                        toastr.info(message);
+                        break;
+                }
+            });
+
+            // Handle comment deletion - refresh the page
+            Livewire.on('commentDeleted', (commentId) => {
+                // Reload the page to refresh comments list
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            });
+        });
     </script>
     @stack('scripts')
     @livewireScripts
