@@ -73,7 +73,8 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    // After login / register, redirect user to frontend profile page
+    'home' => '/profile',
 
     /*
     |--------------------------------------------------------------------------

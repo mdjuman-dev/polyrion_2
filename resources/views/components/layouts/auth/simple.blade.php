@@ -1,22 +1,34 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        @include('partials.head')
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>{{ $title ?? config('app.name') }} - {{ config('app.name', 'Polyrion') }}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="{{ asset('frontend/assets/css/bootstrap.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('frontend/assets/css/style.css') }}">
+        <link rel="stylesheet" href="{{ asset('frontend/assets/css/responsive.css') }}">
+        @livewireStyles
+        @fluxAppearance
+        @stack('style')
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
-        <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div class="flex w-full max-w-sm flex-col gap-2">
-                <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
-                    </span>
-                    <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
-                </a>
-                <div class="flex flex-col gap-6">
+    <body class="dark-theme">
+        <div class="auth-page-wrapper">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <a href="{{ route('home') }}" class="auth-logo">
+                        <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+                        <span>Polyrion</span>
+                    </a>
+                </div>
+                <div class="auth-card">
                     {{ $slot }}
                 </div>
             </div>
         </div>
         @fluxScripts
+        @livewireScripts
+        @stack('script')
     </body>
 </html>

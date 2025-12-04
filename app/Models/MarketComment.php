@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class MarketComment extends Model
 {
-    protected $fillable = ['market_id', 'user_id', 'comment_text', 'parent_comment_id'];
+    protected $fillable = ['market_id', 'user_id', 'comment_text', 'parent_comment_id', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function replies()
     {
@@ -28,5 +32,11 @@ class MarketComment extends Model
     public function market()
     {
         return $this->belongsTo(Event::class, 'market_id');
+    }
+
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'comment_likes', 'comment_id', 'user_id')
+            ->withTimestamps();
     }
 }

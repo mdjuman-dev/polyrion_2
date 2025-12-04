@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\Event;
+use App\Models\Tag;
+use Livewire\Component;
+
+class TaggedEventsGrid extends Component
+{
+    public $tagSlug;
+    public $search = '';
+    public $perPage = 20;
+
+    public function mount($tagSlug)
+    {
+        $this->tagSlug = $tagSlug;
+    }
+
+    public function loadMore()
+    {
+        if ($this->perPage < 1000) {
+            $this->perPage += 20;
+        }
+    }
+
+    public function updatingSearch()
+    {
+        $this->perPage = 20;
+    }
+
+    public function refreshEvents()
+    {
+        // This method is called by wire:poll to refresh the events
+        // No action needed as render() will be called automatically
+    }
+
+    public function render()
+    {
+        $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
+
+        $query = Event::whereHas('tags', function ($q) use ($tag) {
+            $q->where('tags.id', $tag->id);
+        })->with('markets');
+
+        if (!empty($this->search)) {
+            $query->where(function ($q) {
+                $q->where('title', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('markets', function ($marketQuery) {
+                        $marketQuery->where('groupItem_title', 'like', '%' . $this->search . '%');
+                    });
+            });
+        }
+
+        $totalCount = $query->count();
+
+        $events = $query->orderBy('volume', 'desc')
+            ->take($this->perPage)
+            ->get();
+
+        $hasMore = $totalCount > $this->perPage;
+
+        return view('livewire.tagged-events-grid', [
+            'events' => $events,
+            'hasMore' => $hasMore,
+            'tag' => $tag
+        ]);
+    }
+}
