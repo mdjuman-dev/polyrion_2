@@ -2783,9 +2783,8 @@ input:checked + .toggle-slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
 }
 
 .chart-price-info {
@@ -2841,18 +2840,90 @@ input:checked + .toggle-slider:before {
     color: var(--text-primary);
 }
 
+/* Chart Legend (Polymarket style) */
+.chart-legend-wrapper {
+    margin-bottom: 1rem;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.chart-legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    border: none;
+    margin: 0;
+}
+
+.chart-legend-text {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 400;
+    white-space: nowrap;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Custom Chart Legend with Icons */
+.chart-legend-custom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 0;
+    margin-bottom: 1rem;
+    justify-content: flex-start;
+    border-bottom: 1px solid var(--border);
+}
+
+.chart-legend-item-custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+    user-select: none;
+}
+
 /* Outcome Section */
 .outcome-section {
     margin-top: 2rem;
     margin-bottom: 2rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 0;
+    overflow: hidden;
 }
 
 .outcome-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 10px 0;
-    margin-top: 50px;
+    margin: 0;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--card-bg);
 }
 
 .outcome-label {
@@ -2895,18 +2966,30 @@ input:checked + .toggle-slider:before {
 
 .outcome-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    /* flex-direction: column; */
+    gap: 12px;
     padding: 16px;
-    background: var(--card-bg);
-    border-radius: 12px;
-    margin-bottom: 12px;
-    transition: all 0.3s ease;
+    background: transparent;
+    border-radius: 0;
+    margin-bottom: 0;
+    transition: all 0.2s ease;
     cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.outcome-row:last-child {
+    border-bottom: none;
 }
 
 .outcome-row:hover {
-    background: var(--secondary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.outcome-row-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
 }
 
 .outcome-row.active,
@@ -2923,16 +3006,31 @@ input:checked + .toggle-slider:before {
     min-width: 0;
 }
 
+.outcome-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.outcome-text {
+    flex: 1;
+    min-width: 0;
+}
+
 .outcome-name {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     color: var(--text-primary);
+    line-height: 1.4;
 }
 
 .outcome-volume {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 400;
 }
 
 .outcome-percent-wrapper {
@@ -2940,23 +3038,25 @@ input:checked + .toggle-slider:before {
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
-    margin-right: 16px;
-    min-width: 80px;
+    min-width: 100px;
+    text-align: right;
 }
 
 .outcome-percent {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.2;
     color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .percent-change {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 2px;
+    line-height: 1;
 }
 
 .percent-change.text-success {
@@ -2969,40 +3069,42 @@ input:checked + .toggle-slider:before {
 
 .outcome-actions {
     display: flex;
-    gap: 0.5rem;
-    width: 40%;
+    gap: 0.75rem;
+    width: 42%;
 }
 
 .btn-yes {
-    background: var(--success);
-    color: var(--text-primary);
+    background: #10b981;
+    color: #ffffff;
     border: none;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
+    padding: 10px 16px;
+    border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.2s;
-    font-size: 0.9rem;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    flex: 1;
 }
 
 .btn-yes:hover {
-    opacity: 0.9;
+    background: #059669;
 }
 
 .btn-no {
-    background: var(--danger);
-    color: white;
+    background: #ef4444;
+    color: #ffffff;
     border: none;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
+    padding: 10px 16px;
+    border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.2s;
-    font-size: 0.9rem;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    flex: 1;
 }
 
 .btn-no:hover {
-    opacity: 0.9;
+    background: #dc2626;
 }
 
 /* Market Info Section */
@@ -4457,7 +4559,7 @@ input:checked + .toggle-slider:before {
 /* Profit/Loss Card */
 .profit-loss-card {
     width: 476px;
-    height: 211px;
+    /* height: 211px; */
     background: var(--card-bg);
     border-radius: 16px;
     padding: 0;
@@ -4758,6 +4860,14 @@ input:checked + .toggle-slider:before {
 .positions-table,
 .activity-table {
     width: 100%;
+}
+
+.position-row {
+    transition: background-color 0.2s ease;
+}
+
+.position-row:hover {
+    background-color: var(--hover) !important;
 }
 
 .table-header {
@@ -6570,16 +6680,6 @@ input:checked + .toggle-slider:before {
         margin-left: 5px;
     }
 
-    .profile-card,
-    .profit-loss-card {
-        height: 211px;
-        width: 100%;
-    }
-
-    .profit-loss-card {
-        height: 211px;
-    }
-
     .container.align-items-center {
         max-width: 1400px;
         margin: 0 auto;
@@ -6817,7 +6917,7 @@ input:checked + .toggle-slider:before {
     padding: 0;
     border: 1px solid var(--border);
     margin: 0;
-    height: 211px;
+    /* height: 211px; */
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -6941,7 +7041,7 @@ input:checked + .toggle-slider:before {
 /* Positions/Activity Card */
 .positions-activity-card {
     width: 100%;
-    height: 300px;
+    /* height: 300px; */
     background: var(--card-bg);
     border-radius: 16px;
     padding: 24px;

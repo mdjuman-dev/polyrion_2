@@ -27,6 +27,8 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/category/{category}', 'eventsByCategory')->name('events.by.category');
     Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
     Route::get('/api/market/{slug}/price-data', 'getMarketPriceData')->name('api.market.price.data');
+    Route::get('/api/market/{slug}/history-data', 'getMarketHistoryData')->name('api.market.history.data');
+    Route::get('/api/event/{eventId}/comments', 'fetchEventComments')->name('api.event.comments');
     Route::get('/tag/{slug}', 'eventsByTag')->name('events.by.tag');
     Route::get('/saved-events', 'savedEvents')->name('saved.events')->middleware(['auth']);
     Route::get('/profile', 'profile')->name('profile')->middleware(['auth']);
@@ -47,4 +49,10 @@ Route::controller(TradeController::class)->prefix('trades')->name('trades.')->mi
     Route::get('/my-trades', 'myTrades')->name('my');
     Route::get('/my-trades-page', 'myTradesPage')->name('my.page'); // View page
     Route::get('/market/{marketId}', 'marketTrades')->name('market');
+});
+
+// Market trading routes (Polymarket-style)
+Route::controller(\App\Http\Controllers\Frontend\MarketController::class)->prefix('market')->name('market.')->middleware(['auth'])->group(function () {
+    Route::post('/{marketId}/buy', 'buy')->name('buy');
+    Route::post('/{marketId}/settle', 'settleMarket')->name('settle');
 });

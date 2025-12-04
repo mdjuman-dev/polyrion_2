@@ -131,31 +131,31 @@
                             </div>
 
                             @if ($trades->count() > 0)
-                                <div class="positions-table-container" style="padding: 0; overflow-x: auto;">
-                                    <table class="positions-table"
-                                        style="width: 100%; border-collapse: collapse; min-width: 1000px;">
+                                <div class="positions-table-container" style="padding: 0;">
+                                    <table class="positions-table" style="width: 100%; border-collapse: collapse;">
                                         <thead>
-                                            <tr style="border-bottom: 1px solid var(--border);">
+                                            <tr
+                                                style="border-bottom: 1px solid var(--border); background: var(--bg-secondary);">
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     MARKET</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: center; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: center; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     OPTION</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     AVG</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     CURRENT</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     VALUE</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     P/L</th>
                                                 <th
-                                                    style="padding: 0.75rem 1rem; text-align: center; color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                                                    style="padding: 1rem; text-align: center; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     STATUS</th>
                                             </tr>
                                         </thead>
@@ -223,23 +223,26 @@
                                                                 : 0;
                                                     }
                                                 @endphp
-                                                <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;"
+                                                <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; cursor: pointer;"
                                                     class="position-row"
                                                     data-subtab="{{ $trade->status === 'pending' && $isActive ? 'active' : 'closed' }}"
-                                                    data-market="{{ strtolower($position['market']->question ?? '') }}"
-                                                    data-value="{{ $currentValue }}" data-profit="{{ $profitLoss }}"
-                                                    data-profit_pct="{{ $profitLossPct }}"
-                                                    data-bet="{{ $trade->amount }}" data-avg_price="{{ $avgPrice }}"
-                                                    data-current_price="{{ $currentPrice }}">
-                                                    <td style="padding: 0.75rem 1rem; color: var(--text-primary);">
+                                                    data-market="{{ strtolower($position['market']->question ?? '') }}">
+                                                    <td style="padding: 1rem; color: var(--text-primary);">
                                                         <div
-                                                            style="font-weight: 500; font-size: 0.9rem; max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;">
+                                                            style="font-weight: 500; font-size: 0.95rem; max-width: 450px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;">
                                                             {{ $position['market']->question ?? 'N/A' }}
                                                         </div>
+                                                        @if ($position && $position['close_time'])
+                                                            <div
+                                                                style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.3rem; line-height: 1.4;">
+                                                                <i class="fas fa-clock"></i> Closes
+                                                                {{ $position['close_time']->diffForHumans() }}
+                                                            </div>
+                                                        @endif
                                                     </td>
-                                                    <td style="padding: 0.75rem 1rem; text-align: center;">
+                                                    <td style="padding: 1rem; text-align: center;">
                                                         <span
-                                                            style="display: inline-block; padding: 0.3rem 0.7rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; 
+                                                            style="display: inline-block; padding: 0.35rem 0.75rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem; 
                                                     background: {{ $trade->option === 'yes' ? '#10b98120' : '#ef444420' }};
                                                     color: {{ $trade->option === 'yes' ? '#10b981' : '#ef4444' }};
                                                     border: 1px solid {{ $trade->option === 'yes' ? '#10b98140' : '#ef444440' }};
@@ -248,61 +251,56 @@
                                                         </span>
                                                     </td>
                                                     <td
-                                                        style="padding: 0.75rem 1rem; text-align: right; color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">
+                                                        style="padding: 1rem; text-align: right; color: var(--text-primary); font-weight: 500; font-size: 0.95rem; line-height: 1.4;">
                                                         {{ number_format($avgPrice * 100, 2) }}¢
                                                     </td>
                                                     <td
-                                                        style="padding: 0.75rem 1rem; text-align: right; color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">
+                                                        style="padding: 1rem; text-align: right; color: var(--text-primary); font-weight: 500; font-size: 0.95rem; line-height: 1.4;">
                                                         {{ number_format($currentPrice * 100, 2) }}¢
                                                     </td>
                                                     <td
-                                                        style="padding: 0.75rem 1rem; text-align: right; color: var(--text-primary); font-weight: 600; font-size: 0.9rem;">
+                                                        style="padding: 1rem; text-align: right; color: var(--text-primary); font-weight: 600; font-size: 0.95rem; line-height: 1.4;">
                                                         ${{ number_format($currentValue, 2) }}
                                                     </td>
-                                                    <td style="padding: 0.75rem 1rem; text-align: right;">
+                                                    <td style="padding: 1rem; text-align: right;">
                                                         <div
-                                                            style="font-weight: 600; font-size: 0.9rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; line-height: 1.3;">
+                                                            style="font-weight: 600; font-size: 0.95rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; line-height: 1.4;">
                                                             {{ $profitLoss >= 0 ? '+' : '' }}${{ number_format($profitLoss, 2) }}
                                                         </div>
                                                         <div
-                                                            style="font-size: 0.8rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; margin-top: 0.1rem; line-height: 1.3;">
+                                                            style="font-size: 0.85rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; margin-top: 0.2rem; line-height: 1.4;">
                                                             {{ $profitLoss >= 0 ? '+' : '' }}{{ number_format($profitLossPct, 2) }}%
                                                         </div>
                                                     </td>
-                                                    <td style="padding: 0.75rem 1rem; text-align: center;">
+                                                    <td style="padding: 1rem; text-align: center;">
                                                         @if ($isActive)
                                                             <span
-                                                                style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; background: #10b98120; color: #10b981;">
-                                                                <i class="fas fa-circle"
-                                                                    style="font-size: 0.35rem; margin-right: 0.35rem; color: #10b981;"></i>
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
+                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Open
                                                             </span>
                                                         @elseif($isClosed)
                                                             <span
-                                                                style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; background: #f59e0b20; color: #f59e0b;">
-                                                                <i class="fas fa-clock"
-                                                                    style="font-size: 0.45rem; margin-right: 0.35rem;"></i>
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #f59e0b;">
+                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Closed
                                                             </span>
                                                         @elseif($trade->status === 'win')
                                                             <span
-                                                                style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; background: #10b98120; color: #10b981;">
-                                                                <i class="fas fa-trophy"
-                                                                    style="font-size: 0.45rem; margin-right: 0.35rem;"></i>
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
+                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Win
                                                             </span>
                                                         @elseif($trade->status === 'loss')
                                                             <span
-                                                                style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; background: #ef444420; color: #ef4444;">
-                                                                <i class="fas fa-times"
-                                                                    style="font-size: 0.45rem; margin-right: 0.35rem;"></i>
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #ef4444;">
+                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Loss
                                                             </span>
                                                         @else
                                                             <span
-                                                                style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; background: #6366f120; color: #6366f1;">
-                                                                <i class="fas fa-hourglass-half"
-                                                                    style="font-size: 0.45rem; margin-right: 0.35rem;"></i>
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #6366f1;">
+                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Pending
                                                             </span>
                                                         @endif
@@ -315,7 +313,7 @@
                             @else
                                 <div class="no-positions-message" style="padding: 3rem; text-align: center;">
                                     <p style="color: var(--text-secondary); font-size: 1rem;">No positions found</p>
-                                </div>
+                            </div>
                             @endif
                         </div>
 
@@ -388,40 +386,21 @@
                 // Filter dropdown
                 $('#sortFilterBtn').on('click', function(e) {
                     e.stopPropagation();
-                    $('.filter-dropdown-wrapper').not($(this).closest('.filter-dropdown-wrapper')).removeClass(
-                        'active');
-                    $(this).closest('.filter-dropdown-wrapper').toggleClass('active');
+                    $('#sortFilterMenu').toggle();
                 });
 
-                $(document).on('click', function(e) {
-                    if (!$(e.target).closest('.filter-dropdown-wrapper').length) {
-                        $('.filter-dropdown-wrapper').removeClass('active');
-                    }
+                $(document).on('click', function() {
+                    $('#sortFilterMenu').hide();
                 });
 
-                $('.filter-dropdown-item[data-sort]').on('click', function(e) {
+                $('.filter-dropdown-item').on('click', function(e) {
                     e.preventDefault();
-                    $('.filter-dropdown-item[data-sort]').removeClass('active');
+                    $('.filter-dropdown-item').removeClass('active');
                     $(this).addClass('active');
                     const sort = $(this).data('sort');
                     $('#sortFilterBtn span').text($(this).text());
-                    $(this).closest('.filter-dropdown-wrapper').removeClass('active');
-
-                    // Sort positions
-                    const $rows = $('.position-row').toArray();
-                    $rows.sort(function(a, b) {
-                        if (sort === 'alphabetical') {
-                            const aText = ($(a).data('market') || '').toLowerCase();
-                            const bText = ($(b).data('market') || '').toLowerCase();
-                            return aText.localeCompare(bText);
-                        }
-
-                        const aVal = parseFloat($(a).data(sort)) || 0;
-                        const bVal = parseFloat($(b).data(sort)) || 0;
-                        return bVal - aVal; // Descending order
-                    });
-
-                    $('.positions-table tbody').empty().append($rows);
+                    $('#sortFilterMenu').hide();
+                    // TODO: Sort positions
                 });
 
                 // Amount filter dropdown
@@ -468,41 +447,5 @@
                 $('#profitLossAmount').text('$0.00');
             }
         </script>
-
-        <style>
-            /* Positions Table Styling - Matching Image Design */
-            .positions-table tbody tr {
-                transition: background-color 0.2s ease;
-            }
-
-            .positions-table tbody tr:hover {
-                background-color: var(--bg-secondary);
-            }
-
-            .positions-table-container {
-                max-height: 600px;
-                overflow-y: auto;
-            }
-
-            /* Custom scrollbar for table */
-            .positions-table-container::-webkit-scrollbar {
-                width: 6px;
-                height: 6px;
-            }
-
-            .positions-table-container::-webkit-scrollbar-track {
-                background: var(--bg-secondary);
-                border-radius: 3px;
-            }
-
-            .positions-table-container::-webkit-scrollbar-thumb {
-                background: var(--border);
-                border-radius: 3px;
-            }
-
-            .positions-table-container::-webkit-scrollbar-thumb:hover {
-                background: var(--text-secondary);
-            }
-        </style>
     @endpush
 @endsection

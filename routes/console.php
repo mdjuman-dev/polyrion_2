@@ -10,13 +10,10 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 
-// Schedule the storeEvents method to run every minute
+// Schedule the storeEvents command to run every minute
 // The method is optimized to complete within 25 seconds, so it will update frequently
 // For true 30-second intervals, you would need a custom daemon or queue-based solution
-Schedule::call(function () {
-    $controller = new MarketController();
-    $controller->storeEvents();
-})
+Schedule::command('events:store')
     ->name('store-events')
     ->everyMinute()
     ->withoutOverlapping(10) // Increased to 10 minutes to prevent overlapping

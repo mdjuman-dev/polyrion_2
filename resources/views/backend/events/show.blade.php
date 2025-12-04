@@ -4,12 +4,39 @@
     <div class="content-wrapper">
         <div class="container-full">
             <section class="content">
+                <!-- Success Message -->
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fa fa-check-circle"></i> {{ session('success') }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                @endif
+
                 <!-- Back Button -->
                 <div class="row mb-3">
                     <div class="col-12">
-                        <a href="{{ route('admin.events.index') }}" class="btn btn-secondary">
-                            <i class="fa fa-arrow-left"></i> Back to Events
-                        </a>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ route('admin.events.index') }}" class="btn btn-secondary">
+                                <i class="fa fa-arrow-left"></i> Back to Events
+                            </a>
+                            <div>
+                                @if ($event->markets->count() == 0)
+                                    <a href="{{ route('admin.events.add-markets', $event) }}"
+                                        class="btn btn-success btn-lg">
+                                        <i class="fa fa-plus-circle"></i> Add Markets to Event
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.events.add-markets', $event) }}" class="btn btn-primary">
+                                        <i class="fa fa-plus-circle"></i> Add More Markets
+                                    </a>
+                                @endif
+                                <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-info">
+                                    <i class="fa fa-edit"></i> Edit Event
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -36,7 +63,15 @@
                                                 <span class="badge badge-info">New</span>
                                             @endif
                                             @if ($event->category)
-                                                <span class="badge badge-primary">{{ ucfirst($event->category) }}</span>
+                                                <span class="badge badge-primary"
+                                                    style="font-size: 12px; padding: 6px 12px; font-weight: 600;">
+                                                    <i class="fa fa-tag"></i> {{ ucfirst($event->category) }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-secondary"
+                                                    style="font-size: 12px; padding: 6px 12px;">
+                                                    <i class="fa fa-tag"></i> Uncategorized
+                                                </span>
                                             @endif
                                         </div>
                                     </div>
@@ -47,6 +82,21 @@
                                     <i class="fa fa-calendar"></i>
                                     {{ $event->title }}
                                 </h1>
+
+                                <!-- Category Display (Prominent) -->
+                                <div class="mb-3">
+                                    @if ($event->category)
+                                        <span class="badge badge-primary"
+                                            style="font-size: 14px; padding: 8px 16px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px;">
+                                            <i class="fa fa-tag"></i> Category: {{ ucfirst($event->category) }}
+                                        </span>
+                                    @else
+                                        <span class="badge badge-secondary"
+                                            style="font-size: 14px; padding: 8px 16px; border-radius: 20px;">
+                                            <i class="fa fa-tag"></i> Uncategorized
+                                        </span>
+                                    @endif
+                                </div>
 
                                 <!-- Event Description -->
                                 @if ($event->description)
@@ -259,6 +309,23 @@
 
                     <!-- Sidebar -->
                     <div class="col-lg-4">
+                        <!-- No Markets Alert -->
+                        @if ($event->markets->count() == 0)
+                            <div class="box mb-3"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                <div class="box-body text-center py-4">
+                                    <i class="fa fa-chart-line fa-3x text-white mb-3"></i>
+                                    <h4 class="text-white mb-2">No Markets Added Yet</h4>
+                                    <p class="text-white mb-3">This event doesn't have any markets. Add markets to enable
+                                        trading.</p>
+                                    <a href="{{ route('admin.events.add-markets', $event) }}"
+                                        class="btn btn-light btn-lg">
+                                        <i class="fa fa-plus-circle"></i> Add Markets Now
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Markets Card -->
                         @if ($event->markets->count() > 0)
                             <div class="box sidebar-card">

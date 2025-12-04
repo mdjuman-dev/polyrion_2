@@ -6,6 +6,25 @@
             <section class="content">
                 <div class="row">
                     <div class="col-12">
+                        <!-- Action Header -->
+                        <div class="box mb-3">
+                            <div class="box-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h4 class="mb-0">
+                                        <i class="fa fa-calendar"></i> Events Management
+                                    </h4>
+                                    <div class="btn-group">
+                                        <a href="{{ route('admin.events.create-with-markets') }}" class="btn btn-success">
+                                            <i class="fa fa-plus-circle"></i> Create Event with Markets
+                                        </a>
+                                        <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
+                                            <i class="fa fa-plus"></i> Create Event Only
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Search and Filter Section -->
                         <div class="box search-filter-box">
                             <div class="box-body">
@@ -16,8 +35,7 @@
                                                 <label class="form-label">
                                                     <i class="fa fa-search"></i> Search Events
                                                 </label>
-                                                <x-backend.search-box 
-                                                    name="search"
+                                                <x-backend.search-box name="search"
                                                     placeholder="Search by title, description, category or slug..."
                                                     value="{{ request('search') }}" />
                                             </div>
@@ -27,20 +45,16 @@
                                                 <label class="form-label">
                                                     <i class="fa fa-filter"></i> Category
                                                 </label>
-                                                <x-backend.filter-dropdown 
-                                                    name="category"
-                                                    label=""
-                                                    :options="array_combine($categories, array_map('ucfirst', $categories))"
-                                                    allText="All Categories"
-                                                    :currentValue="request('category')" />
+                                                <x-backend.filter-dropdown name="category" label="" :options="array_combine(
+                                                    $categories,
+                                                    array_map('ucfirst', $categories),
+                                                )"
+                                                    allText="All Categories" :currentValue="request('category')" />
                                             </div>
                                         </div>
                                         <div class="col-md-4 mt-2">
                                             <div class="form-group mb-0">
-                                                <x-backend.form-button 
-                                                    type="submit"
-                                                    variant="primary"
-                                                    size="sm"
+                                                <x-backend.form-button type="submit" variant="primary" size="sm"
                                                     icon="search">
                                                     Search
                                                 </x-backend.form-button>
@@ -109,6 +123,19 @@
 
                                         <!-- Card Body -->
                                         <div class="event-card-body">
+                                            <!-- Category Badge (Prominent) -->
+                                            @if ($event->category)
+                                                <div class="event-category-badge mb-2">
+                                                    <i class="fa fa-tag"></i>
+                                                    <span class="category-name">{{ ucfirst($event->category) }}</span>
+                                                </div>
+                                            @else
+                                                <div class="event-category-badge mb-2 text-muted">
+                                                    <i class="fa fa-tag"></i>
+                                                    <span class="category-name">Uncategorized</span>
+                                                </div>
+                                            @endif
+
                                             <h4 class="event-title">
                                                 <i class="fa fa-calendar"></i>
                                                 {{ Str::limit($event->title, 60) }}
@@ -143,10 +170,18 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Markets Count -->
-                                            <div class="markets-count">
-                                                <i class="fa fa-list"></i>
-                                                <span>{{ $event->markets->count() }} Markets</span>
+                                            <!-- Category and Markets Info -->
+                                            <div class="event-info-row">
+                                                @if ($event->category)
+                                                    <div class="info-item category-info">
+                                                        <i class="fa fa-tag"></i>
+                                                        <span>{{ ucfirst($event->category) }}</span>
+                                                    </div>
+                                                @endif
+                                                <div class="markets-count">
+                                                    <i class="fa fa-list"></i>
+                                                    <span>{{ $event->markets->count() }} Markets</span>
+                                                </div>
                                             </div>
 
                                             <!-- Dates -->
@@ -175,6 +210,10 @@
                                                     class="btn btn-sm btn-info">
                                                     <i class="fa fa-eye"></i> View
                                                 </a>
+                                                <a href="{{ route('admin.events.add-markets', $event->id) }}"
+                                                    class="btn btn-sm btn-success">
+                                                    <i class="fa fa-plus-circle"></i> Add Markets
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -196,12 +235,17 @@
                                             </p>
                                             <div class="mt-3">
                                                 @if (request('search') || (request('category') && request('category') != 'all'))
-                                                    <a href="{{ route('admin.events.index') }}" class="btn btn-secondary">
+                                                    <a href="{{ route('admin.events.index') }}"
+                                                        class="btn btn-secondary">
                                                         <i class="fa fa-refresh"></i> Clear Filters
                                                     </a>
                                                 @else
+                                                    <a href="{{ route('admin.events.create-with-markets') }}"
+                                                        class="btn btn-success">
+                                                        <i class="fa fa-plus-circle"></i> Create Event with Markets
+                                                    </a>
                                                     <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
-                                                        <i class="fa fa-plus"></i> Add New Event
+                                                        <i class="fa fa-plus"></i> Create Event Only
                                                     </a>
                                                     <a href="{{ route('admin.event.fetch') }}" class="btn btn-info">
                                                         <i class="fa fa-download"></i> Fetch Events
@@ -476,6 +520,42 @@
                 flex-direction: column;
             }
 
+            /* Category Badge */
+            .event-category-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 14px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #ffffff;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                transition: all 0.3s ease;
+                margin-bottom: 12px;
+            }
+
+            .event-category-badge:hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .event-category-badge i {
+                font-size: 11px;
+            }
+
+            .event-category-badge .category-name {
+                font-weight: 700;
+            }
+
+            .event-category-badge.text-muted {
+                background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+                box-shadow: 0 2px 8px rgba(149, 165, 166, 0.2);
+            }
+
             .event-title {
                 font-size: 18px;
                 font-weight: 700;
@@ -572,12 +652,39 @@
                 text-overflow: ellipsis;
             }
 
+            /* Event Info Row */
+            .event-info-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+            }
+
+            .category-info {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #ffffff;
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+            }
+
+            .category-info i {
+                font-size: 11px;
+            }
+
             /* Markets Count */
             .markets-count {
                 background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
                 padding: 10px 15px;
                 border-radius: 8px;
-                margin-bottom: 15px;
                 display: flex;
                 align-items: center;
                 gap: 8px;

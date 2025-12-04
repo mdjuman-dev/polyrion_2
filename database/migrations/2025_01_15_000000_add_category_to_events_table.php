@@ -11,10 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->string('category', 50)->nullable()->after('title');
-            $table->index('category'); // Add index for faster category-based queries
-        });
+        // Check if events table exists before trying to alter it
+        if (Schema::hasTable('events')) {
+            Schema::table('events', function (Blueprint $table) {
+                // Check if category column doesn't exist before adding
+                if (!Schema::hasColumn('events', 'category')) {
+                    $table->string('category', 50)->nullable()->after('title');
+                    $table->index('category'); // Add index for faster category-based queries
+                }
+            });
+        }
     }
 
     /**
@@ -22,10 +28,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->dropIndex(['category']);
-            $table->dropColumn('category');
-        });
+        if (Schema::hasTable('events') && Schema::hasColumn('events', 'category')) {
+            Schema::table('events', function (Blueprint $table) {
+                $table->dropIndex(['category']);
+                $table->dropColumn('category');
+            });
+        }
     }
 };
-

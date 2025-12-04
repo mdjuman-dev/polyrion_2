@@ -9,37 +9,58 @@
         </div>
     </div>
     @if ($event->markets->count() > 0)
-        @foreach ($event->markets as $market)
+        @foreach ($event->markets as $index => $market)
             @php
                 $prices = json_decode($market->outcome_prices, true);
-                $yesProb = isset($prices[0]) ? round($prices[0] * 100) : 0;
-                $noProb = isset($prices[1]) ? round($prices[1] * 100) : 0;
+                $yesPrice = isset($prices[0]) ? floatval($prices[0]) : 0;
+                $noPrice = isset($prices[1]) ? floatval($prices[1]) : 0;
+                $yesProb = round($yesPrice * 100, 1);
+                $noProb = round($noPrice * 100, 1);
 
-                // যদি percent change না থাকে, always 0%
-                $percentChange = 0;
-                $arrow = $percentChange > 0 ? '▲' : '▼';
-                $changeClass = $percentChange > 0 ? 'text-success' : 'text-danger';
+                // Format prices in cents (Polymarket style)
+                $yesPriceCents = number_format($yesPrice * 100, 1);
+                $noPriceCents = number_format($noPrice * 100, 1);
+
+                // Format percentage display
+                $yesProbDisplay = $yesProb < 1 ? '<1%' : ($yesProb >= 99 ? '>99%' : $yesProb . '%');
+                $noProbDisplay = $noProb < 1 ? '<1%' : ($noProb >= 99 ? '>99%' : $noProb . '%');
+
+                // Get price change from database (one_day_price_change)
+                $priceChange = $market->one_day_price_change ?? 0;
+                $percentChange = round(abs($priceChange) * 100, 1);
+                $arrow = $priceChange > 0 ? '▲' : ($priceChange < 0 ? '▼' : '');
+                $changeClass = $priceChange > 0 ? 'text-success' : ($priceChange < 0 ? 'text-danger' : '');
+                $isFirst = $index === 0;
             @endphp
 
-            <div class="outcome-row" data-market-id="{{ $market->id }}">
-                <div class="d-flex justify-content-between align-items-center w-100">
-
+            <div class="outcome-row {{ $isFirst ? 'first-market' : '' }}" data-market-id="{{ $market->id }}">
+                <div class="outcome-row-content">
                     <div class="outcome-info">
+                        <div class="d-flex align-items-center gap-3">
+                            @if ($market->icon)
+                                <img src="{{ $market->icon }}" alt="{{ $market->question }}" class="outcome-icon"
+                                    onerror="this.style.display='none'">
+                            @endif
+                            <div class="outcome-text">
                         <div class="outcome-name">{{ $market->question }}</div>
                         <div class="outcome-volume">${{ formatVolume($market->volume) }} Vol.</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="outcome-percent-wrapper">
-                        <span class="outcome-percent">{{ $yesProb }}%</span>
+                        <span class="outcome-percent">{{ $yesProbDisplay }}</span>
+                        @if ($priceChange != 0 && $percentChange > 0)
                         <span class="percent-change {{ $changeClass }}">
                             {{ $arrow }}{{ $percentChange }}%
                         </span>
+                        @endif
                     </div>
                 </div>
 
                 <div class="outcome-actions">
-                    <button class="btn-yes">Buy Yes {{ $yesProb }}$</button>
-                    <button class="btn-no">Buy No {{ $noProb }}$</button>
+                    <button class="btn-yes">Buy Yes {{ $yesPriceCents }}¢</button>
+                    <button class="btn-no">Buy No {{ $noPriceCents }}¢</button>
                 </div>
             </div>
         @endforeach

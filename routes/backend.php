@@ -32,7 +32,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::get('/market/edit/{id}', 'edit')->name('market.edit');
             Route::put('/market/update/{id}', 'update')->name('market.update');
             Route::delete('/market/delete/{id}', 'delete')->name('market.delete');
-            
+
             // Trading management
             Route::post('/market/{id}/set-result', 'setResult')->name('market.set-result');
             Route::post('/market/{id}/settle-trades', 'settleTrades')->name('market.settle-trades');
@@ -44,11 +44,15 @@ Route::prefix('/admin')->name('admin.')->group(function () {
         Route::controller(EventController::class)->group(function () {
             Route::get('/events', 'index')->name('events.index');
             Route::get('/events/create', 'create')->name('events.create');
+            Route::get('/events/create-with-markets', 'createWithMarkets')->name('events.create-with-markets');
             Route::post('/events', 'store')->name('events.store');
+            Route::post('/events/with-markets', 'storeWithMarkets')->name('events.store-with-markets');
             Route::get('/events/{event}', 'show')->name('events.show');
             Route::get('/events/{event}/edit', 'edit')->name('events.edit');
             Route::put('/events/{event}', 'update')->name('events.update');
             Route::delete('/events/{event}', 'destroy')->name('events.destroy');
+            Route::get('/events/{event}/add-markets', 'addMarkets')->name('events.add-markets');
+            Route::post('/events/{event}/markets', 'storeMarkets')->name('events.store-markets');
         });
 
         // Comment Management Routes

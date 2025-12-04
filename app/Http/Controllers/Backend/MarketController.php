@@ -143,6 +143,8 @@ class MarketController extends Controller
                         ['slug' => $ev['slug']],
                         [
                             'slug' => $ev['slug'],
+                            'ticker' => $ev['ticker'] ?? null,
+                            'polymarket_event_id' => $ev['id'] ?? null,
                             'title' => $ev['title'] ?? null,
                             'description' => $ev['description'] ?? null,
                             'image' => $ev['image'] ?? null,
@@ -156,6 +158,9 @@ class MarketController extends Controller
                             'volume_1yr' => $ev['volume1yr'] ?? null,
 
                             'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                            'competitive' => isset($ev['competitive']) ? floatval($ev['competitive']) : null,
+                            'comment_count' => $ev['commentCount'] ?? 0,
+
                             'active' => $ev['active'] ?? null,
                             'closed' => $ev['closed'] ?? null,
                             'archived' => $ev['archived'] ?? null,
@@ -174,21 +179,38 @@ class MarketController extends Controller
                             [
                                 'event_id' => $event->id,
                                 'question' => $mk['question'] ?? null,
+                                'condition_id' => $mk['conditionId'] ?? null,
                                 'groupItem_title' => $mk['groupItemTitle'] ?? null,
+                                'group_item_threshold' => $mk['groupItemThreshold'] ?? null,
                                 'description' => $mk['description'] ?? null,
                                 'resolution_source' => $mk['resolutionSource'] ?? null,
                                 'image' => $mk['image'] ?? null,
                                 'icon' => $mk['icon'] ?? null,
 
-                                'liquidity_clob' => $mk['liquidityClob'] ?? null,
-                                'volume' => $mk['volume'] ?? null,
-                                'volume24hr' => $mk['volume24hr'] ?? null,
-                                'volume1wk' => $mk['volume1wk'] ?? null,
-                                'volume1mo' => $mk['volume1mo'] ?? null,
-                                'volume1yr' => $mk['volume1yr'] ?? null,
+                                'liquidity_clob' => $mk['liquidityClob'] ?? $mk['liquidityNum'] ?? null,
+                                'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
+                                'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
+                                'volume1wk' => $mk['volume1wk'] ?? $mk['volume1wkClob'] ?? null,
+                                'volume1mo' => $mk['volume1mo'] ?? $mk['volume1moClob'] ?? null,
+                                'volume1yr' => $mk['volume1yr'] ?? $mk['volume1yrClob'] ?? null,
 
                                 'outcome_prices' => $mk['outcomePrices'] ?? null,
                                 'outcomes' => $mk['outcomes'] ?? null,
+
+                                // Trading prices
+                                'best_bid' => isset($mk['bestBid']) ? floatval($mk['bestBid']) : null,
+                                'best_ask' => isset($mk['bestAsk']) ? floatval($mk['bestAsk']) : null,
+                                'last_trade_price' => isset($mk['lastTradePrice']) ? floatval($mk['lastTradePrice']) : null,
+                                'spread' => isset($mk['spread']) ? floatval($mk['spread']) : null,
+
+                                // Price changes
+                                'one_day_price_change' => isset($mk['oneDayPriceChange']) ? floatval($mk['oneDayPriceChange']) : null,
+                                'one_week_price_change' => isset($mk['oneWeekPriceChange']) ? floatval($mk['oneWeekPriceChange']) : null,
+                                'one_month_price_change' => isset($mk['oneMonthPriceChange']) ? floatval($mk['oneMonthPriceChange']) : null,
+
+                                // Chart and display
+                                'series_color' => $mk['seriesColor'] ?? null,
+                                'competitive' => isset($mk['competitive']) ? floatval($mk['competitive']) : null,
 
                                 'active' => $mk['active'] ?? null,
                                 'closed' => $mk['closed'] ?? null,
@@ -282,7 +304,6 @@ class MarketController extends Controller
                 'message' => 'Market result set and trades settled successfully',
                 'settlement' => $settlementResult,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to set market result', [
                 'market_id' => $id,
@@ -319,7 +340,6 @@ class MarketController extends Controller
                 'message' => 'Trades settled successfully',
                 'settlement' => $result,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to settle trades', [
                 'market_id' => $id,

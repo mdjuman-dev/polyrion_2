@@ -20,6 +20,7 @@ class Event extends Model
         'volume_1mo' => 'float',
         'volume_1yr' => 'float',
         'liquidity_clob' => 'float',
+        'competitive' => 'float',
         'active' => 'boolean',
         'closed' => 'boolean',
         'archived' => 'boolean',
@@ -38,6 +39,11 @@ class Event extends Model
     }
 
     public function comments()
+    {
+        return $this->hasMany(EventComment::class);
+    }
+
+    public function marketComments()
     {
         return $this->hasMany(MarketComment::class, 'market_id');
     }

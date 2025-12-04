@@ -420,14 +420,14 @@
 
                 {{-- <div class="deposit-quick-amounts">
                     <button type="bu    " class="quick-amount-btn" data-amount="10">$10</button>
-                    <button class="quick-amount-btn" data-amount="50">$50</button>
-                    <button class="quick-amount-btn" data-amount="100">$100</button>
-                    <button class="quick-amount-btn" data-amount="500">$500</button>
+                        <button class="quick-amount-btn" data-amount="50">$50</button>
+                        <button class="quick-amount-btn" data-amount="100">$100</button>
+                        <button class="quick-amount-btn" data-amount="500">$500</button>
                 </div> --}}
 
                 {{-- <div class="deposit-method-section">
-                    <label class="deposit-method-label">Payment Method</label>
-                    <div class="deposit-methods">
+                        <label class="deposit-method-label">Payment Method</label>
+                        <div class="deposit-methods">
                         <!-- Binance Pay - Temporarily disabled for testing -->
                         <!-- <button type="button" class="deposit-method-btn active" data-method="binancepay">
                                 <i class="fas fa-coins"></i>
@@ -435,35 +435,35 @@
                             </button> -->
 
                         <button type="button" class="deposit-method-btn active" data-method="manual">
-                            <i class="fas fa-keyboard"></i>
-                            <span>Manual Payment</span>
-                        </button>
+                                <i class="fas fa-keyboard"></i>
+                                <span>Manual Payment</span>
+                            </button>
 
-                        <button type="button" class="deposit-method-btn" data-method="metamask">
-                            <i class="fas fa-mask"></i>
-                            <span>MetaMask</span>
-                        </button>
+                            <button type="button" class="deposit-method-btn" data-method="metamask">
+                                <i class="fas fa-mask"></i>
+                                <span>MetaMask</span>
+                            </button>
 
-                        <button type="button" class="deposit-method-btn" data-method="trustwallet">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Trust Wallet</span>
-                        </button>
-                    </div>
+                            <button type="button" class="deposit-method-btn" data-method="trustwallet">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Trust Wallet</span>
+                            </button>
+                        </div>
                 </div> --}}
 
                 <!-- Query Code Field - Hidden for testing -->
                 {{-- <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
-                    <label class="deposit-input-label">Transaction/Query Code</label>
-                    <div class="deposit-input-wrapper">
-                        <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
-                        <input type="text" class="deposit-input" id="queryCode"
-                            placeholder="Enter transaction or merchant trade number">
-                    </div>
-                    <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
-                        trade
-                        number
-                    </small>
+                        <label class="deposit-input-label">Transaction/Query Code</label>
+                        <div class="deposit-input-wrapper">
+                            <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
+                            <input type="text" class="deposit-input" id="queryCode"
+                                placeholder="Enter transaction or merchant trade number">
+                        </div>
+                        <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
+                            <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
+                            trade
+                            number
+                        </small>
                 </div> --}}
 
                 <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
@@ -479,7 +479,6 @@
                 </div>
             </form>
         </div>
-    </div>
     </div>
 
 

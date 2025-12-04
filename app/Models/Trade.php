@@ -9,21 +9,30 @@ class Trade extends Model
     protected $fillable = [
         'user_id',
         'market_id',
+        'outcome', // YES or NO
+        'amount_invested', // Amount user invested
+        'token_amount', // Calculated tokens: amount / price
+        'price_at_buy', // Price when trade was placed
+        'status', // PENDING, WON, LOST
+        'payout', // Payout amount (token_amount * 1.00 if WON)
+        'settled_at',
+        // Legacy fields for backward compatibility
         'option',
         'amount',
         'price',
-        'status',
-        'payout',
         'payout_amount',
-        'settled_at',
     ];
 
     protected $casts = [
+        'amount_invested' => 'decimal:2',
+        'token_amount' => 'decimal:8',
+        'price_at_buy' => 'decimal:6',
+        'payout' => 'decimal:2',
+        'settled_at' => 'datetime',
+        // Legacy casts
         'amount' => 'decimal:2',
         'price' => 'decimal:4',
-        'payout' => 'decimal:2',
         'payout_amount' => 'decimal:2',
-        'settled_at' => 'datetime',
     ];
 
     /**
@@ -47,7 +56,7 @@ class Trade extends Model
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return strtoupper($this->status) === 'PENDING';
     }
 
     /**
@@ -55,7 +64,7 @@ class Trade extends Model
      */
     public function isWin(): bool
     {
-        return $this->status === 'win';
+        return strtoupper($this->status) === 'WON';
     }
 
     /**
@@ -63,6 +72,6 @@ class Trade extends Model
      */
     public function isLoss(): bool
     {
-        return $this->status === 'loss';
+        return strtoupper($this->status) === 'LOST';
     }
 }
