@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Tag extends Model
 {
     protected $guarded = ['id'];
-    
+
     public function events()
     {
-        return $this->belongsToMany(Event::class);
+        return $this->belongsToMany(Event::class, 'event_tags', 'tag_id', 'event_id')
+            ->withTimestamps();
     }
 }

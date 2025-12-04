@@ -9,13 +9,15 @@
     <meta name="author" content="">
     <link rel="icon" href="{{ asset('backend/assets/images/favicon.ico') }}">
 
-    <title>Polymarkets</title>
+    <title>@yield('title') || Polymarkets</title>
 
     <!-- Vendors Style-->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/vendors_css.css') }}">
     <!--amcharts -->
     <link href="https://www.amcharts.com/lib/3/plugins/export/export.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
+    <!-- SweetAlert2 -->
+    <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
     <!-- Style-->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/skin_color.css') }}">
@@ -60,25 +62,6 @@
                             <a href="index.html#" class="waves-effect waves-light nav-link push-btn btn-primary-light"
                                 data-toggle="push-menu" role="button">
                                 <i data-feather="align-left"></i>
-                            </a>
-                        </li>
-                        <li class="btn-group nav-item d-none d-xl-inline-block">
-                            <a href="contact_app_chat.html"
-                                class="waves-effect waves-light nav-link svg-bt-icon btn-primary-light" title="Chat">
-                                <i data-feather="message-circle"></i>
-                            </a>
-                        </li>
-                        <li class="btn-group nav-item d-none d-xl-inline-block">
-                            <a href="mailbox.html"
-                                class="waves-effect waves-light nav-link svg-bt-icon btn-primary-light" title="Mailbox">
-                                <i data-feather="at-sign"></i>
-                            </a>
-                        </li>
-                        <li class="btn-group nav-item d-none d-xl-inline-block">
-                            <a href="extra_taskboard.html"
-                                class="waves-effect waves-light nav-link svg-bt-icon btn-primary-light"
-                                title="Taskboard">
-                                <i data-feather="clipboard"></i>
                             </a>
                         </li>
                     </ul>
@@ -191,7 +174,8 @@
                             <ul class="dropdown-menu animated flipInX">
                                 <li class="user-body">
                                     <a class="dropdown-item" href="index.html#"><i
-                                            class="ti-user text-muted me-2"></i> Profile</a>
+                                            class="ti-user text-muted me-2"></i>
+                                        Profile</a>
                                     <a class="dropdown-item" href="index.html#"><i
                                             class="ti-wallet text-muted me-2"></i> My Wallet</a>
                                     <a class="dropdown-item" href="index.html#"><i
@@ -209,7 +193,7 @@
 
                         <!-- Control Sidebar Toggle Button -->
                         <li>
-                            <a href="index.html#" data-toggle="control-sidebar" title="Setting"
+                            <a href="{{ route('admin.setting') }}"
                                 class="waves-effect waves-light btn-primary-light">
                                 <i data-feather="settings"></i>
                             </a>
@@ -503,127 +487,11 @@
     </div>
     <!-- ./wrapper -->
     <div id="chat-box-body">
-        <div id="chat-circle" class="waves-effect waves-circle btn btn-circle btn-lg btn-primary l-h-70">
-            <div id="chat-overlay"></div>
-            <span class="icon-Group-chat fs-30"><span class="path1"></span><span class="path2"></span></span>
-        </div>
-
-        <div class="chat-box">
-            <div class="chat-box-header p-15 d-flex justify-content-between align-items-center">
-                <div class="btn-group">
-                    <button
-                        class="waves-effect waves-circle btn btn-circle btn-primary-light h-40 w-40 rounded-circle l-h-45"
-                        type="button" data-bs-toggle="dropdown">
-                        <span class="icon-Add-user fs-22"><span class="path1"></span><span
-                                class="path2"></span></span>
-                    </button>
-                    <div class="dropdown-menu min-w-200">
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Color me-15"></span>
-                            New Group</a>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Clipboard me-15"><span class="path1"></span><span
-                                    class="path2"></span><span class="path3"></span><span
-                                    class="path4"></span></span>
-                            Contacts</a>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Group me-15"><span class="path1"></span><span
-                                    class="path2"></span></span>
-                            Groups</a>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Active-call me-15"><span class="path1"></span><span
-                                    class="path2"></span></span>
-                            Calls</a>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Settings1 me-15"><span class="path1"></span><span
-                                    class="path2"></span></span>
-                            Settings</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Question-circle me-15"><span class="path1"></span><span
-                                    class="path2"></span></span>
-                            Help</a>
-                        <a class="dropdown-item fs-16" href="index.html#">
-                            <span class="icon-Notifications me-15"><span class="path1"></span><span
-                                    class="path2"></span></span>
-                            Privacy</a>
-                    </div>
-                </div>
-                <div class="text-center flex-grow-1">
-                    <div class="text-dark fs-18">Mayra Sibley</div>
-                    <div>
-                        <span class="badge badge-sm badge-dot badge-primary"></span>
-                        <span class="text-muted fs-12">Active</span>
-                    </div>
-                </div>
-                <div class="chat-box-toggle">
-                    <button id="chat-box-toggle"
-                        class="waves-effect waves-circle btn btn-circle btn-danger-light h-40 w-40 rounded-circle l-h-45"
-                        type="button">
-                        <span class="icon-Close fs-22"><span class="path1"></span><span
-                                class="path2"></span></span>
-                    </button>
-                </div>
-            </div>
-            <div class="chat-box-body">
-                <div class="chat-box-overlay">
-                </div>
-                <div class="chat-logs">
-                    <div class="chat-msg user">
-                        <div class="d-flex align-items-center">
-                            <span class="msg-avatar">
-                                <img src="{{ asset('backend/assets/images/avatar/2.jpg') }}"
-                                    class="avatar avatar-lg">
-                            </span>
-                            <div class="mx-10">
-                                <a href="index.html#" class="text-dark hover-primary fw-bold">Mayra Sibley</a>
-                                <p class="text-muted fs-12 mb-0">2 Hours</p>
-                            </div>
-                        </div>
-                        <div class="cm-msg-text">
-                            Hi there, I'm Jesse and you?
-                        </div>
-                    </div>
-                    <div class="chat-msg self">
-                        <div class="d-flex align-items-center justify-content-end">
-                            <div class="mx-10">
-                                <a href="index.html#" class="text-dark hover-primary fw-bold">You</a>
-                                <p class="text-muted fs-12 mb-0">3 minutes</p>
-                            </div>
-                            <span class="msg-avatar">
-                                <img src="{{ asset('backend/assets/images/avatar/3.jpg') }}"
-                                    class="avatar avatar-lg">
-                            </span>
-                        </div>
-                        <div class="cm-msg-text">
-                            My name is Anne Clarc.
-                        </div>
-                    </div>
-                    <div class="chat-msg user">
-                        <div class="d-flex align-items-center">
-                            <span class="msg-avatar">
-                                <img src="{{ asset('backend/assets/images/avatar/2.jpg') }}"
-                                    class="avatar avatar-lg">
-                            </span>
-                            <div class="mx-10">
-                                <a href="index.html#" class="text-dark hover-primary fw-bold">Mayra Sibley</a>
-                                <p class="text-muted fs-12 mb-0">40 seconds</p>
-                            </div>
-                        </div>
-                        <div class="cm-msg-text">
-                            Nice to meet you Anne.<br>How can i help you?
-                        </div>
-                    </div>
-                </div><!--chat-log -->
-            </div>
-            <div class="chat-input">
-                <form>
-                    <input type="text" id="chat-input" placeholder="Send a message..." />
-                    <button type="submit" class="chat-submit" id="chat-submit">
-                        <span class="icon-Send fs-22"></span>
-                    </button>
-                </form>
-            </div>
+        <div id="chat-circle" data-toggle="control-sidebar" title=" Themes Setting"
+            class="waves-effect waves-circle btn btn-circle btn-lg btn-primary l-h-70">
+            <span class="icon-Group-chat fs-30">
+                <i style="width: 30px; margin:auto;" data-feather="settings"></i>
+            </span>
         </div>
     </div>
 
@@ -631,6 +499,7 @@
 
 
     <!-- Vendor JS -->
+    <script src="{{ asset('global/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('backend/assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('backend/assets/js/pages/chat-popup.js') }}"></script>
     <script src="{{ asset('backend/assets/js/demo.js') }}"></script>
@@ -659,6 +528,173 @@
     <script src="{{ asset('backend/assets/js/pages/widget-flot-charts.js') }}"></script>
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
 
+    <script>
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+
+        // Custom Confirmation Function using SweetAlert2
+        function confirmAction(message, callback) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, proceed!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof callback === 'function') {
+                            callback();
+                        } else {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                return false;
+            } else {
+                // Fallback to default confirm if SweetAlert is not available
+                return confirm(message || 'Are you sure?');
+            }
+        }
+
+        // Delete confirmation with toastr notification
+        function confirmDeleteWithToastr(event, commentId, message) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show info toastr before deletion
+                        toastr.info('Deleting...', 'Please wait', {
+                            timeOut: 2000
+                        });
+
+                        // Find the Livewire component and call delete method
+                        const button = event.target.closest('button');
+                        if (button) {
+                            // Find the parent Livewire component
+                            const livewireComponent = button.closest('[wire\\:id]');
+                            if (livewireComponent) {
+                                const wireId = livewireComponent.getAttribute('wire:id');
+                                // Wait for Livewire to be initialized if needed
+                                if (typeof Livewire !== 'undefined' && Livewire.find) {
+                                    const component = Livewire.find(wireId);
+                                    if (component) {
+                                        component.call('delete');
+                                    }
+                                } else {
+                                    // Fallback: wait for Livewire to be ready
+                                    document.addEventListener('livewire:initialized', () => {
+                                        const component = Livewire.find(wireId);
+                                        if (component) {
+                                            component.call('delete');
+                                        }
+                                    }, {
+                                        once: true
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Fallback to native confirm
+                if (confirm(message || 'Are you sure?')) {
+                    toastr.info('Deleting...', 'Please wait', {
+                        timeOut: 2000
+                    });
+                    const button = event.target.closest('button');
+                    if (button) {
+                        const livewireComponent = button.closest('[wire\\:id]');
+                        if (livewireComponent) {
+                            const wireId = livewireComponent.getAttribute('wire:id');
+                            if (typeof Livewire !== 'undefined' && Livewire.find) {
+                                const component = Livewire.find(wireId);
+                                if (component) {
+                                    component.call('delete');
+                                }
+                            } else {
+                                document.addEventListener('livewire:initialized', () => {
+                                    const component = Livewire.find(wireId);
+                                    if (component) {
+                                        component.call('delete');
+                                    }
+                                }, {
+                                    once: true
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Enhanced form submission with confirmation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle all forms with data-confirm attribute
+            document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const message = form.getAttribute('data-confirm');
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: message || 'This action cannot be undone!',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, proceed!',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    } else {
+                        if (confirm(message || 'Are you sure?')) {
+                            form.submit();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 
     <script>
         // Ensure menu links work properly
@@ -681,6 +717,24 @@
             });
         });
 
+        // Handle flash messages with toastr
+        @if (Session::has('success'))
+            toastr.success("{{ Session::get('success') }}");
+        @endif
+
+        @if (Session::has('error'))
+            toastr.error("{{ Session::get('error') }}");
+        @endif
+
+        @if (Session::has('warning'))
+            toastr.warning("{{ Session::get('warning') }}");
+        @endif
+
+        @if (Session::has('info'))
+            toastr.info("{{ Session::get('info') }}");
+        @endif
+
+        // Also support old format with message and alert-type
         @if (Session::has('message'))
             var type = "{{ Session::get('alert-type', 'info') }}"
             switch (type) {
@@ -698,6 +752,38 @@
                     break;
             }
         @endif
+
+        // Listen for Livewire events to show toastr notifications
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('showToastr', (data) => {
+                const type = data[0].type || 'info';
+                const message = data[0].message || 'Operation completed';
+
+                switch (type) {
+                    case 'success':
+                        toastr.success(message);
+                        break;
+                    case 'error':
+                        toastr.error(message);
+                        break;
+                    case 'warning':
+                        toastr.warning(message);
+                        break;
+                    case 'info':
+                    default:
+                        toastr.info(message);
+                        break;
+                }
+            });
+
+            // Handle comment deletion - refresh the page
+            Livewire.on('commentDeleted', (commentId) => {
+                // Reload the page to refresh comments list
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            });
+        });
     </script>
     @stack('scripts')
     @livewireScripts

@@ -2,265 +2,354 @@
 
 namespace App\Http\Controllers\Backend;
 
-use Carbon\Carbon;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Event;
 use App\Models\Market;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tag;
+use App\Services\SettlementService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class MarketController extends Controller
 {
-    function index()
+
+    /**
+     * Display the specified market
+     */
+    public function show($id)
     {
-        return view('backend.market.index');
+        $market = Market::with('event')->findOrFail($id);
+
+        // Decode JSON fields
+        $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [];
+        $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
+
+        return view('backend.market.show', compact('market', 'outcomePrices', 'outcomes'));
     }
 
-    function marketList()
+    function toMysqlDate(?string $date): ?string
     {
-        $events = Event::with('markets')->latest()->paginate(20);
-        return view('backend.market.list', compact('events'));
-    }
-
-    function search(Request $request)
-    {
-        $slug = Str::slug($request->search);
-        $api = 'https://gamma-api.polymarket.com/events/slug/';
-
-        $response = Http::get($api . $slug);
-        if (!$response->successful()) {
-            return back()->with(['message' => 'Failed to get data', 'alert-type' => 'error']);
+        if (empty($date)) {
+            return null;
         }
-        $data = $response->object();
 
-        return view('backend.market.index', compact('data'));
-    }
-
-
-    function marketSave($slug)
-    {
-        $api = 'https://gamma-api.polymarket.com/events/slug/';
-        $response = Http::get($api . $slug);
-        if (!$response->successful()) {
-            return back()->with(['message' => 'Failed to save market', 'alert-type' => 'error']);
+        try {
+            return Carbon::parse($date)->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return null;
         }
-        $data = $response->object();
-        return view('backend.market.edit', compact('data'));
     }
 
-    function edit($id)
+    function storeEvents()
     {
-        $event = Event::with('markets')->findOrFail($id);
+        $startTime = time();
+        $maxExecutionTime = 300; // Increased to 5 minutes
+        $limit = 100;
+        $offset = 0;
+        $maxBatches = 100; // Increased from 10 to 100 (can fetch up to 10,000 events)
+        $batchCount = 0;
+        $totalProcessed = 0;
+        $consecutiveEmptyBatches = 0;
+        $maxConsecutiveEmpty = 3; // Stop after 3 consecutive empty batches
 
-        // Convert event to object format for compatibility with edit view
-        $data = (object) [
-            'id' => $event->id,
-            'title' => $event->title,
-            'slug' => $event->slug,
-            'description' => $event->description,
-            'image' => $event->image,
-            'icon' => $event->icon,
-            'liquidity' => $event->liquidity,
-            'volume' => $event->volume,
-            'volume_24hr' => $event->volume_24hr,
-            'volume_1wk' => $event->volume_1wk,
-            'volume_1mo' => $event->volume_1mo,
-            'volume_1yr' => $event->volume_1yr,
-            'liquidity_clob' => $event->liquidity_clob,
-            'active' => $event->active,
-            'closed' => $event->closed,
-            'archived' => $event->archived,
-            'new' => $event->new,
-            'featured' => $event->featured,
-            'restricted' => $event->restricted,
-            'show_all_outcomes' => $event->show_all_outcomes,
-            'enable_order_book' => $event->enable_order_book,
-            'start_date' => $event->start_date,
-            'end_date' => $event->end_date,
-            'markets' => $event->markets->map(function ($market) {
-                return (object) [
-                    'id' => $market->id,
-                    'slug' => $market->slug,
-                    'question' => $market->question,
-                    'description' => $market->description,
-                    'icon' => $market->icon,
-                    'liquidity' => $market->liquidity,
-                    'liquidity_clob' => $market->liquidity_clob,
-                    'volume' => $market->volume,
-                    'volume_24hr' => $market->volume_24hr,
-                    'volume_1wk' => $market->volume_1wk,
-                    'volume_1mo' => $market->volume_1mo,
-                    'volume_1yr' => $market->volume_1yr,
-                    'outcome_prices' => $market->outcome_prices,
-                    'active' => $market->active,
-                    'closed' => $market->closed,
-                    'archived' => $market->archived,
-                    'new' => $market->new,
-                    'restricted' => $market->restricted,
-                    'start_date' => $market->start_date,
-                    'end_date' => $market->end_date,
-                ];
-            })->toArray()
-        ];
+        Log::info("=== Starting event fetch process at " . date('Y-m-d H:i:s') . " ===");
 
-        return view('backend.market.edit', compact('data'));
+        while ($batchCount < $maxBatches) {
+
+            // Global time check
+            if ((time() - $startTime) >= $maxExecutionTime) {
+                Log::info("Time limit reached. Processed {$totalProcessed} events in this run.");
+                break;
+            }
+
+            // Fetch events with increased timeout and better error handling
+            try {
+                $response = Http::timeout(120) // 2 minutes timeout
+                    ->retry(2, 3000, function ($exception, $request) {
+                        // Only retry on timeout or connection errors
+                        return $exception instanceof \Illuminate\Http\Client\ConnectionException;
+                    })
+                    ->get('https://gamma-api.polymarket.com/events', [
+                        'closed' => false,
+                        'limit' => $limit,
+                        'offset' => $offset,
+                        'ascending' => false,
+                    ]);
+
+                if (!$response->successful()) {
+                    Log::error("Error fetching events: status " . $response->status() . " at offset " . $offset);
+                    // Retry logic: wait and try again
+                    if ($consecutiveEmptyBatches < 2) {
+                        sleep(3);
+                        continue;
+                    }
+                    break;
+                }
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::warning("Connection timeout at offset {$offset}. Retrying... Error: " . $e->getMessage());
+                // Retry on timeout
+                if ($consecutiveEmptyBatches < 2) {
+                    sleep(5); // Wait longer before retry
+                    continue;
+                }
+                // Skip this offset and continue
+                $offset += $limit;
+                $batchCount++;
+                continue;
+            } catch (\Exception $e) {
+                Log::error("Unexpected error at offset {$offset}: " . $e->getMessage());
+                // Skip this offset and continue
+                $offset += $limit;
+                $batchCount++;
+                continue;
+            }
+
+            $events = $response->json();
+
+            // Check if response is empty or not an array
+            if (empty($events) || !is_array($events)) {
+                $consecutiveEmptyBatches++;
+                Log::info("Empty response at offset {$offset}. Consecutive empty batches: {$consecutiveEmptyBatches}");
+
+                if ($consecutiveEmptyBatches >= $maxConsecutiveEmpty) {
+                    Log::info("No more events found after {$consecutiveEmptyBatches} consecutive empty batches. Total processed: {$totalProcessed}");
+                    break;
+                }
+
+                // Still increment offset to try next batch
+                $offset += $limit;
+                $batchCount++;
+                continue;
+            }
+
+            // Reset consecutive empty counter if we got events
+            $consecutiveEmptyBatches = 0;
+
+            // Process each event
+            foreach ($events as $ev) {
+
+                // Time check inside loop
+                if ((time() - $startTime) >= $maxExecutionTime) {
+                    Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
+                    break 2;
+                }
+
+                if (!empty($ev['markets'])) {
+
+                    $event = Event::updateOrCreate(
+                        ['slug' => $ev['slug']],
+                        [
+                            'slug' => $ev['slug'],
+                            'ticker' => $ev['ticker'] ?? null,
+                            'polymarket_event_id' => $ev['id'] ?? null,
+                            'title' => $ev['title'] ?? null,
+                            'description' => $ev['description'] ?? null,
+                            'image' => $ev['image'] ?? null,
+                            'icon' => $ev['icon'] ?? null,
+
+                            'liquidity' => $ev['liquidity'] ?? null,
+                            'volume' => $ev['volume'] ?? null,
+                            'volume_24hr' => $ev['volume24hr'] ?? null,
+                            'volume_1wk' => $ev['volume1wk'] ?? null,
+                            'volume_1mo' => $ev['volume1mo'] ?? null,
+                            'volume_1yr' => $ev['volume1yr'] ?? null,
+
+                            'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                            'competitive' => isset($ev['competitive']) ? floatval($ev['competitive']) : null,
+                            'comment_count' => $ev['commentCount'] ?? 0,
+
+                            'active' => $ev['active'] ?? null,
+                            'closed' => $ev['closed'] ?? null,
+                            'archived' => $ev['archived'] ?? null,
+                            'new' => $ev['new'] ?? null,
+                            'featured' => $ev['featured'] ?? null,
+
+                            'start_date' => toMysqlDate($ev['startDate'] ?? null),
+                            'end_date' => toMysqlDate($ev['endDate'] ?? null),
+                        ]
+                    );
+
+                    // Save markets
+                    foreach ($ev['markets'] as $mk) {
+                        Market::updateOrCreate(
+                            ['slug' => $mk['slug']],
+                            [
+                                'event_id' => $event->id,
+                                'question' => $mk['question'] ?? null,
+                                'condition_id' => $mk['conditionId'] ?? null,
+                                'groupItem_title' => $mk['groupItemTitle'] ?? null,
+                                'group_item_threshold' => $mk['groupItemThreshold'] ?? null,
+                                'description' => $mk['description'] ?? null,
+                                'resolution_source' => $mk['resolutionSource'] ?? null,
+                                'image' => $mk['image'] ?? null,
+                                'icon' => $mk['icon'] ?? null,
+
+                                'liquidity_clob' => $mk['liquidityClob'] ?? $mk['liquidityNum'] ?? null,
+                                'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
+                                'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
+                                'volume1wk' => $mk['volume1wk'] ?? $mk['volume1wkClob'] ?? null,
+                                'volume1mo' => $mk['volume1mo'] ?? $mk['volume1moClob'] ?? null,
+                                'volume1yr' => $mk['volume1yr'] ?? $mk['volume1yrClob'] ?? null,
+
+                                'outcome_prices' => $mk['outcomePrices'] ?? null,
+                                'outcomes' => $mk['outcomes'] ?? null,
+
+                                // Trading prices
+                                'best_bid' => isset($mk['bestBid']) ? floatval($mk['bestBid']) : null,
+                                'best_ask' => isset($mk['bestAsk']) ? floatval($mk['bestAsk']) : null,
+                                'last_trade_price' => isset($mk['lastTradePrice']) ? floatval($mk['lastTradePrice']) : null,
+                                'spread' => isset($mk['spread']) ? floatval($mk['spread']) : null,
+
+                                // Price changes
+                                'one_day_price_change' => isset($mk['oneDayPriceChange']) ? floatval($mk['oneDayPriceChange']) : null,
+                                'one_week_price_change' => isset($mk['oneWeekPriceChange']) ? floatval($mk['oneWeekPriceChange']) : null,
+                                'one_month_price_change' => isset($mk['oneMonthPriceChange']) ? floatval($mk['oneMonthPriceChange']) : null,
+
+                                // Chart and display
+                                'series_color' => $mk['seriesColor'] ?? null,
+                                'competitive' => isset($mk['competitive']) ? floatval($mk['competitive']) : null,
+
+                                'active' => $mk['active'] ?? null,
+                                'closed' => $mk['closed'] ?? null,
+                                'archived' => $mk['archived'] ?? null,
+                                'featured' => $mk['featured'] ?? null,
+                                'new' => $mk['new'] ?? null,
+                                'restricted' => $mk['restricted'] ?? null,
+                                'approved' => $mk['approved'] ?? null,
+
+                                'start_date' => toMysqlDate($mk['startDate'] ?? null),
+                                'end_date' => toMysqlDate($mk['endDate'] ?? null),
+                            ]
+                        );
+                    }
+
+                    // Save Tags
+                    $tagIds = [];
+                    if (!empty($ev['tags'])) {
+                        foreach ($ev['tags'] as $tag) {
+                            $tagModel = Tag::updateOrCreate(
+                                ['slug' => $tag['slug']],
+                                [
+                                    'label' => $tag['label'],
+                                ]
+                            );
+                            $tagIds[] = $tagModel->id;
+                        }
+                        // Attach tags to event
+                        $event->tags()->sync($tagIds);
+                    }
+                }
+
+                $totalProcessed++;
+            }
+
+            $eventsCount = count($events);
+            Log::info("[Batch #{$batchCount}] Fetched {$eventsCount} events from offset {$offset}. Total processed: {$totalProcessed}");
+
+            // If we got less than the limit, we might be near the end
+            if ($eventsCount < $limit) {
+                Log::info("Received less than limit ({$eventsCount} < {$limit}). May be near end of available events.");
+            }
+
+            $offset += $limit;
+            $batchCount++;
+
+            // Small delay between batches to avoid rate limit
+            if ($batchCount < $maxBatches) {
+                usleep(200000); // 200 ms
+            }
+        }
+
+        $executionTime = time() - $startTime;
+        $message = "=== Event fetch completed ===\n";
+        $message .= "Total processed: {$totalProcessed} events\n";
+        $message .= "Batches completed: {$batchCount}\n";
+        $message .= "Execution time: {$executionTime} seconds\n";
+        if ($batchCount >= $maxBatches) {
+            $message .= "Reached max batches limit ({$maxBatches})\n";
+        }
+        $message .= "Next batch will continue from offset {$offset}";
+
+        Log::info($message);
+        return $message;
     }
 
+    /**
+     * Set final result for a market and settle trades
+     */
+    public function setResult(Request $request, $id)
+    {
+        $request->validate([
+            'final_result' => ['required', Rule::in(['yes', 'no'])],
+        ]);
 
-    public function store(Request $request)
+        try {
+            $market = Market::findOrFail($id);
+
+            // Set final result
+            $market->final_result = $request->final_result;
+            $market->result_set_at = now();
+            $market->closed = true;
+            $market->save();
+
+            // Settle all pending trades
+            $settlementService = new SettlementService();
+            $settlementResult = $settlementService->settleMarket($market);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Market result set and trades settled successfully',
+                'settlement' => $settlementResult,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to set market result', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to set result: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Manually settle trades for a market (if result already set)
+     */
+    public function settleTrades($id)
     {
         try {
-            DB::beginTransaction();
+            $market = Market::findOrFail($id);
 
-            // Handle file uploads - preserve existing if no new file
-            $imagePath = $request->existing_image ?? null;
-            $iconPath = $request->existing_icon ?? null;
-
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('events', 'public');
+            if (!$market->hasResult()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Market does not have a final result yet',
+                ], 400);
             }
 
-            if ($request->hasFile('icon')) {
-                $iconPath = $request->file('icon')->store('events', 'public');
-            }
+            $settlementService = new SettlementService();
+            $result = $settlementService->settleMarket($market);
 
-            // Prepare event data
-            $eventData = [
-                'title' => $request->title,
-                'slug' => $request->slug,
-                'description' => $request->description,
-                'image' => $imagePath,
-                'icon' => $iconPath,
-                'liquidity' => $request->liquidity ?? 0,
-                'volume' => $request->volume ?? 0,
-                'volume_24hr' => $request->volume_24hr ?? 0,
-                'volume_1wk' => $request->volume_1wk ?? 0,
-                'volume_1mo' => $request->volume_1mo ?? 0,
-                'volume_1yr' => $request->volume_1yr ?? 0,
-                'liquidity_clob' => $request->liquidity_clob ?? 0,
-                'active' => $request->active ? 1 : 0,
-                'closed' => $request->closed ? 1 : 0,
-                'archived' => $request->archived ? 1 : 0,
-                'new' => $request->new ? 1 : 0,
-                'featured' => $request->featured ? 1 : 0,
-                'restricted' => $request->restricted ? 1 : 0,
-                'show_all_outcomes' => $request->show_all_outcomes ? 1 : 0,
-                'enable_order_book' => $request->enable_order_book ? 1 : 0,
-                'start_date' => $request->start_date ? Carbon::parse($request->start_date) : null,
-                'end_date' => $request->end_date ? Carbon::parse($request->end_date) : null,
-            ];
-
-            // Check if event exists (for update)
-            if (!empty($request->event_id)) {
-                $event = Event::find($request->event_id);
-                if ($event) {
-                    $event->update($eventData);
-                } else {
-                    $event = Event::create($eventData);
-                }
-            } else {
-                // Create new event
-                $event = Event::create($eventData);
-            }
-
-            // Handle markets - update, create, or delete
-            if (!empty($request->markets) && is_array($request->markets)) {
-                foreach ($request->markets as $index => $marketData) {
-
-                    // Delete market if marked
-                    if (!empty($marketData['_delete']) && !empty($marketData['id'])) {
-                        Market::where('id', $marketData['id'])->delete();
-                        continue;
-                    }
-
-                    // Validate required fields
-                    if (empty($marketData['slug']) || empty($marketData['question'])) {
-                        continue;
-                    }
-
-                    // Handle market icon upload
-                    $marketIcon = $marketData['existing_icon'] ?? null;
-                    if ($request->hasFile("markets.$index.icon")) {
-                        $marketIcon = $request->file("markets.$index.icon")
-                            ->store('markets', 'public');
-                    }
-
-                    // Outcome price convert
-                    $outcomePrices = null;
-                    if (isset($marketData['yesPercent'], $marketData['noPercent'])) {
-                        $outcomePrices = json_encode([
-                            floatval($marketData['yesPercent']) / 100,
-                            floatval($marketData['noPercent']) / 100,
-                        ]);
-                    }
-
-                    // Prepare market fields
-                    $marketFields = [
-                        'event_id' => $event->id,
-                        'slug' => $marketData['slug'],
-                        'question' => $marketData['question'],
-                        'description' => $marketData['description'] ?? null,
-                        'icon' => $marketIcon,
-                        'liquidity' => floatval($marketData['liquidity'] ?? 0),
-                        'liquidity_clob' => floatval($marketData['liquidity_clob'] ?? 0),
-                        'volume' => floatval($marketData['volume'] ?? 0),
-                        'volume_24hr' => floatval($marketData['volume_24hr'] ?? 0),
-                        'volume_1wk' => floatval($marketData['volume_1wk'] ?? 0),
-                        'volume_1mo' => floatval($marketData['volume_1mo'] ?? 0),
-                        'volume_1yr' => floatval($marketData['volume_1yr'] ?? 0),
-                        'outcome_prices' => $outcomePrices,
-                        'active' => !empty($marketData['active']),
-                        'closed' => !empty($marketData['closed']),
-                        'archived' => !empty($marketData['archived']),
-                        'new' => !empty($marketData['new']),
-                        'restricted' => !empty($marketData['restricted']),
-                        'start_date' => !empty($marketData['start_date'])
-                            ? Carbon::parse($marketData['start_date'])
-                            : null,
-                        'end_date' => !empty($marketData['end_date'])
-                            ? Carbon::parse($marketData['end_date'])
-                            : null,
-                    ];
-
-                    // Update or create market
-                    if (!empty($marketData['id'])) {
-                        $market = Market::find($marketData['id']);
-                        if ($market) {
-                            $market->update($marketFields);
-                        } else {
-                            Market::create($marketFields);
-                        }
-                    } else {
-                        Market::create($marketFields);
-                    }
-                }
-            }
-
-            DB::commit();
-
-            $message = !empty($request->event_id)
-                ? 'Event updated successfully!'
-                : 'Event created successfully!';
-
-            return redirect()->route('admin.market.list')
-                ->with(['message' => $message, 'alert-type' => 'success']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Event store error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return back()->with([
-                'message' => 'Error: ' . $e->getMessage(),
-                'alert-type' => 'error'
+            return response()->json([
+                'success' => true,
+                'message' => 'Trades settled successfully',
+                'settlement' => $result,
             ]);
-        }
-    }
+        } catch (\Exception $e) {
+            Log::error('Failed to settle trades', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
 
-    public function update(Request $request, $id)
-    {
-        // Redirect to store method with event_id
-        $request->merge(['event_id' => $id]);
-        return $this->store($request);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to settle trades: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
