@@ -1183,26 +1183,32 @@ $(document).ready(function () {
         $(".outcome-btn-yes, .outcome-btn-no").removeClass("active");
         $(this).addClass("active");
         isYes = true;
-        if (window.currentYesPrice !== undefined && !isNaN(window.currentYesPrice)) {
+        if (
+            window.currentYesPrice !== undefined &&
+            !isNaN(window.currentYesPrice)
+        ) {
             const price = parseFloat(window.currentYesPrice) || 0;
             $("#limitPrice").val(price);
             $("#avgPriceValue").text(price.toFixed(0) + "¢");
         }
         updateOutcomePrice();
-        updateSummary();
+        calculateProfit(); // Update profit calculation
     });
 
     $("#noBtn").click(function () {
         $(".outcome-btn-yes, .outcome-btn-no").removeClass("active");
         $(this).addClass("active");
         isYes = false;
-        if (window.currentNoPrice !== undefined && !isNaN(window.currentNoPrice)) {
+        if (
+            window.currentNoPrice !== undefined &&
+            !isNaN(window.currentNoPrice)
+        ) {
             const price = parseFloat(window.currentNoPrice) || 0;
             $("#limitPrice").val(price);
             $("#avgPriceValue").text(price.toFixed(0) + "¢");
         }
         updateOutcomePrice();
-        updateSummary();
+        calculateProfit(); // Update profit calculation
     });
 
     function updateOutcomePrice() {
@@ -1264,7 +1270,7 @@ $(document).ready(function () {
         const currentValue = parseFloat($("#sharesInput").val()) || 0;
         currentShares = Math.max(0, currentValue + amount);
         $("#sharesInput").val(currentShares);
-        updateSummary();
+        calculateProfit(); // Update profit calculation
     }
 
     function updateSharesMax() {
@@ -1272,7 +1278,7 @@ $(document).ready(function () {
         // You can customize this based on your wallet balance logic
         currentShares = 10000; // Or get from wallet balance
         $("#sharesInput").val(currentShares);
-        updateSummary();
+        calculateProfit(); // Update profit calculation
     }
 
     $("#sharesInput").on("input", function () {
@@ -1282,7 +1288,7 @@ $(document).ready(function () {
         if (val === "" || val === null || val === undefined) {
             currentShares = 0;
         }
-        updateSummary();
+        calculateProfit(); // Update profit calculation live
     });
 
     // Initialize input to show 0
@@ -1297,31 +1303,39 @@ $(document).ready(function () {
         } else {
             currentShares = parseFloat($("#sharesInput").val()) || 0;
         }
-        
+
         // Initialize prices if not set (prices are in decimal format, e.g., 0.41 for 41¢)
-        if (window.currentYesPrice === undefined || isNaN(window.currentYesPrice)) {
+        if (
+            window.currentYesPrice === undefined ||
+            isNaN(window.currentYesPrice)
+        ) {
             const yesBtn = $("#yesBtn");
-            if (yesBtn.length && yesBtn.data('price')) {
+            if (yesBtn.length && yesBtn.data("price")) {
                 // Price is already in decimal (0.41), convert to cents for display
-                window.currentYesPrice = parseFloat(yesBtn.data('price')) * 100 || 0;
+                window.currentYesPrice =
+                    parseFloat(yesBtn.data("price")) * 100 || 0;
             } else {
                 window.currentYesPrice = 0;
             }
         }
-        if (window.currentNoPrice === undefined || isNaN(window.currentNoPrice)) {
+        if (
+            window.currentNoPrice === undefined ||
+            isNaN(window.currentNoPrice)
+        ) {
             const noBtn = $("#noBtn");
-            if (noBtn.length && noBtn.data('price')) {
+            if (noBtn.length && noBtn.data("price")) {
                 // Price is already in decimal (0.60), convert to cents for display
-                window.currentNoPrice = parseFloat(noBtn.data('price')) * 100 || 0;
+                window.currentNoPrice =
+                    parseFloat(noBtn.data("price")) * 100 || 0;
             } else {
                 window.currentNoPrice = 0;
             }
         }
-        
-        // Initialize summary
-        if (typeof updateSummary === "function") {
-            updateSummary();
-        }
+
+        // Initialize profit calculation after a short delay to ensure DOM is ready
+        setTimeout(function () {
+            calculateProfit();
+        }, 100);
     });
 
     // Quick Buttons
@@ -1333,12 +1347,16 @@ $(document).ready(function () {
             currentShares = Math.floor((userBalance * percent) / 100 / 0.01);
         }
         $("#sharesInput").val(currentShares);
-        updateSummary();
+        calculateProfit(); // Update profit calculation
     });
 
     // Summary - Polymarket-style profit calculation
     function updateSummary() {
-        // Get the active button (Yes or No) - default is Yes
+        calculateProfit();
+    }
+
+    // Polymarket-style calculation function
+    function calculateProfit() {
         const yesBtn = document.getElementById("yesBtn");
         const noBtn = document.getElementById("noBtn");
         const sharesInput = document.getElementById("sharesInput");
@@ -1348,16 +1366,25 @@ $(document).ready(function () {
             return;
         }
 
-        // Determine which button is active (default to Yes)
+        // Determine selected price based on active button (default to YES)
         let selectedPrice;
         if (yesBtn.classList.contains("active")) {
-            selectedPrice = parseFloat(yesBtn.dataset.price) || 0.5;
+            // Read price from YES button data-price attribute
+            selectedPrice =
+                parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
         } else if (noBtn.classList.contains("active")) {
-            selectedPrice = parseFloat(noBtn.dataset.price) || 0.5;
+            // Read price from NO button data-price attribute
+            selectedPrice = parseFloat(noBtn.getAttribute("data-price")) || 0.5;
         } else {
-            // Default to Yes if neither is active
-            selectedPrice = parseFloat(yesBtn.dataset.price) || 0.5;
-            yesBtn.classList.add("active");
+            // Default to YES if neither is active
+            selectedPrice =
+                parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
+        }
+
+        // Validate price
+        if (!selectedPrice || selectedPrice <= 0 || isNaN(selectedPrice)) {
+            potentialWin.textContent = "$0";
+            return;
         }
 
         // Read amount from input
@@ -1365,20 +1392,25 @@ $(document).ready(function () {
 
         // If amount is empty or 0, show $0
         if (!amount || amount <= 0 || isNaN(amount)) {
-            potentialWin.textContent = "$0.00";
+            potentialWin.textContent = "$0";
             return;
         }
 
         // Polymarket-style calculation:
         // shares = amount / price
-        // payout = shares * 1
-        // profit = payout - amount
+        // payout_if_win = shares * 1 (each share settles at $1)
+        // profit = payout_if_win - amount
         let shares = amount / selectedPrice;
         let payout = shares * 1;
         let profit = payout - amount;
 
-        // Format profit to 2 decimals: $0.00
-        potentialWin.textContent = "$" + profit.toFixed(2);
+        // Round to 2 decimal places to avoid floating point issues
+        payout = Math.round(payout * 100) / 100;
+        profit = Math.round(profit * 100) / 100;
+
+        // "To win" shows the payout (total return), not just profit
+        // This matches Polymarket's "To win" display
+        potentialWin.textContent = "$" + payout.toFixed(2);
     }
 
     // Execute Trade
@@ -1388,7 +1420,10 @@ $(document).ready(function () {
             return alert("Enter valid limit price");
         const action = isBuy ? "buy" : "sell";
         const outcome = isYes ? "Yes" : "No";
-        const date = $("#panelOutcomeName").text() || $("#panelOutcomeTitle").text() || "";
+        const date =
+            $("#panelOutcomeName").text() ||
+            $("#panelOutcomeTitle").text() ||
+            "";
         const price = isLimitOrder
             ? limitPrice / 100
             : isBuy
@@ -1428,7 +1463,10 @@ $(document).ready(function () {
         const isYesAction = $(".outcome-btn.active").text() === "Yes";
         const action = isBuyAction ? "bought" : "sold";
         const outcome = isYesAction ? "Yes" : "No";
-        const date = $("#panelOutcomeName").text() || $("#panelOutcomeTitle").text() || "";
+        const date =
+            $("#panelOutcomeName").text() ||
+            $("#panelOutcomeTitle").text() ||
+            "";
         const price = isYesAction ? 0.78 : 0.22;
         $(".activity-list").prepend(`
       <div class="activity-item">
@@ -1502,13 +1540,18 @@ $(document).ready(function () {
         // Get outcome name - try multiple selectors
         let outcomeName = $row.find(".outcome-name").text().trim();
         if (!outcomeName) {
-            outcomeName = $row.find(".outcome-text .outcome-name").text().trim();
+            outcomeName = $row
+                .find(".outcome-text .outcome-name")
+                .text()
+                .trim();
         }
         if (!outcomeName) {
             outcomeName = $row.data("outcome-name") || "";
         }
-        
-        const marketTitle = $(".market-title").text().trim() || $("#panelMarketTitle").text().trim();
+
+        const marketTitle =
+            $(".market-title").text().trim() ||
+            $("#panelMarketTitle").text().trim();
         const $yesBtn = $row.find(".btn-yes");
         const $noBtn = $row.find(".btn-no");
         const yesButtonText = $yesBtn.text();
@@ -1517,7 +1560,7 @@ $(document).ready(function () {
         const noPriceMatch = noButtonText.match(/([\d.]+)¢/);
         const yesPrice = yesPriceMatch ? parseFloat(yesPriceMatch[1]) : 0;
         const noPrice = noPriceMatch ? parseFloat(noPriceMatch[1]) : 0;
-        
+
         // Update panel elements
         if (marketTitle) {
             $("#panelMarketTitle").text(marketTitle);
@@ -1564,8 +1607,10 @@ $(document).ready(function () {
         // Ensure prices are valid numbers
         window.currentYesPrice = parseFloat(yesPrice) || 0;
         window.currentNoPrice = parseFloat(noPrice) || 0;
-        limitPrice = isYesSelected ? (parseFloat(yesPrice) || 0) : (parseFloat(noPrice) || 0);
-        
+        limitPrice = isYesSelected
+            ? parseFloat(yesPrice) || 0
+            : parseFloat(noPrice) || 0;
+
         // Initialize summary with valid values
         if (typeof updateSummary === "function") {
             updateSummary();

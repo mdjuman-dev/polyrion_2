@@ -1178,4 +1178,78 @@
             }
         </script>
     @endpush
+
+    @push('script')
+        <script>
+            // Polymarket-style profit calculation for trading panel
+            document.addEventListener("DOMContentLoaded", function() {
+                let yesBtn = document.getElementById("yesBtn");
+                let noBtn = document.getElementById("noBtn");
+                let sharesInput = document.getElementById("sharesInput");
+                let potentialWin = document.getElementById("potentialWin");
+
+                if (!yesBtn || !noBtn || !sharesInput || !potentialWin) {
+                    return;
+                }
+
+                // Default to YES price
+                let selectedPrice = parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
+
+                // YES button click handler
+                yesBtn.addEventListener("click", function() {
+                    selectedPrice = parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
+                    yesBtn.classList.add("active");
+                    noBtn.classList.remove("active");
+                    calculate();
+                });
+
+                // NO button click handler
+                noBtn.addEventListener("click", function() {
+                    selectedPrice = parseFloat(noBtn.getAttribute("data-price")) || 0.5;
+                    noBtn.classList.add("active");
+                    yesBtn.classList.remove("active");
+                    calculate();
+                });
+
+                // Input change handler
+                sharesInput.addEventListener("input", calculate);
+
+                // Calculate profit/payout
+                function calculate() {
+                    let amount = parseFloat(sharesInput.value);
+
+                    if (!amount || amount <= 0 || isNaN(amount)) {
+                        potentialWin.textContent = "$0";
+                        return;
+                    }
+
+                    // Validate price
+                    if (!selectedPrice || selectedPrice <= 0 || isNaN(selectedPrice)) {
+                        potentialWin.textContent = "$0";
+                        return;
+                    }
+
+                    // Polymarket-style calculation:
+                    // shares = amount / price
+                    // payout_if_win = shares * 1 (each share settles at $1)
+                    // profit = payout_if_win - amount
+                    let shares = amount / selectedPrice;
+                    let payout = shares * 1;
+                    let profit = payout - amount;
+
+                    // Round to 2 decimal places to avoid floating point issues
+                    payout = Math.round(payout * 100) / 100;
+
+                    // "To win" shows the payout (total return), not just profit
+                    // This matches Polymarket's "To win" display
+                    potentialWin.textContent = "$" + payout.toFixed(2);
+                }
+
+                // Initialize calculation on page load
+                setTimeout(function() {
+                    calculate();
+                }, 100);
+            });
+        </script>
+    @endpush
 @endsection

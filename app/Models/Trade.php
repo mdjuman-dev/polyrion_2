@@ -9,11 +9,13 @@ class Trade extends Model
     protected $fillable = [
         'user_id',
         'market_id',
+        'side', // yes or no (new field)
         'outcome', // YES or NO
         'amount_invested', // Amount user invested
         'token_amount', // Calculated tokens: amount / price
         'price_at_buy', // Price when trade was placed
-        'status', // PENDING, WON, LOST
+        'shares', // amount / price (new field)
+        'status', // pending, win, loss (lowercase) or PENDING, WON, LOST (uppercase)
         'payout', // Payout amount (token_amount * 1.00 if WON)
         'settled_at',
         // Legacy fields for backward compatibility
@@ -27,6 +29,7 @@ class Trade extends Model
         'amount_invested' => 'decimal:2',
         'token_amount' => 'decimal:8',
         'price_at_buy' => 'decimal:6',
+        'shares' => 'decimal:8',
         'payout' => 'decimal:2',
         'settled_at' => 'datetime',
         // Legacy casts
