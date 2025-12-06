@@ -28,6 +28,8 @@ class Market extends Model
         'competitive' => 'float',
         'active' => 'boolean',
         'closed' => 'boolean',
+        'is_closed' => 'boolean',
+        'settled' => 'boolean',
         'archived' => 'boolean',
         'new' => 'boolean',
         'restricted' => 'boolean',
@@ -100,7 +102,7 @@ class Market extends Model
     }
 
     /**
-     * Get final outcome (prefers final_outcome, falls back to final_result)
+     * Get final outcome (prefers final_outcome, falls back to final_result, then outcome_result)
      */
     public function getFinalOutcome()
     {
@@ -113,6 +115,30 @@ class Market extends Model
             return strtoupper($this->final_result);
         }
 
+        // Fallback to outcome_result
+        if ($this->outcome_result) {
+            return strtoupper($this->outcome_result);
+        }
+
         return null;
+    }
+
+    /**
+     * Check if market is ready for settlement
+     */
+    public function isReadyForSettlement(): bool
+    {
+        return $this->is_closed 
+            && !$this->settled 
+            && !empty($this->outcome_result);
+    }
+
+    /**
+     * Settle this market
+     */
+    public function settle(): bool
+    {
+        $settlementService = app(\App\Services\SettlementService::class);
+        return $settlementService->settleMarket($this->id);
     }
 }

@@ -4,181 +4,184 @@ namespace App\Services;
 
 use App\Models\Market;
 use App\Models\Trade;
+use App\Models\User;
 use App\Models\Wallet;
-use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SettlementService
 {
     /**
-     * Settle all pending trades for a market after result is set
+     * Settle a market - process all pending trades and update balances
+     *
+     * @param int $marketId
+     * @return bool
      */
-    public function settleMarket(Market $market): array
+    public function settleMarket($marketId): bool
     {
-        if (!$market->hasResult()) {
-            throw new \Exception('Market does not have a final result yet');
-        }
-
-        $pendingTrades = $market->pendingTrades()->get();
-        
-        if ($pendingTrades->isEmpty()) {
-            return [
-                'success' => true,
-                'message' => 'No pending trades to settle',
-                'wins' => 0,
-                'losses' => 0,
-            ];
-        }
-
-        $wins = 0;
-        $losses = 0;
-        $totalPayout = 0;
-
-        DB::beginTransaction();
-        
         try {
-            foreach ($pendingTrades as $trade) {
-                $result = $this->settleTrade($trade, $market->final_result);
-                
-                if ($result['won']) {
-                    $wins++;
-                    $totalPayout += $result['payout'];
-                } else {
-                    $losses++;
-                }
+            DB::beginTransaction();
+
+            $market = Market::find($marketId);
+
+            if (!$market || !$market->outcome_result) {
+                Log::warning("Market settlement skipped: Market not found or outcome_result not set", [
+                    'market_id' => $marketId
+                ]);
+                DB::rollBack();
+                return false;
             }
+
+            // Get outcome result (normalize to lowercase)
+            $outcomeResult = strtolower($market->outcome_result);
+
+            // Fetch all pending trades for this market
+            $trades = Trade::where('market_id', $marketId)
+                ->where('status', 'pending')
+                ->get();
+
+            if ($trades->isEmpty()) {
+                Log::info("No pending trades to settle for market", [
+                    'market_id' => $marketId
+                ]);
+                DB::commit();
+                return true;
+            }
+
+            $settledCount = 0;
+            $winCount = 0;
+            $lossCount = 0;
+
+            foreach ($trades as $trade) {
+                // Get trade side (normalize to lowercase)
+                // Support both 'side' and 'option' fields for backward compatibility
+                $tradeSide = strtolower($trade->side ?? $trade->option ?? '');
+
+                if (empty($tradeSide)) {
+                    Log::warning("Trade has no side/option, skipping", [
+                        'trade_id' => $trade->id,
+                        'market_id' => $marketId
+                    ]);
+                    continue;
+                }
+
+                // Calculate shares if not set (amount / price)
+                if (!$trade->shares && $trade->price && $trade->price > 0) {
+                    $trade->shares = $trade->amount / $trade->price;
+                } elseif (!$trade->shares && $trade->token_amount) {
+                    // Fallback to token_amount if shares not set
+                    $trade->shares = $trade->token_amount;
+                }
+
+                if ($tradeSide === $outcomeResult) {
+                    // Trade won - calculate payout
+                    $payout = $trade->shares * 1;
+                    $trade->status = 'win';
+                    $trade->payout = $payout;
+                    $trade->settled_at = now();
+
+                    // Update user's balance
+                    $user = User::find($trade->user_id);
+                    if ($user) {
+                        $wallet = Wallet::firstOrCreate(
+                            ['user_id' => $user->id],
+                            ['balance' => 0, 'currency' => 'USD', 'status' => 'active']
+                        );
+
+                        $balanceBefore = $wallet->balance;
+                        $wallet->balance += $payout;
+                        $wallet->save();
+
+                        Log::info("Trade settled as WIN - balance updated", [
+                            'trade_id' => $trade->id,
+                            'user_id' => $user->id,
+                            'payout' => $payout,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $wallet->balance
+                        ]);
+
+                        $winCount++;
+                    }
+                } else {
+                    // Trade lost
+                    $trade->status = 'loss';
+                    $trade->payout = 0;
+                    $trade->settled_at = now();
+
+                    Log::info("Trade settled as LOSS", [
+                        'trade_id' => $trade->id,
+                        'user_id' => $trade->user_id,
+                        'trade_side' => $tradeSide,
+                        'market_result' => $outcomeResult
+                    ]);
+
+                    $lossCount++;
+                }
+
+                $trade->save();
+                $settledCount++;
+            }
+
+            // Mark market as settled
+            $market->settled = true;
+            $market->save();
 
             DB::commit();
 
-            Log::info('Market settled successfully', [
-                'market_id' => $market->id,
-                'wins' => $wins,
-                'losses' => $losses,
-                'total_payout' => $totalPayout,
+            Log::info("Market settlement completed", [
+                'market_id' => $marketId,
+                'total_trades' => $trades->count(),
+                'settled_count' => $settledCount,
+                'win_count' => $winCount,
+                'loss_count' => $lossCount
             ]);
 
-            return [
-                'success' => true,
-                'message' => 'Market settled successfully',
-                'wins' => $wins,
-                'losses' => $losses,
-                'total_payout' => $totalPayout,
-            ];
+            return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Market settlement failed', [
-                'market_id' => $market->id,
+            Log::error("Market settlement failed", [
+                'market_id' => $marketId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
-
-            throw $e;
+            return false;
         }
     }
 
     /**
-     * Settle a single trade
+     * Settle all closed markets that haven't been settled yet
+     *
+     * @return array
      */
-    protected function settleTrade(Trade $trade, string $finalResult): array
+    public function settleClosedMarkets(): array
     {
-        $userWon = ($trade->option === $finalResult);
-
-        if ($userWon) {
-            // Calculate payout: return amount + profit
-            // Profit = amount * (1 - price) for YES, or amount * price for NO
-            if ($trade->option === 'yes') {
-                $profit = $trade->amount * (1 - $trade->price);
-            } else {
-                $profit = $trade->amount * $trade->price;
-            }
-            
-            $payout = $trade->amount + $profit;
-
-            // Update trade
-            $trade->status = 'win';
-            $trade->payout = $payout;
-            $trade->payout_amount = $payout; // Keep both in sync
-            $trade->settled_at = now();
-            $trade->save();
-
-            // Add money to user's wallet
-            $wallet = Wallet::firstOrCreate(
-                ['user_id' => $trade->user_id],
-                ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
-            );
-
-            $balanceBefore = $wallet->balance;
-            $wallet->balance += $payout;
-            $wallet->save();
-
-            // Create transaction record
-            WalletTransaction::create([
-                'user_id' => $trade->user_id,
-                'wallet_id' => $wallet->id,
-                'type' => 'trade_payout',
-                'amount' => $payout,
-                'balance_before' => $balanceBefore,
-                'balance_after' => $wallet->balance,
-                'reference_type' => Trade::class,
-                'reference_id' => $trade->id,
-                'description' => "Trade payout - Won {$trade->option} bet on market #{$trade->market_id}",
-                'metadata' => [
-                    'trade_id' => $trade->id,
-                    'market_id' => $trade->market_id,
-                    'option' => $trade->option,
-                    'profit' => $profit,
-                ]
-            ]);
-
-            return [
-                'won' => true,
-                'payout' => $payout,
-            ];
-        } else {
-            // User lost - money already deducted, just mark as loss
-            $trade->status = 'loss';
-            $trade->settled_at = now();
-            $trade->save();
-
-            return [
-                'won' => false,
-                'payout' => 0,
-            ];
-        }
-    }
-
-    /**
-     * Auto-settle markets that have results but pending trades
-     * This can be called by a scheduled command
-     */
-    public function autoSettleMarkets(): array
-    {
-        $markets = Market::whereNotNull('final_result')
-            ->whereHas('trades', function ($query) {
-                $query->where('status', 'pending');
-            })
+        $markets = Market::where('is_closed', true)
+            ->where('settled', false)
+            ->whereNotNull('outcome_result')
             ->get();
 
-        $results = [];
-        
+        $results = [
+            'total' => $markets->count(),
+            'success' => 0,
+            'failed' => 0,
+            'markets' => []
+        ];
+
         foreach ($markets as $market) {
-            try {
-                $result = $this->settleMarket($market);
-                $results[] = [
-                    'market_id' => $market->id,
-                    'success' => true,
-                    ...$result,
-                ];
-            } catch (\Exception $e) {
-                $results[] = [
-                    'market_id' => $market->id,
-                    'success' => false,
-                    'error' => $e->getMessage(),
-                ];
+            $success = $this->settleMarket($market->id);
+
+            $results['markets'][] = [
+                'market_id' => $market->id,
+                'success' => $success
+            ];
+
+            if ($success) {
+                $results['success']++;
+            } else {
+                $results['failed']++;
             }
         }
 
         return $results;
     }
 }
-

@@ -27,3 +27,14 @@ Schedule::command('events:detect-categories')
     ->withoutOverlapping(10)
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/category-detection.log'));
+
+// Schedule automatic market settlement
+// Runs every minute to settle closed markets with outcome results
+Schedule::call(function () {
+    $settlementService = app(\App\Services\SettlementService::class);
+    $results = $settlementService->settleClosedMarkets();
+
+    if ($results['total'] > 0) {
+        \Illuminate\Support\Facades\Log::info('Market settlement scheduler executed', $results);
+    }
+})->name('settle-markets')->everyMinute()->withoutOverlapping(5)->onOneServer();
