@@ -44,5 +44,10 @@ return [
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT_URL'),
     ],
+    'binance' => [
+        'api_key' => env('BINANCE_API_KEY'),
+        'secret_key' => env('BINANCE_SECRET_KEY'),
+        'base_url' => env('BINANCE_BASE_URL', 'https://bpay.binanceapi.com'),
+    ],
 
 ];
