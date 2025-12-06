@@ -2,8 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Backend\Auth\LoginController;
+use App\Http\Controllers\Backend\GlobalSettingsController;
 use App\Http\Controllers\Backend\HomeController;
 use App\Http\Controllers\Backend\MarketController;
+use App\Http\Controllers\Backend\EventController;
+use App\Http\Controllers\Backend\CommentController;
+use App\Http\Controllers\Backend\BinancePayController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -17,15 +21,56 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+        // Market Management Routes
         Route::controller(MarketController::class)->group(function () {
             Route::get('/market', 'index')->name('market.index');
             Route::post('/market/search', 'search')->name('market.search');
             Route::get('/market/list', 'marketList')->name('market.list');
+            Route::get('/market/show/{id}', 'show')->name('market.show');
             Route::get('/market/save/{slug}', 'marketSave')->name('market.save');
             Route::post('/market/store', 'store')->name('market.store');
             Route::get('/market/edit/{id}', 'edit')->name('market.edit');
             Route::put('/market/update/{id}', 'update')->name('market.update');
             Route::delete('/market/delete/{id}', 'delete')->name('market.delete');
+
+            // Trading management
+            Route::post('/market/{id}/set-result', 'setResult')->name('market.set-result');
+            Route::post('/market/{id}/settle-trades', 'settleTrades')->name('market.settle-trades');
+
+            Route::get('/event/fetch', 'storeEvents')->name('event.fetch');
+        });
+
+        // Event Management Routes
+        Route::controller(EventController::class)->group(function () {
+            Route::get('/events', 'index')->name('events.index');
+            Route::get('/events/create', 'create')->name('events.create');
+            Route::get('/events/create-with-markets', 'createWithMarkets')->name('events.create-with-markets');
+            Route::post('/events', 'store')->name('events.store');
+            Route::post('/events/with-markets', 'storeWithMarkets')->name('events.store-with-markets');
+            Route::get('/events/{event}', 'show')->name('events.show');
+            Route::get('/events/{event}/edit', 'edit')->name('events.edit');
+            Route::put('/events/{event}', 'update')->name('events.update');
+            Route::delete('/events/{event}', 'destroy')->name('events.destroy');
+            Route::get('/events/{event}/add-markets', 'addMarkets')->name('events.add-markets');
+            Route::post('/events/{event}/markets', 'storeMarkets')->name('events.store-markets');
+        });
+
+        // Comment Management Routes
+        Route::controller(CommentController::class)->group(function () {
+            Route::delete('/comments/{id}', 'destroy')->name('comments.destroy');
+            Route::post('/comments/{id}/toggle-status', 'toggleStatus')->name('comments.toggle-status');
+        });
+
+        //Global Setting Management Routes
+        Route::controller(GlobalSettingsController::class)->group(function () {
+
+            Route::get('/setting', 'setting')->name('setting');
+            Route::post('/setting/update', 'settingUpdate')->name('setting.update');
+        });
+
+        // Binance Pay Management Routes
+        Route::controller(BinancePayController::class)->group(function () {
+            Route::post('/deposit/{depositId}/process', 'manualProcess')->name('deposit.manual.process');
         });
     });
 });
