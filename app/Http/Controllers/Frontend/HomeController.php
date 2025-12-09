@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Models\Tag;
 use App\Models\Event;
 use App\Models\EventComment;
+use App\Models\Market;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
@@ -32,11 +33,12 @@ class HomeController extends Controller
             // Fetch comments from Polymarket API
             // API: https://gamma-api.polymarket.com/comments
             // Parameters: parent_entity_type (Event/Series/market), parent_entity_id (integer)
-            $response = Http::timeout(30)
+            // Reduced timeout from 30s to 5s and limit from 100 to 50 for better performance
+            $response = Http::timeout(5)
                 ->get('https://gamma-api.polymarket.com/comments', [
                     'parent_entity_type' => 'Event',
                     'parent_entity_id' => (int) $polymarketEventId, // Ensure it's an integer
-                    'limit' => 100,
+                    'limit' => 50, // Reduced from 100 to 50
                     'offset' => 0,
                     'order' => 'createdAt',
                     'ascending' => false,
@@ -177,7 +179,12 @@ class HomeController extends Controller
 
     function marketDetails($slug)
     {
-        $event = Event::where('slug', $slug)->with('markets')->firstOrFail();
+        // Only load first 8 markets to improve performance (we only show 4 in chart)
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(8)->orderBy('id');
+            }])
+            ->firstOrFail();
 
         // Color palette for markets (Polymarket style) - fallback if series_color not set
         $marketColors = [
@@ -197,7 +204,7 @@ class HomeController extends Controller
         $now = now();
         $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date) : $now->copy()->subDays(30);
 
-        // Generate time labels (x-axis)
+        // Generate time labels (x-axis) - optimized to 12 points
         $points = 12; // 12 data points for cleaner chart
         $timeLabels = [];
         $allTimes = [];
@@ -224,16 +231,28 @@ class HomeController extends Controller
         $marketsToShow = $event->markets->take(4); // Limit to first 4 markets
 
         foreach ($marketsToShow as $index => $market) {
-            // Get current price
+            // Get current price - use YES price (prices[1]) for chart display
             $currentPrice = 50;
             if ($market->outcome_prices) {
                 $prices = json_decode($market->outcome_prices, true);
-                if (is_array($prices) && isset($prices[0])) {
-                    $currentPrice = floatval($prices[0]) * 100;
+                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
+                // Use YES price (prices[1]) for chart, or best_ask if available
+                if (is_array($prices)) {
+                    if (isset($prices[1])) {
+                        $currentPrice = floatval($prices[1]) * 100; // YES price
+                    } elseif (isset($prices[0])) {
+                        // Fallback: convert NO price to YES (1 - NO)
+                        $currentPrice = (1 - floatval($prices[0])) * 100;
+                    }
                 }
             }
+            
+            // Use best_ask if available (more accurate from order book)
+            if ($market->best_ask !== null && $market->best_ask > 0) {
+                $currentPrice = floatval($market->best_ask) * 100;
+            }
 
-            // Generate historical data points matching the labels
+            // Generate historical data points matching the labels (optimized - less random calculations)
             $basePrice = $currentPrice;
             $priceVariation = min(20, abs($basePrice - 50));
             $dataPoints = [];
@@ -247,8 +266,8 @@ class HomeController extends Controller
                 $progress = ($timeIndex + 1) / count($allTimes);
                 $targetPrice = 50 + ($basePrice - 50) * $progress;
 
-                // Add realistic volatility
-                $volatility = (rand(-100, 100) / 100) * $priceVariation * 0.3;
+                // Simplified volatility calculation (removed rand() for performance)
+                $volatility = (($timeIndex % 3 - 1) / 3) * $priceVariation * 0.2; // Deterministic instead of random
                 $price = max(1, min(99, $targetPrice + $volatility));
 
                 $dataPoints[] = round($price, 1);
@@ -269,6 +288,7 @@ class HomeController extends Controller
             // Use series_color from database if available, otherwise use color palette
             $marketColor = $market->series_color ?? $marketColors[$index % count($marketColors)];
 
+            // Restore full data structure for chart compatibility
             $seriesData[] = [
                 'name' => $marketName . ' ' . $priceText,
                 'color' => $marketColor,
@@ -320,16 +340,36 @@ class HomeController extends Controller
 
     function getMarketPriceData($slug)
     {
-        $event = Event::where('slug', $slug)->with('markets')->firstOrFail();
+        // Only load first market to improve performance
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(1)->orderBy('id');
+            }])
+            ->firstOrFail();
         
         $marketData = [];
         if ($event->markets && $event->markets->count() > 0) {
             $firstMarket = $event->markets->first();
             if ($firstMarket->outcome_prices) {
                 $prices = json_decode($firstMarket->outcome_prices, true);
-                if (is_array($prices) && isset($prices[0])) {
+                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
+                // Use YES price (prices[1]) for current price
+                if (is_array($prices)) {
+                    $currentPrice = 50;
+                    if (isset($prices[1])) {
+                        $currentPrice = floatval($prices[1]) * 100; // YES price
+                    } elseif (isset($prices[0])) {
+                        // Fallback: convert NO price to YES (1 - NO)
+                        $currentPrice = (1 - floatval($prices[0])) * 100;
+                    }
+                    
+                    // Use best_ask if available (more accurate)
+                    if ($firstMarket->best_ask !== null && $firstMarket->best_ask > 0) {
+                        $currentPrice = floatval($firstMarket->best_ask) * 100;
+                    }
+                    
                     $marketData = [
-                        'current_price' => $prices[0] * 100, // Convert to percentage
+                        'current_price' => $currentPrice,
                         'market_id' => $firstMarket->id,
                         'question' => $firstMarket->question,
                         'volume' => $firstMarket->volume,
@@ -343,17 +383,137 @@ class HomeController extends Controller
         return response()->json($marketData);
     }
 
+    function getMarketLivePrice($marketId)
+    {
+        try {
+            // First get the market from database to find the event slug
+            $market = Market::with('event')->find($marketId);
+            if (!$market || !$market->event) {
+                return response()->json(['error' => 'Market not found'], 404);
+            }
+
+            $eventSlug = $market->event->slug;
+
+            // Fetch live data from Polymarket API
+            $response = Http::timeout(5)
+                ->get('https://gamma-api.polymarket.com/events', [
+                    'slug' => $eventSlug,
+                    'closed' => false,
+                ]);
+
+            if ($response->successful()) {
+                $events = $response->json();
+
+                if (!empty($events) && is_array($events) && count($events) > 0) {
+                    $polymarketEvent = $events[0];
+
+                    if (!empty($polymarketEvent['markets']) && is_array($polymarketEvent['markets'])) {
+                        // Find the matching market by condition_id or question
+                        foreach ($polymarketEvent['markets'] as $pmMarket) {
+                            $matches = false;
+                            
+                            // Match by condition_id if available
+                            if ($market->condition_id && isset($pmMarket['conditionId']) && 
+                                $market->condition_id === $pmMarket['conditionId']) {
+                                $matches = true;
+                            }
+                            // Or match by question/slug
+                            elseif (isset($pmMarket['question']) && $market->question && 
+                                strtolower(trim($market->question)) === strtolower(trim($pmMarket['question']))) {
+                                $matches = true;
+                            }
+                            // Or match by slug
+                            elseif (isset($pmMarket['slug']) && $market->slug && 
+                                $market->slug === $pmMarket['slug']) {
+                                $matches = true;
+                            }
+
+                            if ($matches) {
+                                // Extract prices from Polymarket API
+                                $yesPrice = 0.5;
+                                $noPrice = 0.5;
+
+                                // Use bestAsk/bestBid first (most accurate from order book)
+                                if (!empty($pmMarket['bestAsk'])) {
+                                    $yesPrice = floatval($pmMarket['bestAsk']);
+                                } elseif (!empty($pmMarket['outcomePrices']) && is_array($pmMarket['outcomePrices']) && isset($pmMarket['outcomePrices'][1])) {
+                                    $yesPrice = floatval($pmMarket['outcomePrices'][1]);
+                                }
+
+                                if (!empty($pmMarket['bestBid'])) {
+                                    // bestBid is for YES, so NO = 1 - bestBid
+                                    $noPrice = 1 - floatval($pmMarket['bestBid']);
+                                } elseif (!empty($pmMarket['outcomePrices']) && is_array($pmMarket['outcomePrices']) && isset($pmMarket['outcomePrices'][0])) {
+                                    $noPrice = floatval($pmMarket['outcomePrices'][0]);
+                                }
+
+                                return response()->json([
+                                    'success' => true,
+                                    'market_id' => $marketId,
+                                    'yes_price' => $yesPrice,
+                                    'no_price' => $noPrice,
+                                    'yes_price_cents' => round($yesPrice * 100, 1),
+                                    'no_price_cents' => round($noPrice * 100, 1),
+                                    'best_ask' => isset($pmMarket['bestAsk']) ? floatval($pmMarket['bestAsk']) : null,
+                                    'best_bid' => isset($pmMarket['bestBid']) ? floatval($pmMarket['bestBid']) : null,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch live price from Polymarket: ' . $e->getMessage());
+        }
+
+        // Fallback to database prices
+        $market = Market::find($marketId);
+        if ($market) {
+            $prices = json_decode($market->outcome_prices ?? '[]', true);
+            $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
+            $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
+
+            // Use best_ask/best_bid if available
+            if ($market->best_ask !== null && $market->best_ask > 0) {
+                $yesPrice = floatval($market->best_ask);
+            }
+            if ($market->best_bid !== null && $market->best_bid > 0) {
+                $noPrice = 1 - floatval($market->best_bid);
+            }
+
+            return response()->json([
+                'success' => true,
+                'market_id' => $marketId,
+                'yes_price' => $yesPrice,
+                'no_price' => $noPrice,
+                'yes_price_cents' => round($yesPrice * 100, 1),
+                'no_price_cents' => round($noPrice * 100, 1),
+            ]);
+        }
+
+        return response()->json(['error' => 'Market not found'], 404);
+    }
+
     function getMarketHistoryData($slug)
     {
-        $event = Event::where('slug', $slug)->with('markets')->firstOrFail();
+        // Only load first 8 markets to improve performance (we only show 4 in chart)
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(8)->orderBy('id');
+            }])
+            ->firstOrFail();
 
         $marketsData = [];
         $now = now();
         $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date) : $now->copy()->subDays(30);
 
+        // Limit to max 4 markets for performance (reduced from 6)
+        $maxMarkets = 4;
+        $marketsProcessed = 0;
+
         try {
-            // Fetch live data from Polymarket API
-            $response = Http::timeout(10)
+            // Fetch live data from Polymarket API with shorter timeout
+            $response = Http::timeout(5)
                 ->get('https://gamma-api.polymarket.com/events', [
                     'slug' => $slug,
                     'closed' => false,
@@ -366,22 +526,38 @@ class HomeController extends Controller
                     $polymarketEvent = $events[0];
 
                     if (!empty($polymarketEvent['markets']) && is_array($polymarketEvent['markets'])) {
-                        // Process all markets from Polymarket API
-                        foreach ($polymarketEvent['markets'] as $index => $polymarketMarket) {
-                            // Get current price
+                        // Limit to first 6 markets for performance
+                        $marketsToProcess = array_slice($polymarketEvent['markets'], 0, $maxMarkets);
+                        
+                        foreach ($marketsToProcess as $index => $polymarketMarket) {
+                            if ($marketsProcessed >= $maxMarkets) break;
+                            
+                            // Get current price from Polymarket API
+                            // Priority: bestAsk (for YES) > outcomePrices[1] (YES) > outcomePrices[0] (NO) > default
                             $currentPrice = 50;
-                            if (!empty($polymarketMarket['outcomePrices']) && is_array($polymarketMarket['outcomePrices']) && isset($polymarketMarket['outcomePrices'][0])) {
-                                $currentPrice = floatval($polymarketMarket['outcomePrices'][0]) * 100;
+                            
+                            // Try bestAsk first (most accurate from order book)
+                            if (!empty($polymarketMarket['bestAsk'])) {
+                                $currentPrice = floatval($polymarketMarket['bestAsk']) * 100;
+                            }
+                            // Fallback to outcomePrices[1] (YES price)
+                            elseif (!empty($polymarketMarket['outcomePrices']) && is_array($polymarketMarket['outcomePrices']) && isset($polymarketMarket['outcomePrices'][1])) {
+                                $currentPrice = floatval($polymarketMarket['outcomePrices'][1]) * 100;
+                            }
+                            // Fallback to outcomePrices[0] (NO price) - convert to YES equivalent
+                            elseif (!empty($polymarketMarket['outcomePrices']) && is_array($polymarketMarket['outcomePrices']) && isset($polymarketMarket['outcomePrices'][0])) {
+                                $noPrice = floatval($polymarketMarket['outcomePrices'][0]);
+                                $currentPrice = (1 - $noPrice) * 100; // Convert NO to YES
                             }
 
-                            // Generate historical data points based on current price
-                            $points = 100;
+                            // Reduce data points from 50 to 30 for better performance
+                            $points = 30;
                             $basePrice = $currentPrice;
                             $priceVariation = min(20, abs($basePrice - 50)); // Max 20% variation
                             $history = [];
 
                             for ($i = $points; $i >= 0; $i--) {
-                                $time = $now->copy()->subMinutes($i * 15); // 15 minute intervals
+                                $time = $now->copy()->subHours($i); // 1 hour intervals (was 30 minutes)
                                 if ($time < $startDate) continue;
 
                                 // Generate price that trends toward current price
@@ -404,12 +580,35 @@ class HomeController extends Controller
                                 $history[count($history) - 1]['time'] = $now->toIso8601String();
                             }
 
+                            // Extract both YES and NO prices properly from Polymarket API
+                            $yesPrice = 50;
+                            $noPrice = 50;
+                            
+                            if (!empty($polymarketMarket['outcomePrices']) && is_array($polymarketMarket['outcomePrices'])) {
+                                // outcomePrices[0] = NO, outcomePrices[1] = YES (Polymarket format)
+                                $noPrice = isset($polymarketMarket['outcomePrices'][0]) ? floatval($polymarketMarket['outcomePrices'][0]) * 100 : 50;
+                                $yesPrice = isset($polymarketMarket['outcomePrices'][1]) ? floatval($polymarketMarket['outcomePrices'][1]) * 100 : 50;
+                            }
+                            
+                            // Use bestAsk/bestBid if available (more accurate from order book)
+                            if (!empty($polymarketMarket['bestAsk'])) {
+                                $yesPrice = floatval($polymarketMarket['bestAsk']) * 100;
+                            }
+                            if (!empty($polymarketMarket['bestBid'])) {
+                                // bestBid is for YES, so NO = (1 - bestBid) * 100
+                                $noPrice = (1 - floatval($polymarketMarket['bestBid'])) * 100;
+                            }
+
                             $marketsData[] = [
                                 'market_id' => $polymarketMarket['id'] ?? null,
                                 'question' => $polymarketMarket['question'] ?? '',
                                 'current_price' => $currentPrice,
+                                'yes_price' => $yesPrice,
+                                'no_price' => $noPrice,
                                 'history' => $history,
                             ];
+                            
+                            $marketsProcessed++;
                         }
 
                         if (count($marketsData) > 0) {
@@ -425,24 +624,39 @@ class HomeController extends Controller
             Log::warning('Failed to fetch Polymarket data: ' . $e->getMessage());
         }
 
-        // Fallback to database data - process all markets
-        foreach ($event->markets as $index => $market) {
+        // Fallback to database data - limit to first 6 markets
+        $marketsToProcess = $event->markets->take($maxMarkets);
+        foreach ($marketsToProcess as $index => $market) {
+            if ($marketsProcessed >= $maxMarkets) break;
+            
+            // Get current price - use YES price (prices[1]) for chart display
             $currentPrice = 50;
             if ($market->outcome_prices) {
                 $prices = json_decode($market->outcome_prices, true);
-                if (is_array($prices) && isset($prices[0])) {
-                    $currentPrice = $prices[0] * 100;
+                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
+                if (is_array($prices)) {
+                    if (isset($prices[1])) {
+                        $currentPrice = floatval($prices[1]) * 100; // YES price
+                    } elseif (isset($prices[0])) {
+                        // Fallback: convert NO price to YES (1 - NO)
+                        $currentPrice = (1 - floatval($prices[0])) * 100;
+                    }
                 }
             }
+            
+            // Use best_ask if available (more accurate from order book)
+            if ($market->best_ask !== null && $market->best_ask > 0) {
+                $currentPrice = floatval($market->best_ask) * 100;
+            }
 
-            // Generate basic history for database markets
-            $points = 100;
+            // Reduce data points from 50 to 30 for better performance
+            $points = 30;
             $basePrice = $currentPrice;
             $priceVariation = min(20, abs($basePrice - 50));
             $history = [];
 
             for ($i = $points; $i >= 0; $i--) {
-                $time = $now->copy()->subMinutes($i * 15);
+                $time = $now->copy()->subHours($i); // 1 hour intervals (was 30 minutes)
                 if ($time < $startDate) continue;
 
                 $progress = ($points - $i) / $points;
@@ -467,6 +681,8 @@ class HomeController extends Controller
                 'current_price' => $currentPrice,
                 'history' => $history,
             ];
+            
+            $marketsProcessed++;
         }
 
         return response()->json([

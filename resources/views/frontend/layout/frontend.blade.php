@@ -425,16 +425,15 @@
                         <button class="quick-amount-btn" data-amount="500">$500</button>
                 </div> --}}
 
-                {{-- <div class="deposit-method-section">
+                <div class="deposit-method-section">
                         <label class="deposit-method-label">Payment Method</label>
                         <div class="deposit-methods">
-                        <!-- Binance Pay - Temporarily disabled for testing -->
-                        <!-- <button type="button" class="deposit-method-btn active" data-method="binancepay">
+                        <button type="button" class="deposit-method-btn active" data-method="binancepay">
                                 <i class="fas fa-coins"></i>
                                 <span>Binance Pay</span>
-                            </button> -->
+                            </button>
 
-                        <button type="button" class="deposit-method-btn active" data-method="manual">
+                        <button type="button" class="deposit-method-btn" data-method="manual">
                                 <i class="fas fa-keyboard"></i>
                                 <span>Manual Payment</span>
                             </button>
@@ -449,10 +448,10 @@
                                 <span>Trust Wallet</span>
                             </button>
                         </div>
-                </div> --}}
+                </div>
 
-                <!-- Query Code Field - Hidden for testing -->
-                {{-- <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
+                <!-- Query Code Field - Shown for manual payment -->
+                <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
                         <label class="deposit-input-label">Transaction/Query Code</label>
                         <div class="deposit-input-wrapper">
                             <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
@@ -464,7 +463,7 @@
                             trade
                             number
                         </small>
-                </div> --}}
+                </div>
 
                 <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
                     <i class="fas fa-arrow-right"></i>
@@ -472,9 +471,9 @@
                 </button>
 
                 <div class="deposit-footer">
-                    <p class="deposit-note" style="color: #10b981; font-weight: 600;">
-                        <i class="fas fa-flask"></i>
-                        Test Mode: Fake deposits enabled for testing. No real payment required.
+                    <p class="deposit-note" style="color: #6b7280; font-size: 12px;">
+                        <i class="fas fa-info-circle"></i>
+                        Minimum deposit: $10. Your payment will be processed securely through Binance Pay.
                     </p>
                 </div>
             </form>
@@ -1779,6 +1778,7 @@
             $depositClose.on("click", function(e) {
                 e.preventDefault();
                 closeDepositModal();
+
             });
 
             // Close modal on overlay click
@@ -1802,22 +1802,20 @@
                 $methodBtns.removeClass("active");
                 $(this).addClass("active");
 
-                // Query code field hidden for testing - always keep it hidden
-                // const method = $(this).data("method");
-                // if (method === 'manual') {
-                //     $("#queryCodeGroup").slideDown(200);
-                // } else {
-                //     $("#queryCodeGroup").slideUp(200);
-                //     $("#queryCode").val("");
-                // }
+                const method = $(this).data("method");
+                if (method === 'manual') {
+                    $("#queryCodeGroup").slideDown(200);
+                } else {
+                    $("#queryCodeGroup").slideUp(200);
+                    $("#queryCode").val("");
+                }
             });
 
             // Submit deposit
             $depositSubmit.on("click", function(e) {
                 e.preventDefault();
                 const amount = parseFloat($depositAmount.val());
-                // Default method for testing - manual deposit
-                const method = 'manual';
+                const method = $methodBtns.filter('.active').data('method') || 'binancepay';
                 const currency = 'USDT';
 
                 if (!amount || amount <= 0) {
@@ -1825,39 +1823,319 @@
                     return;
                 }
 
-                // Minimum amount check disabled for testing
-                // if (amount < 10) {
-                //     showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
-                //     return;
-                // }
+                if (amount < 10) {
+                    showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                    return;
+                }
 
                 // Disable submit button
                 const $btn = $(this);
                 const originalText = $btn.html();
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
-                // Direct deposit - simplified for testing (just amount needed)
+                // Handle Binance Pay
+                if (method === 'binancepay') {
+                    $.ajax({
+                        url: '{{ route('binance.create') }}',
+                        method: 'POST',
+                        data: {
+                            amount: amount,
+                            currency: currency,
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success && response.checkoutUrl) {
+                                // Close modal first
+                                closeDepositModal();
+                                
+                                // Redirect to Binance Pay checkout
+                                window.location.href = response.checkoutUrl;
+                            } else {
+                                showError(response.message || "Failed to create payment. Please try again.",
+                                    'Payment Error');
+                                $btn.prop("disabled", false).html(originalText);
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = "Failed to create payment. Please try again.";
+
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                const errors = Object.values(xhr.responseJSON.errors).flat();
+                                errorMessage = errors.join('\n');
+                            }
+
+                            showError(errorMessage, 'Payment Error');
+                            $btn.prop("disabled", false).html(originalText);
+                        }
+                    });
+                    return;
+                }
+
+                // Handle Manual Payment
+                if (method === 'manual') {
+                    const queryCode = $("#queryCode").val();
+                    if (!queryCode) {
+                        showWarning('Please enter your transaction/query code', 'Query Code Required');
+                        $btn.prop("disabled", false).html(originalText);
+                        return;
+                    }
+
+                    $.ajax({
+                        url: '{{ route('binance.manual.verify') }}',
+                        method: 'POST',
+                        data: {
+                            query_code: queryCode,
+                            amount: amount,
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                showSuccess(
+                                    response.message || `Payment verified! Your new balance is $${response.balance}`,
+                                    'Payment Verified'
+                                );
+
+                                // Update balance display
+                                $('.wallet-value').each(function() {
+                                    if ($(this).closest('.wallet-item').find(
+                                            '.wallet-label').text().trim() === 'Cash') {
+                                        $(this).text('$' + response.balance);
+                                    }
+                                });
+
+                                // Update balance in modal
+                                $('.balance-value').text('$' + response.balance);
+
+                                // Close modal and reset form
+                                closeDepositModal();
+                                $depositAmount.val("");
+                                $("#queryCode").val("");
+
+                                // Reload page to update balance everywhere
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                showError(response.message || "Verification failed. Please try again.",
+                                    'Verification Failed');
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = "Verification failed. Please try again.";
+
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                const errors = Object.values(xhr.responseJSON.errors).flat();
+                                errorMessage = errors.join('\n');
+                            }
+
+                            showError(errorMessage, 'Verification Failed');
+                        },
+                        complete: function() {
+                            $btn.prop("disabled", false).html(originalText);
+                        }
+                    });
+                    return;
+                }
+
+                // Handle MetaMask
+                if (method === 'metamask') {
+                    handleMetaMaskDeposit(amount, currency, $btn, originalText);
+                    return;
+                }
+
+                // Handle other methods - placeholder
+                showWarning('This payment method is not yet implemented', 'Coming Soon');
+                $btn.prop("disabled", false).html(originalText);
+            });
+
+            // Close on Escape key
+            $(document).on("keydown", function(e) {
+                if (e.key === "Escape" && $depositModal.hasClass("active")) {
+                    closeDepositModal();
+                }
+            });
+
+            // MetaMask Deposit Handler
+            function handleMetaMaskDeposit(amount, currency, $btn, originalText) {
+                // Check if MetaMask is installed
+                if (typeof window.ethereum === 'undefined') {
+                    showError(
+                        'MetaMask is not installed. Please install MetaMask extension to continue.',
+                        'MetaMask Required'
+                    );
+                    $btn.prop("disabled", false).html(originalText);
+                    return;
+                }
+
+                // Get network selection (default to Ethereum)
+                const network = 'ethereum'; // You can add a network selector in the UI
+                const tokenAddress = null; // null for native token (ETH/BNB/MATIC), or token contract address for ERC20
+
+                // Step 1: Create deposit record
                 $.ajax({
-                    url: '{{ route('wallet.deposit') }}',
+                    url: '{{ route('metamask.deposit.create') }}',
                     method: 'POST',
                     data: {
                         amount: amount,
-                        method: method,
-                        currency: currency,
+                        currency: currency || 'USDT',
+                        network: network,
+                        token_address: tokenAddress,
                         _token: $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Show success message
+                            // Close deposit modal first before showing SweetAlert
+                            closeDepositModal();
+                            
+                            // Small delay to ensure modal closes before SweetAlert opens
+                            setTimeout(function() {
+                                // Show payment instructions
+                                Swal.fire({
+                                title: 'MetaMask Payment',
+                                html: `
+                                    <div style="text-align: left; color: var(--text-primary, #333);">
+                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Amount:</strong> ${amount} ${response.currency}</p>
+                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Network:</strong> ${response.network}</p>
+                                        <p style="color: var(--text-primary, #333); margin-bottom: 8px;"><strong>Send to:</strong></p>
+                                        <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444); box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                            <span id="merchantAddressText" style="flex: 1; word-break: break-all;">${response.merchant_address}</span>
+                                            <button id="copyAddressBtn" onclick="copyToClipboard('${response.merchant_address}', 'copyAddressBtn')" style="background: var(--accent, #ffb11a); color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s ease; white-space: nowrap; flex-shrink: 0;" title="Copy address">
+                                                <i class="fas fa-copy" style="margin-right: 5px;"></i> Copy
+                                            </button>
+                                        </div>
+                                        <p style="margin-top: 15px; color: var(--text-primary, #333);"><strong>Steps:</strong></p>
+                                        <ol style="text-align: left; padding-left: 20px; font-size: 13px; color: var(--text-secondary, #666); line-height: 1.8;">
+                                            <li>Open MetaMask wallet</li>
+                                            <li>Switch to <strong>${response.network}</strong> network</li>
+                                            <li>Send <strong>${amount} ${response.currency}</strong> to the address above</li>
+                                            <li>After sending, copy the <strong>Transaction Hash</strong> from MetaMask</li>
+                                            <li>Paste the transaction hash below (starts with 0x, 66 characters long)</li>
+                                        </ol>
+                                        <div style="background: var(--accent, #ffb11a); color: #000; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 12px; border: 1px solid rgba(255,177,26,0.3);">
+                                            <strong>⚠️ Important:</strong> Enter the <strong>Transaction Hash</strong> (tx hash), NOT the wallet address. 
+                                            Transaction hash is 66 characters long and starts with 0x. 
+                                            You can find it in MetaMask under "Activity" → Click on your transaction → Copy "Transaction hash".
+                                        </div>
+                                    </div>
+                                `,
+                                icon: 'info',
+                                showCancelButton: true,
+                                confirmButtonText: 'I\'ve Sent Payment',
+                                cancelButtonText: 'Cancel',
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#d33',
+                                input: 'text',
+                                inputPlaceholder: 'Enter Transaction Hash (0x...)',
+                                inputValidator: (value) => {
+                                    if (!value) {
+                                        return 'Please enter transaction hash';
+                                    }
+                                    // Transaction hash should be 0x followed by 64 hex characters (66 total)
+                                    const txHashPattern = /^0x[a-fA-F0-9]{64}$/;
+                                    if (!txHashPattern.test(value.trim())) {
+                                        return 'Invalid transaction hash format. Must be 66 characters (0x + 64 hex characters). Example: 0x1234...abcd';
+                                    }
+                                    // Check if user entered merchant address instead
+                                    if (value.trim().toLowerCase() === response.merchant_address.toLowerCase()) {
+                                        return 'You entered the merchant address. Please enter the transaction hash (tx hash) from MetaMask, not the wallet address.';
+                                    }
+                                }
+                                }).then((result) => {
+                                    if (result.isConfirmed && result.value) {
+                                        verifyMetaMaskTransaction(result.value, response.deposit_id, network, $btn, originalText);
+                                    } else {
+                                        // User cancelled - reset button
+                                        $btn.prop("disabled", false).html(originalText);
+                                    }
+                                });
+                            }, 100); // Small delay to ensure modal closes before SweetAlert opens
+                        } else {
+                            showError(response.message || "Failed to create deposit", 'Error');
+                            $btn.prop("disabled", false).html(originalText);
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = "Failed to create deposit. Please try again.";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showError(errorMessage, 'Error');
+                        $btn.prop("disabled", false).html(originalText);
+                    }
+                });
+            }
+
+            // Verify MetaMask Transaction
+            function verifyMetaMaskTransaction(txHash, depositId, network, $btn, originalText) {
+                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Verifying...');
+
+                // First, check transaction status
+                checkTransactionStatus(txHash, network, depositId, $btn, originalText, 0);
+            }
+
+            // Check transaction status with polling
+            function checkTransactionStatus(txHash, network, depositId, $btn, originalText, attempt) {
+                const maxAttempts = 30; // 30 attempts = ~2.5 minutes
+                
+                $.ajax({
+                    url: '{{ route('metamask.transaction.status') }}',
+                    method: 'POST',
+                    data: {
+                        tx_hash: txHash,
+                        network: network,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success && response.status === 'success') {
+                            // Transaction confirmed, now verify
+                            verifyTransaction(txHash, depositId, network, $btn, originalText);
+                        } else if (response.success && response.status === 'pending') {
+                            // Still pending, poll again
+                            if (attempt < maxAttempts) {
+                                setTimeout(() => {
+                                    checkTransactionStatus(txHash, network, depositId, $btn, originalText, attempt + 1);
+                                }, 5000); // Check every 5 seconds
+                            } else {
+                                showError('Transaction is taking too long to confirm. Please verify manually later.', 'Timeout');
+                                $btn.prop("disabled", false).html(originalText);
+                            }
+                        } else {
+                            showError(response.message || 'Transaction verification failed', 'Error');
+                            $btn.prop("disabled", false).html(originalText);
+                        }
+                    },
+                    error: function() {
+                        // If status check fails, try to verify anyway
+                        verifyTransaction(txHash, depositId, network, $btn, originalText);
+                    }
+                });
+            }
+
+            // Verify transaction
+            function verifyTransaction(txHash, depositId, network, $btn, originalText) {
+                $.ajax({
+                    url: '{{ route('metamask.transaction.verify') }}',
+                    method: 'POST',
+                    data: {
+                        tx_hash: txHash,
+                        deposit_id: depositId,
+                        network: network,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
                             showSuccess(
-                                `Deposit of $${response.amount} successful! Your new balance is $${response.balance}`,
-                                'Deposit Successful'
+                                response.message || `Payment verified! Your new balance is $${response.balance}`,
+                                'Payment Verified'
                             );
 
-                            // Update balance display if exists
+                            // Update balance display
                             $('.wallet-value').each(function() {
-                                if ($(this).closest('.wallet-item').find(
-                                        '.wallet-label').text().trim() === 'Cash') {
+                                if ($(this).closest('.wallet-item').find('.wallet-label').text().trim() === 'Cash') {
                                     $(this).text('$' + response.balance);
                                 }
                             });
@@ -1874,35 +2152,20 @@
                                 window.location.reload();
                             }, 1500);
                         } else {
-                            showError(response.message || "Deposit failed. Please try again.",
-                                'Deposit Failed');
+                            showError(response.message || "Verification failed. Please try again.", 'Verification Failed');
+                            $btn.prop("disabled", false).html(originalText);
                         }
                     },
                     error: function(xhr) {
-                        let errorMessage = "Deposit failed. Please try again.";
-
+                        let errorMessage = "Verification failed. Please try again.";
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            const errors = Object.values(xhr.responseJSON.errors).flat();
-                            errorMessage = errors.join('\n');
                         }
-
-                        showError(errorMessage, 'Deposit Failed');
-                    },
-                    complete: function() {
-                        // Re-enable submit button
+                        showError(errorMessage, 'Verification Failed');
                         $btn.prop("disabled", false).html(originalText);
                     }
                 });
-            });
-
-            // Close on Escape key
-            $(document).on("keydown", function(e) {
-                if (e.key === "Escape" && $depositModal.hasClass("active")) {
-                    closeDepositModal();
-                }
-            });
+            }
         });
     </script>
     <!-- SweetAlert2 -->
@@ -2368,6 +2631,71 @@
             }
         }
 
+        // Copy to clipboard function
+        function copyToClipboard(text, buttonId) {
+            // Create a temporary textarea element
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (successful) {
+                    // Update button text to show success
+                    const btn = document.getElementById(buttonId);
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
+                        btn.style.background = '#28a745';
+                        btn.style.color = '#fff';
+                        
+                        // Reset after 2 seconds
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.style.background = 'var(--accent, #ffb11a)';
+                            btn.style.color = '#000';
+                        }, 2000);
+                    }
+                    
+                    // Show toast notification
+                    showSuccess('Address copied to clipboard!', 'Copied');
+                } else {
+                    showError('Failed to copy. Please try again.', 'Copy Failed');
+                }
+            } catch (err) {
+                document.body.removeChild(textarea);
+                // Fallback: try using Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        const btn = document.getElementById(buttonId);
+                        if (btn) {
+                            const originalHTML = btn.innerHTML;
+                            btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
+                            btn.style.background = '#28a745';
+                            btn.style.color = '#fff';
+                            
+                            setTimeout(() => {
+                                btn.innerHTML = originalHTML;
+                                btn.style.background = 'var(--accent, #ffb11a)';
+                                btn.style.color = '#000';
+                            }, 2000);
+                        }
+                        showSuccess('Address copied to clipboard!', 'Copied');
+                    }).catch(() => {
+                        showError('Failed to copy. Please copy manually.', 'Copy Failed');
+                    });
+                } else {
+                    showError('Copy not supported. Please copy manually.', 'Copy Failed');
+                }
+            }
+        }
+
         // Confirmation dialog with theme
         function showConfirm(message, title = 'Confirm', confirmText = 'Yes', cancelText = 'No') {
             return Swal.fire({
@@ -2543,3 +2871,4 @@
 </body>
 
 </html>
+

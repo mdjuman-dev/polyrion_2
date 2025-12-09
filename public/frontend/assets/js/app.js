@@ -1530,7 +1530,7 @@ $(document).ready(function () {
     // =======================
     // Function to populate trading panel with outcome data
     // =======================
-    function populateTradingPanel($row, isYesSelected, isMobile) {
+    async function populateTradingPanel($row, isYesSelected, isMobile) {
         // Remove highlight from all outcome rows
         $(".outcome-row").removeClass("active selected");
 
@@ -1554,12 +1554,76 @@ $(document).ready(function () {
             $("#panelMarketTitle").text().trim();
         const $yesBtn = $row.find(".btn-yes");
         const $noBtn = $row.find(".btn-no");
-        const yesButtonText = $yesBtn.text();
-        const noButtonText = $noBtn.text();
-        const yesPriceMatch = yesButtonText.match(/([\d.]+)¢/);
-        const noPriceMatch = noButtonText.match(/([\d.]+)¢/);
-        const yesPrice = yesPriceMatch ? parseFloat(yesPriceMatch[1]) : 0;
-        const noPrice = noPriceMatch ? parseFloat(noPriceMatch[1]) : 0;
+        
+        // Get market ID from row
+        const marketId = $row.data("market-id");
+        
+        // Get initial prices from data attributes (fallback)
+        let yesPriceDecimal = parseFloat($yesBtn.attr("data-yes-price")) || 0.5;
+        let noPriceDecimal = parseFloat($noBtn.attr("data-no-price")) || 0.5;
+        
+        // Fallback: Extract from button text if data attributes not available
+        if (isNaN(yesPriceDecimal) || yesPriceDecimal <= 0) {
+            const yesButtonText = $yesBtn.text();
+            const noButtonText = $noBtn.text();
+            const yesPriceMatch = yesButtonText.match(/([\d.]+)¢/);
+            const noPriceMatch = noButtonText.match(/([\d.]+)¢/);
+            // Extract prices in CENTS, then convert to DECIMAL for calculation
+            const yesPriceCents = yesPriceMatch ? parseFloat(yesPriceMatch[1]) : 50;
+            const noPriceCents = noPriceMatch ? parseFloat(noPriceMatch[1]) : 50;
+            // Convert cents to decimal (50¢ = 0.50) for calculation
+            yesPriceDecimal = yesPriceCents / 100;
+            noPriceDecimal = noPriceCents / 100;
+        }
+        
+        // Fetch live prices from Polymarket API if market ID is available
+        if (marketId) {
+            try {
+                const response = await fetch(`/api/market/${marketId}/live-price`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.yes_price !== undefined && data.no_price !== undefined) {
+                        // Use live prices from Polymarket API
+                        // Prices from API should already be in decimal format (0.001 to 0.999)
+                        // But validate and convert if needed
+                        let yesPrice = parseFloat(data.yes_price);
+                        let noPrice = parseFloat(data.no_price);
+                        
+                        // Fix: If price is >= 1, it might be in cents (e.g., 70 = 70¢ = 0.70)
+                        // Convert to decimal if needed
+                        if (yesPrice >= 1 && yesPrice <= 100) {
+                            yesPrice = yesPrice / 100;
+                        }
+                        if (noPrice >= 1 && noPrice <= 100) {
+                            noPrice = noPrice / 100;
+                        }
+                        
+                        // Ensure prices are in valid range (0.001 to 0.999)
+                        if (yesPrice > 0 && yesPrice < 1) {
+                            yesPriceDecimal = yesPrice;
+                        }
+                        if (noPrice > 0 && noPrice < 1) {
+                            noPriceDecimal = noPrice;
+                        }
+                        
+                        console.log('Live prices fetched from Polymarket:', {
+                            rawYes: data.yes_price,
+                            rawNo: data.no_price,
+                            convertedYes: yesPriceDecimal,
+                            convertedNo: noPriceDecimal,
+                            yesCents: (yesPriceDecimal * 100).toFixed(1) + '¢',
+                            noCents: (noPriceDecimal * 100).toFixed(1) + '¢'
+                        });
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch live prices, using cached prices:', error);
+            }
+        }
+        
+        // Convert to cents for display
+        const yesPriceCents = yesPriceDecimal * 100;
+        const noPriceCents = noPriceDecimal * 100;
 
         // Update panel elements
         if (marketTitle) {
@@ -1577,39 +1641,60 @@ $(document).ready(function () {
             $("#sellTab").removeClass("active");
             $("#actionTabs").addClass("buy-only");
         }
-        // Update button text with prices
+        // Update button text with prices (display in cents) but store decimal in data-price
         $("#yesBtn")
-            .html(`Yes ${yesPrice.toFixed(1)}¢`)
-            .attr("data-price", yesPrice);
+            .html(`Yes ${yesPriceCents.toFixed(1)}¢`)
+            .attr("data-price", yesPriceDecimal)
+            .data("price-decimal", yesPriceDecimal); // Store in jQuery data as well
         $("#noBtn")
-            .html(`No ${noPrice.toFixed(1)}¢`)
-            .attr("data-price", noPrice);
-
-        // Update button text with prices
-        $("#yesBtn")
-            .html(`Yes ${yesPrice.toFixed(1)}¢`)
-            .attr("data-price", yesPrice);
-        $("#noBtn")
-            .html(`No ${noPrice.toFixed(1)}¢`)
-            .attr("data-price", noPrice);
+            .html(`No ${noPriceCents.toFixed(1)}¢`)
+            .attr("data-price", noPriceDecimal)
+            .data("price-decimal", noPriceDecimal); // Store in jQuery data as well
 
         if (isYesSelected) {
             $("#yesBtn").addClass("active");
             $("#noBtn").removeClass("active");
-            $("#limitPrice").val(yesPrice);
-            $("#avgPriceValue").text(yesPrice.toFixed(0) + "¢");
+            $("#limitPrice").val(yesPriceCents.toFixed(1));
+            if ($("#avgPriceValue").length) {
+                $("#avgPriceValue").text(yesPriceCents.toFixed(0) + "¢");
+            }
         } else {
             $("#noBtn").addClass("active");
             $("#yesBtn").removeClass("active");
-            $("#limitPrice").val(noPrice);
-            $("#avgPriceValue").text(noPrice.toFixed(0) + "¢");
+            $("#limitPrice").val(noPriceCents.toFixed(1));
+            if ($("#avgPriceValue").length) {
+                $("#avgPriceValue").text(noPriceCents.toFixed(0) + "¢");
+            }
         }
-        // Ensure prices are valid numbers
-        window.currentYesPrice = parseFloat(yesPrice) || 0;
-        window.currentNoPrice = parseFloat(noPrice) || 0;
-        limitPrice = isYesSelected
-            ? parseFloat(yesPrice) || 0
-            : parseFloat(noPrice) || 0;
+        // Ensure prices are valid numbers (store decimal prices for calculations)
+        window.currentYesPrice = yesPriceDecimal;
+        window.currentNoPrice = noPriceDecimal;
+        limitPrice = isYesSelected ? yesPriceCents : noPriceCents;
+        
+        // Trigger calculation update after price change
+        // Use multiple methods to ensure calculation updates
+        setTimeout(function() {
+            // Method 1: Direct call to global function
+            if (typeof window.calculatePayout === 'function') {
+                window.calculatePayout();
+            }
+            // Method 2: Dispatch custom event
+            const event = new CustomEvent('tradingPriceUpdated', {
+                detail: {
+                    yesPrice: yesPriceDecimal,
+                    noPrice: noPriceDecimal,
+                    isYesSelected: isYesSelected
+                }
+            });
+            document.dispatchEvent(event);
+            // Method 3: Legacy function support
+            if (typeof calculate === 'function') {
+                calculate();
+            }
+            if (typeof calculateProfit === 'function') {
+                calculateProfit();
+            }
+        }, 200);
 
         // Initialize summary with valid values
         if (typeof updateSummary === "function") {
@@ -1620,11 +1705,11 @@ $(document).ready(function () {
     // =======================
     // Buy Yes Button Click
     // =======================
-    $(".btn-yes").click(function (e) {
+    $(".btn-yes").click(async function (e) {
         e.stopPropagation();
         const $row = $(this).closest(".outcome-row");
         const isMobile = window.innerWidth <= 768;
-        populateTradingPanel($row, true, isMobile);
+        await populateTradingPanel($row, true, isMobile);
         if (isMobile) {
             $("#tradingPanel, #mobilePanelOverlay").addClass("active");
             $("body").css("overflow", "hidden");
@@ -1647,11 +1732,11 @@ $(document).ready(function () {
     // =======================
     // Buy No Button Click
     // =======================
-    $(".btn-no").click(function (e) {
+    $(".btn-no").click(async function (e) {
         e.stopPropagation();
         const $row = $(this).closest(".outcome-row");
         const isMobile = window.innerWidth <= 768;
-        populateTradingPanel($row, false, isMobile);
+        await populateTradingPanel($row, false, isMobile);
         if (isMobile) {
             $("#tradingPanel, #mobilePanelOverlay").addClass("active");
             $("body").css("overflow", "hidden");
@@ -1674,13 +1759,13 @@ $(document).ready(function () {
     // =======================
     // Outcome Row Click
     // =======================
-    $(".outcome-row").click(function (e) {
+    $(".outcome-row").click(async function (e) {
         if ($(e.target).closest(".btn-yes, .btn-no").length) {
             return;
         }
         const $row = $(this);
         const isMobile = window.innerWidth <= 768;
-        populateTradingPanel($row, true, isMobile);
+        await populateTradingPanel($row, true, isMobile);
         if (isMobile) {
             $("#tradingPanel, #mobilePanelOverlay").addClass("active");
             $("body").css("overflow", "hidden");

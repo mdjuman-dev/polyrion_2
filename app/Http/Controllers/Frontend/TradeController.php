@@ -91,6 +91,12 @@ class TradeController extends Controller
             $wallet->balance -= $amount;
             $wallet->save();
 
+            // Calculate token amount (shares): amount / price
+            $tokenAmount = $price > 0 ? $amount / $price : 0;
+            
+            // Convert option to outcome format (yes/no -> YES/NO)
+            $outcome = strtoupper($option);
+
             // Create trade
             $trade = Trade::create([
                 'user_id' => $user->id,
@@ -98,7 +104,12 @@ class TradeController extends Controller
                 'option' => $option,
                 'amount' => $amount,
                 'price' => $price,
-                'status' => 'pending',
+                'status' => 'PENDING',
+                // Required fields for new schema
+                'outcome' => $outcome,
+                'amount_invested' => $amount,
+                'token_amount' => $tokenAmount,
+                'price_at_buy' => $price,
             ]);
 
             // Create wallet transaction
