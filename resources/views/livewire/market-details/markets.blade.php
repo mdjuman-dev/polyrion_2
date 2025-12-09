@@ -12,8 +12,19 @@
         @foreach ($event->markets as $index => $market)
             @php
                 $prices = json_decode($market->outcome_prices, true);
-                $yesPrice = isset($prices[0]) ? floatval($prices[0]) : 0;
-                $noPrice = isset($prices[1]) ? floatval($prices[1]) : 0;
+                // Fix: Polymarket format - prices[0] = NO, prices[1] = YES
+                $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
+                $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
+                
+                // Use bestBid/bestAsk if available (more accurate from Polymarket API)
+                if ($market->best_ask !== null) {
+                    $yesPrice = floatval($market->best_ask); // Best ask is the price to buy YES
+                }
+                if ($market->best_bid !== null) {
+                    // For NO price, we need to calculate: 1 - bestBid (if bestBid is for YES)
+                    // Or use the NO price from outcome_prices
+                }
+                
                 $yesProb = round($yesPrice * 100, 1);
                 $noProb = round($noPrice * 100, 1);
 
@@ -59,8 +70,8 @@
                 </div>
 
                 <div class="outcome-actions">
-                    <button class="btn-yes">Buy Yes {{ $yesPriceCents }}¢</button>
-                    <button class="btn-no">Buy No {{ $noPriceCents }}¢</button>
+                    <button class="btn-yes" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}">Buy Yes {{ $yesPriceCents }}¢</button>
+                    <button class="btn-no" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}">Buy No {{ $noPriceCents }}¢</button>
                 </div>
             </div>
         @endforeach

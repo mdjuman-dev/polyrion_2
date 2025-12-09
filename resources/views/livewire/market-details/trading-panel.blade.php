@@ -25,8 +25,18 @@
             @php
                 $market = $event->markets->first();
                 $prices = json_decode($market->outcome_prices ?? '[]', true);
+                // Fix: Polymarket format - prices[0] = NO, prices[1] = YES
                 $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
                 $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
+                
+                // Use bestAsk/bestBid if available (more accurate from Polymarket API)
+                if ($market->best_ask !== null && $market->best_ask > 0) {
+                    $yesPrice = floatval($market->best_ask);
+                }
+                if ($market->best_bid !== null && $market->best_bid > 0) {
+                    // bestBid is for YES, so NO = 1 - bestBid
+                    $noPrice = 1 - floatval($market->best_bid);
+                }
 
                 $yesPriceCents = number_format($yesPrice * 100, 1);
                 $noPriceCents = number_format($noPrice * 100, 1);

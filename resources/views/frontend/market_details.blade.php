@@ -131,8 +131,11 @@
                     '#ff9500', // Orange (repeat if needed)
                 ];
 
-                // Fetch live historical data from Polymarket API
+                // Fetch live historical data from Polymarket API - deferred for faster initial load
                 async function fetchLiveHistoryData() {
+                    // Defer API call to not block initial page render
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
                     try {
                         const response = await fetch('{{ route('api.market.history.data', $event->slug) }}');
                         if (!response.ok) {
@@ -750,20 +753,22 @@
                 // Sync chart when market prices update (check every 2 seconds)
                 setInterval(syncChartWithMarketPrice, 2000);
 
-                // Fetch live data first, then initialize chart
-                fetchLiveHistoryData().then(() => {
-                    // Initialize chart with live data
+                // Initialize chart immediately with static data, then fetch live data in background
                     buildHistory(currentPeriod);
                     updateChart(currentPeriod);
 
-                    // Set up periodic updates (every 5 seconds for live data)
-                    setInterval(fetchMarketData, 5000);
-                }).catch(() => {
-                    // Fallback if live data fetch fails
+                // Fetch live data in background after initial render (deferred)
+                setTimeout(() => {
+                    fetchLiveHistoryData().then(() => {
                     buildHistory(currentPeriod);
                     updateChart(currentPeriod);
-                    setInterval(fetchMarketData, 5000);
-                });
+                        // Set up periodic updates (every 10 seconds for live data - increased from 5s)
+                        setInterval(fetchMarketData, 10000);
+                    }).catch(() => {
+                        // Fallback if live data fetch fails
+                        setInterval(fetchMarketData, 10000);
+                    });
+                }, 1000); // Wait 1 second after page load
 
                 // Handle resize
                 window.addEventListener('resize', () => {
@@ -903,18 +908,8 @@
 
                 let chart = echarts.init(chartElement);
 
-                // Calculate dynamic y-axis max based on data
-                let maxValue = 0;
-                seriesData.forEach(item => {
-                    if (item.data && Array.isArray(item.data)) {
-                        const itemMax = Math.max(...item.data.filter(v => v !== null && v !== undefined));
-                        if (itemMax > maxValue) {
-                            maxValue = itemMax;
-                        }
-                    }
-                });
-                // Round up to nearest 5 and add 5% padding, but cap at 100
-                const yAxisMax = Math.min(100, Math.ceil((maxValue + 5) / 5) * 5);
+                // Polymarket always uses 0-100% scale
+                const yAxisMax = 100;
 
                 let option = {
                     backgroundColor: "#111b2b",
@@ -1044,6 +1039,59 @@
                 window.addEventListener("resize", () => chart.resize());
 
                 // Create custom legend with icons
+                function createCustomLegend(data) {
+                    const legendContainer = document.getElementById('chart-legend-custom');
+                    if (!legendContainer || !data || data.length <= 1) {
+                        if (legendContainer) legendContainer.style.display = 'none';
+                        return;
+                    }
+
+                    legendContainer.style.display = 'flex';
+                    legendContainer.style.flexWrap = 'wrap';
+                    legendContainer.style.gap = '16px';
+                    legendContainer.style.padding = '12px 0';
+                    legendContainer.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+                    legendContainer.style.marginBottom = '16px';
+                    legendContainer.innerHTML = '';
+
+                    data.forEach((item, index) => {
+                        const legendItem = document.createElement('div');
+                        legendItem.style.display = 'flex';
+                        legendItem.style.alignItems = 'center';
+                        legendItem.style.gap = '8px';
+                        legendItem.style.cursor = 'pointer';
+                        legendItem.style.padding = '4px 8px';
+                        legendItem.style.borderRadius = '4px';
+                        legendItem.style.transition = 'background-color 0.2s';
+
+                        const colorBox = document.createElement('div');
+                        colorBox.style.width = '12px';
+                        colorBox.style.height = '12px';
+                        colorBox.style.borderRadius = '2px';
+                        colorBox.style.backgroundColor = item.color;
+                        colorBox.style.flexShrink = '0';
+
+                        const label = document.createElement('span');
+                        label.style.color = '#ffffff';
+                        label.style.fontSize = '12px';
+                        label.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                        label.textContent = item.name;
+
+                        legendItem.appendChild(colorBox);
+                        legendItem.appendChild(label);
+
+                        // Hover effect
+                        legendItem.addEventListener('mouseenter', () => {
+                            legendItem.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                        });
+                        legendItem.addEventListener('mouseleave', () => {
+                            legendItem.style.backgroundColor = 'transparent';
+                        });
+
+                        legendContainer.appendChild(legendItem);
+                    });
+                }
+
                 createCustomLegend(seriesData);
 
                 // Store chart instance globally for period filtering
@@ -1121,9 +1169,10 @@
                         }
                     }
                 });
-                const yAxisMax = Math.min(100, Math.ceil((maxValue + 5) / 5) * 5);
+                // Always use 0-100% scale like Polymarket
+                const yAxisMax = 100;
 
-                // Update chart
+                // Update chart with Polymarket style
                 chart.setOption({
                     xAxis: {
                         data: filteredLabels
@@ -1181,75 +1230,248 @@
 
     @push('script')
         <script>
-            // Polymarket-style profit calculation for trading panel
-            document.addEventListener("DOMContentLoaded", function() {
-                let yesBtn = document.getElementById("yesBtn");
-                let noBtn = document.getElementById("noBtn");
-                let sharesInput = document.getElementById("sharesInput");
-                let potentialWin = document.getElementById("potentialWin");
+            // Polymarket-style trading calculation (moved to blade file for better control)
+            (function() {
+                'use strict';
+                
+                let yesBtn, noBtn, sharesInput, potentialWin;
+                let selectedPrice = 0.5; // Default price
+                
+                // Initialize when DOM is ready
+                function initTradingCalculation() {
+                    yesBtn = document.getElementById("yesBtn");
+                    noBtn = document.getElementById("noBtn");
+                    sharesInput = document.getElementById("sharesInput");
+                    potentialWin = document.getElementById("potentialWin");
 
                 if (!yesBtn || !noBtn || !sharesInput || !potentialWin) {
+                        console.warn('Trading panel elements not found');
                     return;
                 }
 
-                // Default to YES price
-                let selectedPrice = parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
+                    // Get initial price from YES button
+                    updateSelectedPrice();
 
                 // YES button click handler
                 yesBtn.addEventListener("click", function() {
-                    selectedPrice = parseFloat(yesBtn.getAttribute("data-price")) || 0.5;
+                        updateSelectedPrice();
                     yesBtn.classList.add("active");
                     noBtn.classList.remove("active");
-                    calculate();
+                        calculatePayout();
                 });
 
                 // NO button click handler
                 noBtn.addEventListener("click", function() {
-                    selectedPrice = parseFloat(noBtn.getAttribute("data-price")) || 0.5;
+                        updateSelectedPrice();
                     noBtn.classList.add("active");
                     yesBtn.classList.remove("active");
-                    calculate();
+                        calculatePayout();
                 });
 
                 // Input change handler
-                sharesInput.addEventListener("input", calculate);
+                    sharesInput.addEventListener("input", function() {
+                        calculatePayout();
+                    });
 
-                // Calculate profit/payout
-                function calculate() {
-                    let amount = parseFloat(sharesInput.value);
+                    // Listen for market selection changes (when populateTradingPanel updates prices)
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'data-price') {
+                                console.log('Price attribute changed, recalculating...');
+                                setTimeout(function() {
+                                    updateSelectedPrice();
+                                    calculatePayout();
+                                }, 50);
+                            }
+                        });
+                    });
 
-                    if (!amount || amount <= 0 || isNaN(amount)) {
-                        potentialWin.textContent = "$0";
-                        return;
-                    }
+                    // Observe price changes on buttons
+                    if (yesBtn) observer.observe(yesBtn, { attributes: true, attributeFilter: ['data-price'] });
+                    if (noBtn) observer.observe(noBtn, { attributes: true, attributeFilter: ['data-price'] });
+                    
+                    // Also listen for custom event from populateTradingPanel
+                    document.addEventListener('tradingPriceUpdated', function(event) {
+                        console.log('Trading price updated event received', event.detail);
+                        setTimeout(function() {
+                            updateSelectedPrice();
+                            calculatePayout();
+                        }, 100);
+                    });
 
-                    // Validate price
-                    if (!selectedPrice || selectedPrice <= 0 || isNaN(selectedPrice)) {
-                        potentialWin.textContent = "$0";
-                        return;
-                    }
-
-                    // Polymarket-style calculation:
-                    // shares = amount / price
-                    // payout_if_win = shares * 1 (each share settles at $1)
-                    // profit = payout_if_win - amount
-                    let shares = amount / selectedPrice;
-                    let payout = shares * 1;
-                    let profit = payout - amount;
-
-                    // Round to 2 decimal places to avoid floating point issues
-                    payout = Math.round(payout * 100) / 100;
-
-                    // "To win" shows the payout (total return), not just profit
-                    // This matches Polymarket's "To win" display
-                    potentialWin.textContent = "$" + payout.toFixed(2);
+                    // Initial calculation
+                    calculatePayout();
                 }
 
-                // Initialize calculation on page load
-                setTimeout(function() {
-                    calculate();
-                }, 100);
-            });
+                // Update selected price based on active button
+                function updateSelectedPrice() {
+                    if (!yesBtn || !noBtn) return;
+                    
+                    // Check which button is active
+                    const yesActive = yesBtn.classList.contains("active");
+                    const noActive = noBtn.classList.contains("active");
+                    
+                    let rawPrice;
+                    if (yesActive) {
+                        rawPrice = parseFloat(yesBtn.getAttribute("data-price"));
+                    } else if (noActive) {
+                        rawPrice = parseFloat(noBtn.getAttribute("data-price"));
+                    } else {
+                        // Default to YES if neither is active (shouldn't happen, but safety)
+                        rawPrice = parseFloat(yesBtn.getAttribute("data-price"));
+                    }
+                    
+                    // Fix: If price is >= 1, it might be in cents format (e.g., 70 for 70¢ = 0.70)
+                    // But if it's > 100, it's definitely wrong (e.g., 7000 for 70¢ would be wrong)
+                    // Polymarket prices should be between 0.001 and 0.999 (0.1¢ to 99.9¢)
+                    if (rawPrice >= 1 && rawPrice <= 100) {
+                        // Price is in cents (e.g., 70 = 70¢), convert to decimal (0.70)
+                        selectedPrice = rawPrice / 100;
+                        console.warn('Price was in cents format, converted:', rawPrice, '→', selectedPrice);
+                    } else if (rawPrice > 100) {
+                        // Price is way too high, might be in wrong format (e.g., 7000)
+                        // Try dividing by 10000 to get cents, then by 100 to get decimal
+                        selectedPrice = (rawPrice / 10000) / 100;
+                        console.warn('Price was in wrong format, attempting conversion:', rawPrice, '→', selectedPrice);
+                    } else {
+                        // Price is already in decimal format (0.001 to 0.999)
+                        selectedPrice = rawPrice;
+                    }
+                    
+                    // Validate the price is within valid range (0.001 to 0.999)
+                    if (isNaN(selectedPrice) || selectedPrice <= 0 || selectedPrice >= 1) {
+                        console.warn('Invalid price detected after conversion:', selectedPrice, 'from raw:', rawPrice);
+                        // Try one more conversion: if rawPrice is very small (like 0.007), it might be correct
+                        if (rawPrice > 0 && rawPrice < 0.01) {
+                            selectedPrice = rawPrice; // Very small prices (< 1¢) are likely correct
+                            console.log('Using very small price as-is:', selectedPrice);
+                        } else {
+                            selectedPrice = 0.5; // Fallback
+                        }
+                    }
+                    
+                    console.log('Price updated:', {
+                        raw: rawPrice,
+                        decimal: selectedPrice,
+                        cents: (selectedPrice * 100).toFixed(1) + '¢',
+                        activeButton: yesActive ? 'YES' : (noActive ? 'NO' : 'NONE'),
+                        buttonText: yesActive ? yesBtn?.textContent : (noActive ? noBtn?.textContent : 'N/A')
+                    });
+                }
+
+                // Calculate payout using Polymarket formula
+                function calculatePayout() {
+                    if (!sharesInput || !potentialWin) {
+                        console.warn('Trading elements not found');
+                        return;
+                    }
+
+                    // Always update price before calculating (in case it changed)
+                    updateSelectedPrice();
+
+                    const amount = parseFloat(sharesInput.value) || 0;
+
+                    // If no amount entered, show $0
+                    if (amount <= 0 || isNaN(amount)) {
+                        potentialWin.textContent = "$0.00";
+                        return;
+                    }
+
+                    // Validate price (should be decimal between 0.001 and 0.999)
+                    if (!selectedPrice || selectedPrice <= 0 || selectedPrice >= 1 || isNaN(selectedPrice)) {
+                        potentialWin.textContent = "$0.00";
+                        console.warn('Invalid price in calculation:', selectedPrice, {
+                            yesBtn: yesBtn ? yesBtn.getAttribute("data-price") : 'missing',
+                            noBtn: noBtn ? noBtn.getAttribute("data-price") : 'missing',
+                            yesActive: yesBtn?.classList.contains("active"),
+                            noActive: noBtn?.classList.contains("active")
+                        });
+                        return;
+                    }
+
+                    // Polymarket calculation formula (verified):
+                    // Example 1: Spend $1 at 0.7¢ per share (0.007 decimal)
+                    //   Shares = $1 / 0.007 = 142.857 shares
+                    //   Payout = 142.857 × $1.00 = $142.86
+                    //
+                    // Example 2: Spend $10 at 50¢ per share (0.50 decimal)
+                    //   Shares = $10 / 0.50 = 20 shares
+                    //   Payout = 20 × $1.00 = $20.00
+                    //
+                    // Example 3: Spend $1 at 92.5¢ per share (0.925 decimal)
+                    //   Shares = $1 / 0.925 = 1.081 shares
+                    //   Payout = 1.081 × $1.00 = $1.08
+                    
+                    // Ensure price is within valid range (0.001 to 0.999)
+                    const pricePerShare = Math.max(0.001, Math.min(0.999, selectedPrice));
+                    
+                    // Calculate shares you receive
+                    const shares = amount / pricePerShare;
+                    
+                    // Calculate total payout (each share pays $1.00 if you win)
+                    const totalPayout = shares * 1.0;
+                    
+                    // Round to 2 decimal places to avoid floating point errors
+                    const payout = Math.round(totalPayout * 100) / 100;
+
+                    // Display "To win" - this is what you receive if you win (total payout)
+                    potentialWin.textContent = "$" + payout.toFixed(2);
+                    
+                    // Debug log for verification
+                    const rawYesPrice = yesBtn?.getAttribute("data-price");
+                    const rawNoPrice = noBtn?.getAttribute("data-price");
+                    const buttonText = (yesBtn?.classList.contains("active") ? yesBtn : noBtn)?.textContent || 'N/A';
+                    
+                    console.log('Trading Calculation:', {
+                        amount: '$' + amount.toFixed(2),
+                        priceCents: (pricePerShare * 100).toFixed(1) + '¢',
+                        priceDecimal: pricePerShare,
+                        rawYesPrice: rawYesPrice,
+                        rawNoPrice: rawNoPrice,
+                        selectedPrice: selectedPrice,
+                        buttonText: buttonText,
+                        shares: shares.toFixed(6),
+                        payout: '$' + payout.toFixed(2),
+                        expectedPayoutFor1Dollar: '$' + (1 / pricePerShare).toFixed(2),
+                        formula: `$${amount} / ${pricePerShare} = ${shares.toFixed(4)} shares × $1.00 = $${payout.toFixed(2)}`
+                    });
+                    
+                    // Warn if calculation seems wrong (payout should be > amount for prices < 0.50)
+                    if (pricePerShare < 0.5 && amount === 1 && payout < 2) {
+                        console.error('⚠️ POTENTIAL CALCULATION ERROR:', {
+                            message: 'For $1 at ' + (pricePerShare * 100).toFixed(1) + '¢, payout should be > $2',
+                            actualPayout: '$' + payout.toFixed(2),
+                            priceUsed: pricePerShare,
+                            suggestion: 'Price might be in wrong format (e.g., 0.70 instead of 0.007)'
+                        });
+                    }
+                }
+                
+                // Make calculatePayout globally accessible for external calls
+                window.calculatePayout = calculatePayout;
+
+                // Global function for updateShares buttons (+$1, +$20, etc.)
+                window.updateShares = function(amount) {
+                    if (!sharesInput) return;
+                    const currentValue = parseFloat(sharesInput.value) || 0;
+                    const newValue = Math.max(0, currentValue + amount);
+                    sharesInput.value = newValue;
+                    calculatePayout();
+                };
+
+                // Initialize when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initTradingCalculation);
+                } else {
+                    initTradingCalculation();
+                }
+
+                // Also reinitialize after Livewire updates (if using Livewire)
+                document.addEventListener('livewire:load', initTradingCalculation);
+                document.addEventListener('livewire:update', function() {
+                    setTimeout(initTradingCalculation, 100);
+                });
+            })();
         </script>
     @endpush
 @endsection

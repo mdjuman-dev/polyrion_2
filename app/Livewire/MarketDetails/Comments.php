@@ -121,7 +121,8 @@ class Comments extends Component
 
         try {
             $url = url('/api/event/' . $this->event->id . '/comments');
-            $response = \Illuminate\Support\Facades\Http::timeout(30)->get($url);
+            // Reduced timeout from 30s to 5s to prevent blocking
+            $response = \Illuminate\Support\Facades\Http::timeout(5)->get($url);
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -142,19 +143,16 @@ class Comments extends Component
             \Illuminate\Support\Facades\Log::error('Failed to fetch Polymarket comments', [
                 'error' => $e->getMessage(),
                 'event_id' => $this->event->id,
-                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
 
     public function render()
     {
-        // Fetch comments from API on first render if not already fetched
-        if (!$this->commentsFetched) {
-            $this->fetchPolymarketComments();
-        }
-
-        // Frontend: Only show active comments
+        // Don't fetch API on render - do it lazily via JavaScript or on demand
+        // This prevents blocking page load
+        
+        // Frontend: Only show active comments with pagination (limit to 10 for faster initial load)
         $comments = EventComment::where('event_id', $this->event->id)
             ->whereNull('parent_comment_id')
             ->where(function ($q) {
@@ -165,11 +163,15 @@ class Comments extends Component
                 $replyQuery->where(function ($q) {
                     $q->where('is_active', true)
                         ->orWhereNull('is_active');
-                })->with('user', 'likes');
-            }, 'replies.likes', 'likes'])
+                })
+                ->limit(3) // Limit replies to 3 per comment (reduced from 5)
+                ->with('user'); // Removed 'likes' eager load for performance
+            }]) // Removed 'replies.likes' and 'likes' eager loads
             ->orderBy('created_at', 'desc')
+            ->limit(10) // Limit to 10 comments for initial load (reduced from 20)
             ->get();
 
+        // Use cached count or simple count query
         $commentsCount = EventComment::where('event_id', $this->event->id)
             ->whereNull('parent_comment_id')
             ->where(function ($q) {
