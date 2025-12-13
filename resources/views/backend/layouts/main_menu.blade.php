@@ -18,6 +18,13 @@
                 </li>
 
                 <li class="">
+                    <a href="{{ route('admin.withdrawal.index') }}">
+                        <i data-feather="dollar-sign"></i>
+                        <span>Withdrawals</span>
+                    </a>
+                </li>
+
+                <li class="">
                     <a href="{{ route('admin.setting') }}">
                         <i data-feather="settings"></i>
                         <span>Settings</span>
