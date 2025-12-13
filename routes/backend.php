@@ -18,6 +18,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::middleware('auth:admin')->group(function () {
         Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('backend.dashboard');
+        Route::post('/search', [HomeController::class, 'search'])->name('search');
 
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -43,7 +44,6 @@ Route::prefix('/admin')->name('admin.')->group(function () {
         // Event Management Routes
         Route::controller(EventController::class)->group(function () {
             Route::get('/events', 'index')->name('events.index');
-            Route::get('/events/create', 'create')->name('events.create');
             Route::get('/events/create-with-markets', 'createWithMarkets')->name('events.create-with-markets');
             Route::post('/events', 'store')->name('events.store');
             Route::post('/events/with-markets', 'storeWithMarkets')->name('events.store-with-markets');

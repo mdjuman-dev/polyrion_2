@@ -4,8 +4,8 @@
             <div class="comment-input-wrapper">
                 <input wire:model="commentText" wire:keydown.enter="addComment" class="comment-input" type="text"
                     placeholder="Add a comment">
-                <button wire:click="addComment" class="comment-submit-btn" wire:loading.attr="disabled">
-                    <span>Post</span>
+                <button wire:click="addComment" class="comment-submit-btn"  wire:loading.attr="disabled">
+                    <span style='color: var(--accent);'>Post</span> 
                 </button>
             </div>
         </div>

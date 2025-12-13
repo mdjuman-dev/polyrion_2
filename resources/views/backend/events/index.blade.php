@@ -17,9 +17,6 @@
                                         <a href="{{ route('admin.events.create-with-markets') }}" class="btn btn-success">
                                             <i class="fa fa-plus-circle"></i> Create Event with Markets
                                         </a>
-                                    <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
-                                            <i class="fa fa-plus"></i> Create Event Only
-                                    </a>
                                     </div>
                                 </div>
                             </div>
