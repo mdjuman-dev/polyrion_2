@@ -3,6 +3,169 @@
     <title>{{ $event->title }}</title>
 @endsection
 @section('content')
+    <style>
+        /* Mobile Responsive Styles for Market Details */
+        .chart-container {
+            display: block;
+            width: 100%;
+        }
+
+        .poly-chart-wrapper {
+            width: 100%;
+            height: 400px;
+            background: #111b2b;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        /* Medium screens (600px - 768px) - like 629px in image */
+        @media (min-width: 600px) and (max-width: 768px) {
+            .poly-chart-wrapper {
+                height: 320px;
+            }
+
+            .chart-container {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .chart-controls {
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .chart-btn {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .poly-chart-wrapper {
+                height: 300px;
+                margin-bottom: 0.75rem;
+            }
+
+            .chart-container {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .chart-controls {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding-bottom: 0.5rem;
+                gap: 0.4rem;
+                flex-wrap: nowrap;
+            }
+
+            .chart-controls::-webkit-scrollbar {
+                display: none;
+            }
+
+            .chart-btn {
+                padding: 0.45rem 0.65rem;
+                font-size: 0.8rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .market-detail-header {
+                padding: 0 1rem;
+            }
+
+            .market-header-top {
+                gap: 0.75rem;
+            }
+
+            .market-profile-img {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            .market-title {
+                font-size: 1.1rem !important;
+                line-height: 1.3;
+            }
+
+            .market-header-meta {
+                font-size: 0.8rem;
+                gap: 10px;
+            }
+
+            .market-header-actions {
+                gap: 6px;
+            }
+
+            .main-content {
+                padding-bottom: 80px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .poly-chart-wrapper {
+                height: 250px;
+                margin-bottom: 0.5rem;
+            }
+
+            .chart-container {
+                padding: 0.75rem;
+            }
+
+            .chart-controls {
+                gap: 0.3rem;
+            }
+
+            .chart-btn {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .market-title {
+                font-size: 1rem !important;
+            }
+
+            .market-header-meta {
+                font-size: 0.75rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .main-content {
+                padding: 0.75rem 0.5rem;
+                padding-bottom: 80px;
+            }
+        }
+
+        /* Ensure chart resizes on orientation change */
+        @media (orientation: landscape) and (max-width: 768px) {
+            .poly-chart-wrapper {
+                height: 250px;
+            }
+        }
+
+        /* Chart legend custom container */
+        #chart-legend-custom {
+            padding: 0 1rem;
+        }
+
+        @media (max-width: 768px) {
+            #chart-legend-custom {
+                padding: 0 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #chart-legend-custom {
+                padding: 0 0.75rem;
+            }
+        }
+    </style>
     <main>
         <div class="main-layout">
             <div class="main-content">
@@ -28,14 +191,8 @@
 
 
                 <div class="chart-container">
-                    <!-- Custom Legend with Icons (Above Chart - Polymarket style) -->
-                    <div id="chart-legend-custom" class="chart-legend-custom" style="display: none; margin-bottom: 1rem;">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-
                     <!-- Chart (Polymarket style) -->
-                    <div id="polyChart"
-                        style="width:100%; height:400px; background: #111b2b; border-radius: 8px; margin-bottom: 1rem;">
+                    <div id="polyChart" class="poly-chart-wrapper">
                     </div>
 
                     <div class="chart-controls">
@@ -911,6 +1068,10 @@
                 // Polymarket always uses 0-100% scale
                 const yAxisMax = 100;
 
+                // Detect mobile device
+                const isMobile = window.innerWidth <= 768;
+                const isSmallMobile = window.innerWidth <= 480;
+
                 let option = {
                     backgroundColor: "#111b2b",
 
@@ -921,9 +1082,9 @@
                         borderWidth: 0,
                         textStyle: {
                             color: "#fff",
-                            fontSize: 12
+                            fontSize: isMobile ? 11 : 12
                         },
-                        padding: [8, 12],
+                        padding: isMobile ? [6, 10] : [8, 12],
                         formatter: function(params) {
                             let result = '';
                             params.forEach((param, index) => {
@@ -938,7 +1099,7 @@
                             });
                             if (params[0]) {
                                 result +=
-                                    `<div style="margin-top: 6px; color: #9ab1c6; font-size: 11px;">${params[0].name}</div>`;
+                                    `<div style="margin-top: 6px; color: #9ab1c6; font-size: ${isMobile ? '10px' : '11px'};">${params[0].name}</div>`;
                             }
                             return result;
                         }
@@ -949,11 +1110,11 @@
                     },
 
                     grid: {
-                        left: "3%",
-                        right: "4%",
-                        bottom: "8%",
-                        top: "15%", // Less space needed since custom legend is below
-                        containLabel: true
+                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
+                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
+                        bottom: isMobile ? "12%" : "8%",
+                        top: isMobile ? "10%" : "15%",
+                        containLabel: false
                     },
 
                     xAxis: {
@@ -968,7 +1129,10 @@
                         },
                         axisLabel: {
                             color: "#9ab1c6",
-                            fontSize: 11
+                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
+                            interval: 'auto',
+                            rotate: -45, // Always rotate labels like in the image
+                            margin: 12
                         }
                     },
 
@@ -984,7 +1148,7 @@
                         },
                         axisLabel: {
                             color: "#9ab1c6",
-                            fontSize: 11,
+                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
                             formatter: '{value}%'
                         },
                         splitLine: {
@@ -1036,7 +1200,20 @@
                 };
 
                 chart.setOption(option);
-                window.addEventListener("resize", () => chart.resize());
+                
+                // Handle resize with mobile detection
+                function handleResize() {
+                    chart.resize();
+                    // Update chart options on resize if mobile state changed
+                    const wasMobile = isMobile;
+                    const nowMobile = window.innerWidth <= 768;
+                    if (wasMobile !== nowMobile) {
+                        // Reinitialize with new mobile settings
+                        initPolyChart();
+                    }
+                }
+                
+                window.addEventListener("resize", handleResize);
 
                 // Create custom legend with icons
                 function createCustomLegend(data) {
@@ -1046,47 +1223,59 @@
                         return;
                     }
 
+                    const isMobile = window.innerWidth <= 768;
+                    const isSmallMobile = window.innerWidth <= 480;
+
                     legendContainer.style.display = 'flex';
                     legendContainer.style.flexWrap = 'wrap';
-                    legendContainer.style.gap = '16px';
-                    legendContainer.style.padding = '12px 0';
+                    legendContainer.style.gap = isMobile ? (isSmallMobile ? '8px' : '12px') : '16px';
+                    legendContainer.style.padding = isMobile ? '8px 0' : '12px 0';
                     legendContainer.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
-                    legendContainer.style.marginBottom = '16px';
+                    legendContainer.style.marginBottom = isMobile ? '12px' : '16px';
                     legendContainer.innerHTML = '';
 
                     data.forEach((item, index) => {
                         const legendItem = document.createElement('div');
                         legendItem.style.display = 'flex';
                         legendItem.style.alignItems = 'center';
-                        legendItem.style.gap = '8px';
+                        legendItem.style.gap = isMobile ? '6px' : '8px';
                         legendItem.style.cursor = 'pointer';
-                        legendItem.style.padding = '4px 8px';
+                        legendItem.style.padding = isMobile ? '3px 6px' : '4px 8px';
                         legendItem.style.borderRadius = '4px';
                         legendItem.style.transition = 'background-color 0.2s';
 
                         const colorBox = document.createElement('div');
-                        colorBox.style.width = '12px';
-                        colorBox.style.height = '12px';
+                        colorBox.style.width = isMobile ? '10px' : '12px';
+                        colorBox.style.height = isMobile ? '10px' : '12px';
                         colorBox.style.borderRadius = '2px';
                         colorBox.style.backgroundColor = item.color;
                         colorBox.style.flexShrink = '0';
 
                         const label = document.createElement('span');
                         label.style.color = '#ffffff';
-                        label.style.fontSize = '12px';
+                        label.style.fontSize = isMobile ? (isSmallMobile ? '10px' : '11px') : '12px';
                         label.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                        label.textContent = item.name;
+                        // Truncate long names on mobile
+                        let displayName = item.name;
+                        if (isSmallMobile && displayName.length > 20) {
+                            displayName = displayName.substring(0, 17) + '...';
+                        } else if (isMobile && displayName.length > 30) {
+                            displayName = displayName.substring(0, 27) + '...';
+                        }
+                        label.textContent = displayName;
 
                         legendItem.appendChild(colorBox);
                         legendItem.appendChild(label);
 
-                        // Hover effect
-                        legendItem.addEventListener('mouseenter', () => {
-                            legendItem.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                        });
-                        legendItem.addEventListener('mouseleave', () => {
-                            legendItem.style.backgroundColor = 'transparent';
-                        });
+                        // Hover effect (only on non-touch devices)
+                        if (!('ontouchstart' in window)) {
+                            legendItem.addEventListener('mouseenter', () => {
+                                legendItem.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                            });
+                            legendItem.addEventListener('mouseleave', () => {
+                                legendItem.style.backgroundColor = 'transparent';
+                            });
+                        }
 
                         legendContainer.appendChild(legendItem);
                     });
@@ -1114,15 +1303,19 @@
                 });
             }
 
-            // Filter chart data by period
-            function filterChartByPeriod(period) {
-                if (!window.polyChart || !window.originalSeriesData || !window.originalLabels) {
-                    return;
-                }
+                // Filter chart data by period
+                function filterChartByPeriod(period) {
+                    if (!window.polyChart || !window.originalSeriesData || !window.originalLabels) {
+                        return;
+                    }
 
-                const chart = window.polyChart;
-                const originalData = window.originalSeriesData;
-                const originalLabels = window.originalLabels;
+                    const chart = window.polyChart;
+                    const originalData = window.originalSeriesData;
+                    const originalLabels = window.originalLabels;
+                    
+                    // Detect mobile for responsive grid
+                    const isMobile = window.innerWidth <= 768;
+                    const isSmallMobile = window.innerWidth <= 480;
 
                 // Calculate how many data points to show based on period
                 let dataPointsToShow = originalLabels.length;
@@ -1174,11 +1367,26 @@
 
                 // Update chart with Polymarket style
                 chart.setOption({
+                    grid: {
+                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
+                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
+                        bottom: isMobile ? "15%" : "12%", // More space for rotated labels
+                        top: isMobile ? "10%" : "15%",
+                        containLabel: false
+                    },
                     xAxis: {
-                        data: filteredLabels
+                        data: filteredLabels,
+                        axisLabel: {
+                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
+                            rotate: -45, // Always rotate labels like in the image
+                            margin: 12
+                        }
                     },
                     yAxis: {
-                        max: yAxisMax
+                        max: yAxisMax,
+                        axisLabel: {
+                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11
+                        }
                     },
                     series: filteredSeriesData.map((item) => ({
                         name: item.name,

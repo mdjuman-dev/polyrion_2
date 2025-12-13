@@ -53,21 +53,6 @@ class EventController extends Controller
     }
 
     /**
-     * Show the form for creating a new event
-     * Only admins can access
-     */
-    public function create()
-    {
-        // Additional check - ensure user is admin
-        if (!Auth::guard('admin')->check()) {
-            abort(403, 'Unauthorized. Only admins can create events.');
-        }
-
-        $categories = $this->categoryDetector->getAvailableCategories();
-        return view('backend.events.create', compact('categories'));
-    }
-
-    /**
      * Show the form for creating a new event with markets
      * Only admins can access
      */
