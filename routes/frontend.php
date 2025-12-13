@@ -44,6 +44,13 @@ Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->m
     Route::post('/deposit', 'deposit')->name('deposit');
 });
 
+// Withdrawal routes
+Route::controller(\App\Http\Controllers\Frontend\WithdrawalController::class)->prefix('withdrawal')->name('withdrawal.')->middleware(['auth'])->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'store')->name('store');
+    Route::get('/history', 'history')->name('history');
+});
+
 // Trading routes
 Route::controller(TradeController::class)->prefix('trades')->name('trades.')->middleware(['auth'])->group(function () {
     Route::post('/market/{marketId}', 'placeTrade')->name('place');

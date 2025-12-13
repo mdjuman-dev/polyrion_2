@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('payment_method'); // Bank, Crypto address, etc.
             $table->text('payment_details'); // Bank account or crypto address (JSON)
             $table->string('admin_note')->nullable();
+            $table->foreignId('approved_by')->nullable()->constrained('admins')->onDelete('set null');
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
 
