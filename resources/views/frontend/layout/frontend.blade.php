@@ -97,6 +97,10 @@
                                             <i class="fas fa-chart-line"></i>
                                             <span>My Trades History</span>
                                         </a>
+                                        <a href="{{ route('withdrawal.index') }}">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                            <span>Withdraw Funds</span>
+                                        </a>
                                     @endauth
 
                                     <a href="#">
