@@ -1,5 +1,5 @@
 @extends('backend.layouts.master')
-@section('title', 'Create Event with Markets')
+@section('title', 'Create New Event')
 @section('content')
     <div class="content-wrapper">
         <div class="container-full">
@@ -173,47 +173,158 @@
 
                                                 <!-- Right Column -->
                                                 <div class="col-md-4">
-                                                    <!-- Image URL -->
+                                                    <!-- Event Image Upload -->
                                                     <div class="form-group-modern">
                                                         <label class="form-label-modern">
                                                             <i class="fa fa-image"></i>
-                                                            Event Image URL
+                                                            Event Image
                                                         </label>
-                                                        <input type="url" name="image"
-                                                            class="form-control-modern @error('image') is-invalid @enderror"
-                                                            value="{{ old('image') }}"
-                                                            placeholder="https://example.com/image.jpg">
-                                                        @error('image')
-                                                            <div class="error-message">
-                                                                <i class="fa fa-exclamation-circle"></i> {{ $message }}
+                                                        <div class="upload-option-tabs">
+                                                            <button type="button" class="upload-tab-btn active"
+                                                                data-tab="image-upload"
+                                                                onclick="switchImageTab('upload')">
+                                                                <i class="fa fa-upload"></i> Upload
+                                                            </button>
+                                                            <button type="button" class="upload-tab-btn"
+                                                                data-tab="image-url" onclick="switchImageTab('url')">
+                                                                <i class="fa fa-link"></i> URL
+                                                            </button>
+                                                        </div>
+
+                                                        <!-- File Upload -->
+                                                        <div id="imageUploadTab" class="upload-tab-content">
+                                                            <div class="file-upload-wrapper">
+                                                                <input type="file" name="image_file"
+                                                                    id="imageFileInput"
+                                                                    class="file-input @error('image_file') is-invalid @enderror"
+                                                                    accept="image/*"
+                                                                    onchange="handleImageFileSelect(this)">
+                                                                <label for="imageFileInput" class="file-upload-label">
+                                                                    <i class="fa fa-cloud-upload-alt"></i>
+                                                                    <span>Choose Image File</span>
+                                                                </label>
+                                                                @error('image_file')
+                                                                    <div class="error-message">
+                                                                        <i class="fa fa-exclamation-circle"></i>
+                                                                        {{ $message }}
+                                                                    </div>
+                                                                @enderror
                                                             </div>
-                                                        @enderror
-                                                        <div class="mt-3" id="imagePreview" style="display: none;">
-                                                            <div class="image-preview-wrapper">
-                                                                <img src="" alt="Preview" class="preview-image">
-                                                                <button type="button" class="remove-preview"
-                                                                    onclick="removeImagePreview()">
-                                                                    <i class="fa fa-times"></i>
-                                                                </button>
+                                                            <div class="mt-3" id="imageFilePreview"
+                                                                style="display: none;">
+                                                                <div class="image-preview-wrapper">
+                                                                    <img src="" alt="Preview"
+                                                                        class="preview-image" id="imageFilePreviewImg">
+                                                                    <button type="button" class="remove-preview"
+                                                                        onclick="removeImageFilePreview()">
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- URL Input -->
+                                                        <div id="imageUrlTab" class="upload-tab-content"
+                                                            style="display: none;">
+                                                            <input type="url" name="image"
+                                                                class="form-control-modern @error('image') is-invalid @enderror"
+                                                                value="{{ old('image') }}"
+                                                                placeholder="https://example.com/image.jpg"
+                                                                oninput="handleImageUrlInput(this)">
+                                                            @error('image')
+                                                                <div class="error-message">
+                                                                    <i class="fa fa-exclamation-circle"></i>
+                                                                    {{ $message }}
+                                                                </div>
+                                                            @enderror
+                                                            <div class="mt-3" id="imageUrlPreview"
+                                                                style="display: none;">
+                                                                <div class="image-preview-wrapper">
+                                                                    <img src="" alt="Preview"
+                                                                        class="preview-image" id="imageUrlPreviewImg">
+                                                                    <button type="button" class="remove-preview"
+                                                                        onclick="removeImageUrlPreview()">
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Icon URL -->
+                                                    <!-- Event Icon Upload -->
                                                     <div class="form-group-modern">
                                                         <label class="form-label-modern">
                                                             <i class="fa fa-icons"></i>
-                                                            Event Icon URL
+                                                            Event Icon
                                                         </label>
-                                                        <input type="url" name="icon"
-                                                            class="form-control-modern @error('icon') is-invalid @enderror"
-                                                            value="{{ old('icon') }}"
-                                                            placeholder="https://example.com/icon.jpg">
-                                                        @error('icon')
-                                                            <div class="error-message">
-                                                                <i class="fa fa-exclamation-circle"></i> {{ $message }}
+                                                        <div class="upload-option-tabs">
+                                                            <button type="button" class="upload-tab-btn active"
+                                                                data-tab="icon-upload" onclick="switchIconTab('upload')">
+                                                                <i class="fa fa-upload"></i> Upload
+                                                            </button>
+                                                            <button type="button" class="upload-tab-btn"
+                                                                data-tab="icon-url" onclick="switchIconTab('url')">
+                                                                <i class="fa fa-link"></i> URL
+                                                            </button>
+                                                        </div>
+
+                                                        <!-- File Upload -->
+                                                        <div id="iconUploadTab" class="upload-tab-content">
+                                                            <div class="file-upload-wrapper">
+                                                                <input type="file" name="icon_file" id="iconFileInput"
+                                                                    class="file-input @error('icon_file') is-invalid @enderror"
+                                                                    accept="image/*"
+                                                                    onchange="handleIconFileSelect(this)">
+                                                                <label for="iconFileInput" class="file-upload-label">
+                                                                    <i class="fa fa-cloud-upload-alt"></i>
+                                                                    <span>Choose Icon File</span>
+                                                                </label>
+                                                                @error('icon_file')
+                                                                    <div class="error-message">
+                                                                        <i class="fa fa-exclamation-circle"></i>
+                                                                        {{ $message }}
+                                                                    </div>
+                                                                @enderror
                                                             </div>
-                                                        @enderror
+                                                            <div class="mt-3" id="iconFilePreview"
+                                                                style="display: none;">
+                                                                <div class="image-preview-wrapper">
+                                                                    <img src="" alt="Preview"
+                                                                        class="preview-image" id="iconFilePreviewImg">
+                                                                    <button type="button" class="remove-preview"
+                                                                        onclick="removeIconFilePreview()">
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- URL Input -->
+                                                        <div id="iconUrlTab" class="upload-tab-content"
+                                                            style="display: none;">
+                                                            <input type="url" name="icon"
+                                                                class="form-control-modern @error('icon') is-invalid @enderror"
+                                                                value="{{ old('icon') }}"
+                                                                placeholder="https://example.com/icon.jpg"
+                                                                oninput="handleIconUrlInput(this)">
+                                                            @error('icon')
+                                                                <div class="error-message">
+                                                                    <i class="fa fa-exclamation-circle"></i>
+                                                                    {{ $message }}
+                                                                </div>
+                                                            @enderror
+                                                            <div class="mt-3" id="iconUrlPreview"
+                                                                style="display: none;">
+                                                                <div class="image-preview-wrapper">
+                                                                    <img src="" alt="Preview"
+                                                                        class="preview-image" id="iconUrlPreviewImg">
+                                                                    <button type="button" class="remove-preview"
+                                                                        onclick="removeIconUrlPreview()">
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                     <!-- Dates -->
@@ -634,20 +745,115 @@
             this.dataset.autoGenerated = 'false';
         });
 
-        // Image preview
-        document.querySelector('input[name="image"]').addEventListener('input', function(e) {
-            const preview = document.getElementById('imagePreview');
-            if (e.target.value) {
+        // Image/Icon Tab Switching
+        function switchImageTab(type) {
+            const uploadTab = document.getElementById('imageUploadTab');
+            const urlTab = document.getElementById('imageUrlTab');
+            const uploadBtn = document.querySelector('[data-tab="image-upload"]');
+            const urlBtn = document.querySelector('[data-tab="image-url"]');
+
+            if (type === 'upload') {
+                uploadTab.style.display = 'block';
+                urlTab.style.display = 'none';
+                uploadBtn.classList.add('active');
+                urlBtn.classList.remove('active');
+            } else {
+                uploadTab.style.display = 'none';
+                urlTab.style.display = 'block';
+                uploadBtn.classList.remove('active');
+                urlBtn.classList.add('active');
+            }
+        }
+
+        function switchIconTab(type) {
+            const uploadTab = document.getElementById('iconUploadTab');
+            const urlTab = document.getElementById('iconUrlTab');
+            const uploadBtn = document.querySelector('[data-tab="icon-upload"]');
+            const urlBtn = document.querySelector('[data-tab="icon-url"]');
+
+            if (type === 'upload') {
+                uploadTab.style.display = 'block';
+                urlTab.style.display = 'none';
+                uploadBtn.classList.add('active');
+                urlBtn.classList.remove('active');
+            } else {
+                uploadTab.style.display = 'none';
+                urlTab.style.display = 'block';
+                uploadBtn.classList.remove('active');
+                urlBtn.classList.add('active');
+            }
+        }
+
+        // Image File Upload Handler
+        function handleImageFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imageFilePreview');
+                    const previewImg = document.getElementById('imageFilePreviewImg');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImageFilePreview() {
+            document.getElementById('imageFilePreview').style.display = 'none';
+            document.getElementById('imageFileInput').value = '';
+        }
+
+        // Image URL Handler
+        function handleImageUrlInput(input) {
+            const preview = document.getElementById('imageUrlPreview');
+            const previewImg = document.getElementById('imageUrlPreviewImg');
+            if (input.value) {
+                previewImg.src = input.value;
                 preview.style.display = 'block';
-                preview.querySelector('img').src = e.target.value;
             } else {
                 preview.style.display = 'none';
             }
-        });
+        }
 
-        function removeImagePreview() {
-            document.getElementById('imagePreview').style.display = 'none';
+        function removeImageUrlPreview() {
+            document.getElementById('imageUrlPreview').style.display = 'none';
             document.querySelector('input[name="image"]').value = '';
+        }
+
+        // Icon File Upload Handler
+        function handleIconFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('iconFilePreview');
+                    const previewImg = document.getElementById('iconFilePreviewImg');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeIconFilePreview() {
+            document.getElementById('iconFilePreview').style.display = 'none';
+            document.getElementById('iconFileInput').value = '';
+        }
+
+        // Icon URL Handler
+        function handleIconUrlInput(input) {
+            const preview = document.getElementById('iconUrlPreview');
+            const previewImg = document.getElementById('iconUrlPreviewImg');
+            if (input.value) {
+                previewImg.src = input.value;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function removeIconUrlPreview() {
+            document.getElementById('iconUrlPreview').style.display = 'none';
+            document.querySelector('input[name="icon"]').value = '';
         }
 
         // Add new market
@@ -1120,6 +1326,86 @@
             color: #ff6b6b;
             font-size: 13px;
             margin-top: 6px;
+        }
+
+        /* Upload Tabs */
+        .upload-option-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .upload-tab-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upload-tab-btn:hover {
+            color: #667eea;
+        }
+
+        .upload-tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .upload-tab-content {
+            margin-top: 0;
+        }
+
+        /* File Upload */
+        .file-upload-wrapper {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .file-upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%);
+            transform: translateY(-2px);
+        }
+
+        .file-upload-label i {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-label span {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         /* Image Preview */

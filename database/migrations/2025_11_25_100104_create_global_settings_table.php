@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('global_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
+            $table->string('key', 255)->unique();
             $table->text('value')->nullable();
             $table->timestamps();
+            
+            // Add index on key for faster lookups
+            $table->index('key');
         });
     }
 

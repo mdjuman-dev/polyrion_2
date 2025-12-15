@@ -1,6 +1,10 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>{{ $event->title }}</title>
+    <title>{{ $event->title }} - {{ $appName }}</title>
+    <meta name="description" content="{{ Str::limit($event->description ?? $event->title, 160) }}">
+    <meta property="og:title" content="{{ $event->title }} - {{ $appName }}">
+    <meta property="og:description" content="{{ Str::limit($event->description ?? $event->title, 160) }}">
+    <link rel="canonical" href="{{ $appUrl }}/market/details/{{ $event->slug ?? $event->id }}">
 @endsection
 @section('content')
     <style>
@@ -1200,7 +1204,7 @@
                 };
 
                 chart.setOption(option);
-                
+
                 // Handle resize with mobile detection
                 function handleResize() {
                     chart.resize();
@@ -1212,7 +1216,7 @@
                         initPolyChart();
                     }
                 }
-                
+
                 window.addEventListener("resize", handleResize);
 
                 // Create custom legend with icons
@@ -1303,19 +1307,19 @@
                 });
             }
 
-                // Filter chart data by period
-                function filterChartByPeriod(period) {
-                    if (!window.polyChart || !window.originalSeriesData || !window.originalLabels) {
-                        return;
-                    }
+            // Filter chart data by period
+            function filterChartByPeriod(period) {
+                if (!window.polyChart || !window.originalSeriesData || !window.originalLabels) {
+                    return;
+                }
 
-                    const chart = window.polyChart;
-                    const originalData = window.originalSeriesData;
-                    const originalLabels = window.originalLabels;
-                    
-                    // Detect mobile for responsive grid
-                    const isMobile = window.innerWidth <= 768;
-                    const isSmallMobile = window.innerWidth <= 480;
+                const chart = window.polyChart;
+                const originalData = window.originalSeriesData;
+                const originalLabels = window.originalLabels;
+
+                // Detect mobile for responsive grid
+                const isMobile = window.innerWidth <= 768;
+                const isSmallMobile = window.innerWidth <= 480;
 
                 // Calculate how many data points to show based on period
                 let dataPointsToShow = originalLabels.length;
@@ -1441,10 +1445,10 @@
             // Polymarket-style trading calculation (moved to blade file for better control)
             (function() {
                 'use strict';
-                
+
                 let yesBtn, noBtn, sharesInput, potentialWin;
                 let selectedPrice = 0.5; // Default price
-                
+
                 // Initialize when DOM is ready
                 function initTradingCalculation() {
                     yesBtn = document.getElementById("yesBtn");
@@ -1452,31 +1456,31 @@
                     sharesInput = document.getElementById("sharesInput");
                     potentialWin = document.getElementById("potentialWin");
 
-                if (!yesBtn || !noBtn || !sharesInput || !potentialWin) {
+                    if (!yesBtn || !noBtn || !sharesInput || !potentialWin) {
                         console.warn('Trading panel elements not found');
-                    return;
-                }
+                        return;
+                    }
 
                     // Get initial price from YES button
                     updateSelectedPrice();
 
-                // YES button click handler
-                yesBtn.addEventListener("click", function() {
+                    // YES button click handler
+                    yesBtn.addEventListener("click", function() {
                         updateSelectedPrice();
-                    yesBtn.classList.add("active");
-                    noBtn.classList.remove("active");
+                        yesBtn.classList.add("active");
+                        noBtn.classList.remove("active");
                         calculatePayout();
-                });
+                    });
 
-                // NO button click handler
-                noBtn.addEventListener("click", function() {
+                    // NO button click handler
+                    noBtn.addEventListener("click", function() {
                         updateSelectedPrice();
-                    noBtn.classList.add("active");
-                    yesBtn.classList.remove("active");
+                        noBtn.classList.add("active");
+                        yesBtn.classList.remove("active");
                         calculatePayout();
-                });
+                    });
 
-                // Input change handler
+                    // Input change handler
                     sharesInput.addEventListener("input", function() {
                         calculatePayout();
                     });
@@ -1495,9 +1499,15 @@
                     });
 
                     // Observe price changes on buttons
-                    if (yesBtn) observer.observe(yesBtn, { attributes: true, attributeFilter: ['data-price'] });
-                    if (noBtn) observer.observe(noBtn, { attributes: true, attributeFilter: ['data-price'] });
-                    
+                    if (yesBtn) observer.observe(yesBtn, {
+                        attributes: true,
+                        attributeFilter: ['data-price']
+                    });
+                    if (noBtn) observer.observe(noBtn, {
+                        attributes: true,
+                        attributeFilter: ['data-price']
+                    });
+
                     // Also listen for custom event from populateTradingPanel
                     document.addEventListener('tradingPriceUpdated', function(event) {
                         console.log('Trading price updated event received', event.detail);
@@ -1514,11 +1524,11 @@
                 // Update selected price based on active button
                 function updateSelectedPrice() {
                     if (!yesBtn || !noBtn) return;
-                    
+
                     // Check which button is active
                     const yesActive = yesBtn.classList.contains("active");
                     const noActive = noBtn.classList.contains("active");
-                    
+
                     let rawPrice;
                     if (yesActive) {
                         rawPrice = parseFloat(yesBtn.getAttribute("data-price"));
@@ -1528,7 +1538,7 @@
                         // Default to YES if neither is active (shouldn't happen, but safety)
                         rawPrice = parseFloat(yesBtn.getAttribute("data-price"));
                     }
-                    
+
                     // Fix: If price is >= 1, it might be in cents format (e.g., 70 for 70¢ = 0.70)
                     // But if it's > 100, it's definitely wrong (e.g., 7000 for 70¢ would be wrong)
                     // Polymarket prices should be between 0.001 and 0.999 (0.1¢ to 99.9¢)
@@ -1545,7 +1555,7 @@
                         // Price is already in decimal format (0.001 to 0.999)
                         selectedPrice = rawPrice;
                     }
-                    
+
                     // Validate the price is within valid range (0.001 to 0.999)
                     if (isNaN(selectedPrice) || selectedPrice <= 0 || selectedPrice >= 1) {
                         console.warn('Invalid price detected after conversion:', selectedPrice, 'from raw:', rawPrice);
@@ -1557,7 +1567,7 @@
                             selectedPrice = 0.5; // Fallback
                         }
                     }
-                    
+
                     console.log('Price updated:', {
                         raw: rawPrice,
                         decimal: selectedPrice,
@@ -1609,27 +1619,27 @@
                     // Example 3: Spend $1 at 92.5¢ per share (0.925 decimal)
                     //   Shares = $1 / 0.925 = 1.081 shares
                     //   Payout = 1.081 × $1.00 = $1.08
-                    
+
                     // Ensure price is within valid range (0.001 to 0.999)
                     const pricePerShare = Math.max(0.001, Math.min(0.999, selectedPrice));
-                    
+
                     // Calculate shares you receive
                     const shares = amount / pricePerShare;
-                    
+
                     // Calculate total payout (each share pays $1.00 if you win)
                     const totalPayout = shares * 1.0;
-                    
+
                     // Round to 2 decimal places to avoid floating point errors
                     const payout = Math.round(totalPayout * 100) / 100;
 
                     // Display "To win" - this is what you receive if you win (total payout)
                     potentialWin.textContent = "$" + payout.toFixed(2);
-                    
+
                     // Debug log for verification
                     const rawYesPrice = yesBtn?.getAttribute("data-price");
                     const rawNoPrice = noBtn?.getAttribute("data-price");
                     const buttonText = (yesBtn?.classList.contains("active") ? yesBtn : noBtn)?.textContent || 'N/A';
-                    
+
                     console.log('Trading Calculation:', {
                         amount: '$' + amount.toFixed(2),
                         priceCents: (pricePerShare * 100).toFixed(1) + '¢',
@@ -1643,7 +1653,7 @@
                         expectedPayoutFor1Dollar: '$' + (1 / pricePerShare).toFixed(2),
                         formula: `$${amount} / ${pricePerShare} = ${shares.toFixed(4)} shares × $1.00 = $${payout.toFixed(2)}`
                     });
-                    
+
                     // Warn if calculation seems wrong (payout should be > amount for prices < 0.50)
                     if (pricePerShare < 0.5 && amount === 1 && payout < 2) {
                         console.error('⚠️ POTENTIAL CALCULATION ERROR:', {
@@ -1654,7 +1664,7 @@
                         });
                     }
                 }
-                
+
                 // Make calculatePayout globally accessible for external calls
                 window.calculatePayout = calculatePayout;
 

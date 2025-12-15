@@ -1,5 +1,5 @@
 @extends('backend.layouts.master')
-@section('title', 'Settings')
+@section('title', 'Global Settings')
 @section('content')
     <div class="content-wrapper">
         <div class="container-full">
@@ -21,7 +21,8 @@
                     <div class="col-12">
                         <div class="box">
                             <div class="box-body p-0">
-                                <form method="POST" action="{{ route('admin.setting.update') }}" id="settingsForm">
+                                <form method="POST" action="{{ route('admin.setting.update') }}" id="settingsForm"
+                                    enctype="multipart/form-data">
                                     @csrf
 
                                     <div class="row g-0">
@@ -181,15 +182,43 @@
                                                         <div class="col-md-12">
                                                             <div class="form-group mb-3">
                                                                 <label class="form-label">Site Logo</label>
-                                                                <input type="file" name="site_logo"
-                                                                    class="form-control">
+                                                                <input type="file" name="site_logo" id="site_logo"
+                                                                    class="form-control" accept="image/*">
+                                                                @if (isset($generalSettings['logo']) && $generalSettings['logo'])
+                                                                    <div class="mt-3">
+                                                                        <img src="{{ str_starts_with($generalSettings['logo'], 'http') ? $generalSettings['logo'] : asset('storage/' . $generalSettings['logo']) }}"
+                                                                            alt="Current Logo" class="img-preview"
+                                                                            style="max-width: 200px; max-height: 100px; border-radius: 8px; border: 2px solid #e5e7eb;"
+                                                                            onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
+                                                                    </div>
+                                                                @endif
+                                                                <div id="site_logo_preview" class="mt-3"
+                                                                    style="display: none;">
+                                                                    <img id="site_logo_preview_img" src=""
+                                                                        alt="Logo Preview"
+                                                                        style="max-width: 200px; max-height: 100px; border-radius: 8px; border: 2px solid #e5e7eb;">
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-12">
                                                             <div class="form-group mb-3">
                                                                 <label class="form-label">Favicon</label>
-                                                                <input type="file" name="favicon"
-                                                                    class="form-control">
+                                                                <input type="file" name="favicon" id="favicon"
+                                                                    class="form-control" accept="image/*">
+                                                                @if (isset($generalSettings['favicon']) && $generalSettings['favicon'])
+                                                                    <div class="mt-3">
+                                                                        <img src="{{ str_starts_with($generalSettings['favicon'], 'http') ? $generalSettings['favicon'] : asset('storage/' . $generalSettings['favicon']) }}"
+                                                                            alt="Current Favicon" class="img-preview"
+                                                                            style="max-width: 64px; max-height: 64px; border-radius: 8px; border: 2px solid #e5e7eb;"
+                                                                            onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
+                                                                    </div>
+                                                                @endif
+                                                                <div id="favicon_preview" class="mt-3"
+                                                                    style="display: none;">
+                                                                    <img id="favicon_preview_img" src=""
+                                                                        alt="Favicon Preview"
+                                                                        style="max-width: 64px; max-height: 64px; border-radius: 8px; border: 2px solid #e5e7eb;">
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -264,7 +293,7 @@
                                                                 <label class="form-label">Facebook Pixel ID</label>
                                                                 <input type="text" name="fb_pixel_id"
                                                                     class="form-control"
-                                                                    value="{{ old('fb_pixel_id', $facebookSettings['pixel_id'] ?? '') }}"
+                                                                    value="{{ old('fb_pixel_id', $facebookPixelSettings['pixel_id'] ?? '') }}"
                                                                     placeholder="Enter your Facebook Pixel ID">
                                                             </div>
                                                         </div>
@@ -314,16 +343,31 @@
 
 @push('styles')
     <style>
-        .settings-sidebar {
-            background-color: #f8f9fa;
-            border-right: 1px solid #e5e7eb;
-            min-height: 600px;
-            padding: 20px 0;
+        /* Page Background */
+        .content-wrapper {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 50%, #f0f2ff 100%);
+            min-height: 100vh;
         }
 
-        .settings-sidebar i {
-            width: 20px;
-            height: 20px;
+        /* Settings Container */
+        .box {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: none;
+        }
+
+        .box-body {
+            padding: 0 !important;
+        }
+
+        /* Sidebar */
+        .settings-sidebar {
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            border-right: 2px solid #e5e7eb;
+            min-height: 600px;
+            padding: 30px 0;
         }
 
         .settings-nav {
@@ -332,104 +376,228 @@
 
         .settings-nav .nav-link {
             color: #4b5563;
-            padding: 14px 24px;
+            padding: 16px 28px;
             border-radius: 0;
-            border-left: 3px solid transparent;
-            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-weight: 500;
+            gap: 14px;
+            font-weight: 600;
             font-size: 15px;
+            margin: 4px 0;
+            position: relative;
+        }
+
+        .settings-nav .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
         }
 
         .settings-nav .nav-icon {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            background: #fff;
+            border-radius: 12px;
+            background: #ffffff;
             border: 2px solid #e5e7eb;
             flex-shrink: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .settings-nav .nav-link:hover {
-            background-color: #e9ecef;
-            color: #1f2937;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);
+            color: #667eea;
+            transform: translateX(4px);
+        }
+
+        .settings-nav .nav-link:hover .nav-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .settings-nav .nav-link.active {
-            background-color: #10b981;
-            color: #ffffff;
-            border-left-color: #059669;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+            color: #667eea;
+            border-left-color: #667eea;
+            font-weight: 700;
+        }
+
+        .settings-nav .nav-link.active::before {
+            width: 4px;
         }
 
         .settings-nav .nav-link.active .nav-icon {
-            background: rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-color: transparent;
+            color: white;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
+        /* Content Area */
         .settings-content {
             background-color: #ffffff;
         }
 
         .settings-content .tab-content {
             min-height: 500px;
+            padding: 40px;
         }
 
         .settings-content h5 {
             color: #1f2937;
-            font-weight: 600;
-            font-size: 20px;
+            font-weight: 700;
+            font-size: 24px;
             margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
+        .settings-content h5::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        /* Form Elements */
         .form-label {
-            font-weight: 500;
+            font-weight: 600;
             color: #374151;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-label .text-danger {
+            color: #ef4444;
         }
 
         .form-control {
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px 16px;
             font-size: 14px;
+            transition: all 0.3s ease;
+            background: #ffffff;
         }
 
         .form-control:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            outline: none;
+            transform: translateY(-1px);
         }
 
+        .form-control:hover {
+            border-color: #cbd5e1;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Image Preview */
+        .img-preview {
+            transition: all 0.3s ease;
+        }
+
+        .img-preview:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Footer */
         .settings-footer {
-            background-color: #fff;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-top: 2px solid #e5e7eb;
+            padding: 30px 40px;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
         }
 
         .btn-primary {
-            background: #1f2937;
-            border-color: #1f2937;
-            padding: 10px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .btn-primary:hover {
-            background: #111827;
-            border-color: #111827;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        /* Breadcrumb */
         .breadcrumb {
             background-color: transparent;
             padding: 0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
+        .breadcrumb-item a {
+            color: #667eea;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .breadcrumb-item a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        /* Alert */
+        .alert-warning {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe0b2 100%);
+            border: 2px solid #ffb74d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .settings-sidebar {
                 border-right: none;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 2px solid #e5e7eb;
+                min-height: auto;
             }
 
             .settings-nav .nav-link {
@@ -439,7 +607,20 @@
 
             .settings-nav .nav-link.active {
                 border-left: none;
-                border-bottom-color: #059669;
+                border-bottom-color: #667eea;
+            }
+
+            .settings-content .tab-content {
+                padding: 25px 20px;
+            }
+
+            .settings-footer {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .settings-footer .btn {
+                width: 100%;
             }
         }
 
@@ -477,6 +658,46 @@
                     }
                 });
             });
+
+            // Image preview for site_logo
+            const siteLogoInput = document.getElementById('site_logo');
+            if (siteLogoInput) {
+                siteLogoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.getElementById('site_logo_preview');
+                            const previewImg = document.getElementById('site_logo_preview_img');
+                            if (preview && previewImg) {
+                                previewImg.src = e.target.result;
+                                preview.style.display = 'block';
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Image preview for favicon
+            const faviconInput = document.getElementById('favicon');
+            if (faviconInput) {
+                faviconInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.getElementById('favicon_preview');
+                            const previewImg = document.getElementById('favicon_preview_img');
+                            if (preview && previewImg) {
+                                previewImg.src = e.target.result;
+                                preview.style.display = 'block';
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
         });
     </script>
 @endpush

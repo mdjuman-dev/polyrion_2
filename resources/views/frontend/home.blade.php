@@ -1,6 +1,33 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>Polymarket</title>
+    <title>{{ $appName }} - Prediction Markets & Trading Platform</title>
+    <meta name="description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}. Join the future of decentralized prediction markets.">
+    <meta name="keywords" content="prediction markets, trading, betting, events, markets, polymarket, decentralized">
+    <meta name="author" content="{{ $appName }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ $appUrl }}">
+    <meta property="og:title" content="{{ $appName }} - Prediction Markets & Trading Platform">
+    <meta property="og:description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}.">
+    @if ($logo)
+        <meta property="og:image" content="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}">
+    @endif
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ $appUrl }}">
+    <meta property="twitter:title" content="{{ $appName }} - Prediction Markets & Trading Platform">
+    <meta property="twitter:description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}.">
+    @if ($logo)
+        <meta property="twitter:image" content="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}">
+    @endif
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ $appUrl }}">
 @endsection
 @section('content')
     <!-- Main Content -->
@@ -104,9 +131,11 @@
                             </button>
                             <div class="status-dropdown-menu">
                                 <ul>
-                                    <li class="status-option" data-status="active" onclick="setStatus('active', 'Active')">
+                                    <li class="status-option" data-status="active"
+                                        onclick="setStatus('active', 'Active')">
                                         Active</li>
-                                    <li class="status-option" data-status="closed" onclick="setStatus('closed', 'Closed')">
+                                    <li class="status-option" data-status="closed"
+                                        onclick="setStatus('closed', 'Closed')">
                                         Closed</li>
                                     <li class="status-option" data-status="pending"
                                         onclick="setStatus('pending', 'Pending')">Pending</li>

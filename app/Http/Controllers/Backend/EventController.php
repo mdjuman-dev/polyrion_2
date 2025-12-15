@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
@@ -231,6 +232,8 @@ class EventController extends Controller
             'slug' => 'nullable|string|max:255|unique:events,slug',
             'image' => 'nullable|url|max:500',
             'icon' => 'nullable|url|max:500',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
             'active' => 'nullable|boolean',
@@ -241,6 +244,12 @@ class EventController extends Controller
             'slug.unique' => 'This slug is already taken. Please use a different one.',
             'image.url' => 'Please provide a valid image URL.',
             'icon.url' => 'Please provide a valid icon URL.',
+            'image_file.image' => 'Event image must be an image file.',
+            'image_file.mimes' => 'Event image must be a jpeg, png, jpg, gif, or webp file.',
+            'image_file.max' => 'Event image must not exceed 2MB.',
+            'icon_file.image' => 'Event icon must be an image file.',
+            'icon_file.mimes' => 'Event icon must be a jpeg, png, jpg, gif, or webp file.',
+            'icon_file.max' => 'Event icon must not exceed 2MB.',
             'end_date.after' => 'End date must be after start date.',
         ]);
 
@@ -252,6 +261,8 @@ class EventController extends Controller
             'markets.*.slug' => 'nullable|string|max:255',
             'markets.*.image' => 'nullable|url|max:500',
             'markets.*.icon' => 'nullable|url|max:500',
+            'markets.*.image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'markets.*.icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'markets.*.start_date' => 'nullable|date',
             'markets.*.end_date' => 'nullable|date',
             'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
@@ -263,6 +274,12 @@ class EventController extends Controller
             'markets.*.question.max' => 'Market question cannot exceed 255 characters.',
             'markets.*.image.url' => 'Please provide a valid image URL.',
             'markets.*.icon.url' => 'Please provide a valid icon URL.',
+            'markets.*.image_file.image' => 'Market image must be an image file.',
+            'markets.*.image_file.mimes' => 'Market image must be a jpeg, png, jpg, gif, or webp file.',
+            'markets.*.image_file.max' => 'Market image must not exceed 2MB.',
+            'markets.*.icon_file.image' => 'Market icon must be an image file.',
+            'markets.*.icon_file.mimes' => 'Market icon must be a jpeg, png, jpg, gif, or webp file.',
+            'markets.*.icon_file.max' => 'Market icon must not exceed 2MB.',
             'markets.*.yes_price.numeric' => 'Yes price must be a number.',
             'markets.*.yes_price.min' => 'Yes price must be between 0 and 1.',
             'markets.*.yes_price.max' => 'Yes price must be between 0 and 1.',
@@ -312,12 +329,37 @@ class EventController extends Controller
             $eventValidated['active'] = $eventValidated['active'] ?? true;
             $eventValidated['featured'] = $eventValidated['featured'] ?? false;
 
+            // Handle event image file upload (prioritize file over URL)
+            if ($request->hasFile('image_file')) {
+                $imageFile = $request->file('image_file');
+                $imageName = 'event-' . time() . '-' . Str::random(10) . '.' . $imageFile->getClientOriginalExtension();
+                $imagePath = $imageFile->storeAs('events', $imageName, 'public');
+                $eventValidated['image'] = $imagePath;
+            } else {
+                // Use URL if provided, otherwise null
+                $eventValidated['image'] = $eventValidated['image'] ?? null;
+            }
+
+            // Handle event icon file upload (prioritize file over URL)
+            if ($request->hasFile('icon_file')) {
+                $iconFile = $request->file('icon_file');
+                $iconName = 'event-icon-' . time() . '-' . Str::random(10) . '.' . $iconFile->getClientOriginalExtension();
+                $iconPath = $iconFile->storeAs('events', $iconName, 'public');
+                $eventValidated['icon'] = $iconPath;
+            } else {
+                // Use URL if provided, otherwise null
+                $eventValidated['icon'] = $eventValidated['icon'] ?? null;
+            }
+
+            // Remove file fields from validated data before creating event
+            unset($eventValidated['image_file'], $eventValidated['icon_file']);
+
             // Create event
             $event = Event::create($eventValidated);
 
             // Create markets
             $createdCount = 0;
-            foreach ($marketsValidated['markets'] as $marketData) {
+            foreach ($marketsValidated['markets'] as $index => $marketData) {
                 // Generate slug if not provided
                 if (empty($marketData['slug'])) {
                     $marketData['slug'] = Str::slug($marketData['question']);
@@ -328,6 +370,30 @@ class EventController extends Controller
                         $marketData['slug'] = $baseSlug . '-' . $counter;
                         $counter++;
                     }
+                }
+
+                // Handle market image file upload (prioritize file over URL)
+                $marketImage = null;
+                if ($request->hasFile("markets.{$index}.image_file")) {
+                    $imageFile = $request->file("markets.{$index}.image_file");
+                    $imageName = 'market-' . time() . '-' . Str::random(10) . '.' . $imageFile->getClientOriginalExtension();
+                    $imagePath = $imageFile->storeAs('markets', $imageName, 'public');
+                    $marketImage = $imagePath;
+                } else {
+                    // Use URL if provided, otherwise null
+                    $marketImage = $marketData['image'] ?? null;
+                }
+
+                // Handle market icon file upload (prioritize file over URL)
+                $marketIcon = null;
+                if ($request->hasFile("markets.{$index}.icon_file")) {
+                    $iconFile = $request->file("markets.{$index}.icon_file");
+                    $iconName = 'market-icon-' . time() . '-' . Str::random(10) . '.' . $iconFile->getClientOriginalExtension();
+                    $iconPath = $iconFile->storeAs('markets', $iconName, 'public');
+                    $marketIcon = $iconPath;
+                } else {
+                    // Use URL if provided, otherwise null
+                    $marketIcon = $marketData['icon'] ?? null;
                 }
 
                 // Set outcome prices
@@ -347,8 +413,8 @@ class EventController extends Controller
                     'question' => $marketData['question'],
                     'slug' => $marketData['slug'],
                     'description' => $marketData['description'] ?? null,
-                    'image' => $marketData['image'] ?? null,
-                    'icon' => $marketData['icon'] ?? null,
+                    'image' => $marketImage,
+                    'icon' => $marketIcon,
                     'start_date' => $marketData['start_date'] ?? null,
                     'end_date' => $marketData['end_date'] ?? null,
                     'outcome_prices' => json_encode($outcomePrices),

@@ -1,6 +1,9 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>{{ $tag->label }} - Polymarket</title>
+    <title>{{ $tag->label }} - {{ $appName }}</title>
+    <meta name="description" content="Events tagged with '{{ $tag->label }}' on {{ $appName }}.">
+    <meta property="og:title" content="{{ $tag->label }} - {{ $appName }}">
+    <link rel="canonical" href="{{ $appUrl }}/tag/{{ $tag->slug }}">
 @endsection
 @section('content')
     <!-- Main Content -->
@@ -10,7 +13,8 @@
             <div class="tag-header mb-4">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div>
-                        <h1 class="tag-title" style="color: var(--text-primary); font-size: 28px; font-weight: 700; margin-bottom: 8px;">
+                        <h1 class="tag-title"
+                            style="color: var(--text-primary); font-size: 28px; font-weight: 700; margin-bottom: 8px;">
                             <i class="fas fa-tag" style="color: var(--accent); margin-right: 8px;"></i>
                             {{ $tag->label }}
                         </h1>
@@ -251,6 +255,7 @@
             }
 
             @keyframes bblFadInOut {
+
                 0%,
                 80%,
                 100% {
@@ -339,9 +344,12 @@
             }
 
             @keyframes float {
-                0%, 100% {
+
+                0%,
+                100% {
                     transform: translateY(0px);
                 }
+
                 50% {
                     transform: translateY(-10px);
                 }
@@ -395,4 +403,3 @@
         </style>
     @endpush
 @endsection
-

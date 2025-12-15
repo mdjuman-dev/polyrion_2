@@ -1,5 +1,5 @@
 @extends('backend.layouts.master')
-@section('title', 'Events List')
+@section('title', 'All Events')
 @section('content')
     <div class="content-wrapper">
         <div class="container-full">

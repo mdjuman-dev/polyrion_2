@@ -1,5 +1,8 @@
 @extends('frontend.layout.frontend')
-
+@section('meta_derails')
+    <title>My Trades History - {{ $appName }}</title>
+    <meta name="description" content="View your complete trading history on {{ $appName }}.">
+@endsection
 @section('content')
 <div class="container" style="padding: 2rem 1rem; max-width: 1200px; margin: 0 auto;">
     <div class="trades-history-page">

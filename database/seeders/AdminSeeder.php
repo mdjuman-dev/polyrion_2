@@ -14,10 +14,17 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        Admin::create([
-            'name' => 'Admin',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = Admin::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        // Assign admin role if it exists
+        if ($adminRole = \Spatie\Permission\Models\Role::where('name', 'admin')->where('guard_name', 'admin')->first()) {
+            $admin->assignRole($adminRole);
+        }
     }
 }
