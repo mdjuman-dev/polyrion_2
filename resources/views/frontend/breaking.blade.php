@@ -1,6 +1,7 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>Breaking - Polymarket</title>
+    <title>Breaking Events - {{ $appName }}</title>
+    <meta name="description" content="Breaking news and events on {{ $appName }}.">
 @endsection
 @section('content')
     <main>
@@ -10,7 +11,8 @@
                     <div class="row align-items-center justify-content-between">
                         <div class="secondary-search-bar">
                             <i class="fas fa-search search-icon"></i>
-                            <input type="text" placeholder="Search" class="secondary-search-input" id="breakingSearchInput">
+                            <input type="text" placeholder="Search" class="secondary-search-input"
+                                id="breakingSearchInput">
                         </div>
                         <button class="filter-icon-btn mx-2" id="filterToggleBtn"><i class="fas fa-sliders-h"></i></button>
                         <a href="{{ route('saved.events') }}" class="bookmark-icon-btn" title="Saved Events">

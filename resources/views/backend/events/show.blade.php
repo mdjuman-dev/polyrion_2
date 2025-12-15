@@ -32,9 +32,6 @@
                                         <i class="fa fa-plus-circle"></i> Add More Markets
                                     </a>
                                 @endif
-                                <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-info">
-                                    <i class="fa fa-edit"></i> Edit Event
-                                </a>
                             </div>
                         </div>
                     </div>
@@ -95,90 +92,207 @@
                                 @endforeach
                             </div>
 
-                            <!-- Historical Chart Section -->
-                            <div class="chart-section">
-                                <div class="chart-container">
-                                    <canvas id="chanceChart" height="200"></canvas>
-                                </div>
-                                <div class="chart-footer">
-                                    <div class="trading-volume">
-                                        <i class="fa fa-chart-line"></i>
-                                        ${{ number_format($event->volume ?? 0, 0) }} vol
-                                    </div>
-                                    <div class="time-filters">
-                                        <button class="time-filter-btn active" data-period="1D">1D</button>
-                                        <button class="time-filter-btn" data-period="1W">1W</button>
-                                        <button class="time-filter-btn" data-period="1M">1M</button>
-                                        <button class="time-filter-btn" data-period="ALL">ALL</button>
-                                        <button class="time-filter-btn" title="More options">
-                                            <i class="fa fa-sliders-h"></i>
-                                        </button>
+                            <!-- Markets Details Section -->
+                            <div class="box markets-container-new">
+                                <div class="box-body">
+                                    <h3 class="section-title-modern">
+                                        <i class="fa fa-list"></i> All Markets ({{ $markets->count() }})
+                                    </h3>
+                                    <div class="markets-list-modern">
+                                        @foreach ($markets as $index => $market)
+                                            @php
+                                                $outcomePrices = json_decode($market->outcome_prices, true) ?? [
+                                                    '0.5',
+                                                    '0.5',
+                                                ];
+                                                $noPrice = isset($outcomePrices[0]) ? (float) $outcomePrices[0] : 0.5;
+                                                $yesPrice = isset($outcomePrices[1]) ? (float) $outcomePrices[1] : 0.5;
+                                                $chance = round($yesPrice * 100);
+                                                $noPriceCents = round($noPrice * 100);
+                                                $yesPriceCents = round($yesPrice * 100);
+                                            @endphp
+                                            <div class="market-detail-card">
+                                                <div class="market-detail-header">
+                                                    <div class="market-image-wrapper">
+                                                        <img src="{{ $market->icon ? (str_starts_with($market->icon, 'http') ? $market->icon : asset('storage/' . $market->icon)) : asset('backend/assets/images/avatar.png') }}"
+                                                            alt="{{ $market->question }}"
+                                                            onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
+                                                    </div>
+                                                    <div class="market-detail-info">
+                                                        <h4 class="market-question-modern">
+                                                            <a href="{{ route('admin.market.show', $market->id) }}"
+                                                                class="market-link">
+                                                                {{ $market->question }}
+                                                            </a>
+                                                        </h4>
+                                                        @if ($market->groupItem_title)
+                                                            <p class="market-group-title">
+                                                                <i class="fa fa-tag"></i> {{ $market->groupItem_title }}
+                                                            </p>
+                                                        @endif
+                                                        @if ($market->description)
+                                                            <p class="market-description">
+                                                                {{ Str::limit($market->description, 150) }}</p>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="market-detail-body">
+                                                    <div class="market-details-grid">
+                                                        <div class="market-detail-item">
+                                                            <span class="detail-label">Yes Price:</span>
+                                                            <span class="detail-value">{{ $yesPriceCents }}¢</span>
+                                                        </div>
+                                                        <div class="market-detail-item">
+                                                            <span class="detail-label">No Price:</span>
+                                                            <span class="detail-value">{{ $noPriceCents }}¢</span>
+                                                        </div>
+                                                        <div class="market-detail-item">
+                                                            <span class="detail-label">Chance:</span>
+                                                            <span
+                                                                class="detail-value chance-badge">{{ $chance }}%</span>
+                                                        </div>
+                                                        @if ($market->volume)
+                                                            <div class="market-detail-item">
+                                                                <span class="detail-label">Volume:</span>
+                                                                <span
+                                                                    class="detail-value">${{ number_format($market->volume, 2) }}</span>
+                                                            </div>
+                                                        @endif
+                                                        @if ($market->liquidity)
+                                                            <div class="market-detail-item">
+                                                                <span class="detail-label">Liquidity:</span>
+                                                                <span
+                                                                    class="detail-value">${{ number_format($market->liquidity, 2) }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                    <div class="market-actions-admin">
+                                                        <a href="{{ route('admin.market.show', $market->id) }}"
+                                                            class="btn btn-sm btn-info">
+                                                            <i class="fa fa-eye"></i> View Details
+                                                        </a>
+                                                        <a href="{{ route('admin.market.edit', $market->id) }}"
+                                                            class="btn btn-sm btn-warning">
+                                                            <i class="fa fa-edit"></i> Edit
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Markets List -->
-                            <div class="markets-section-modern">
-                                <h3 class="section-title-modern">
-                                    <i class="fa fa-chart-bar"></i> Chance
-                                </h3>
-                                <div class="markets-list-modern">
-                                    @foreach ($markets as $index => $market)
-                                        @php
-                                            $outcomePrices = json_decode($market->outcome_prices, true) ?? [
-                                                '0.5',
-                                                '0.5',
-                                            ];
-                                            $noPrice = isset($outcomePrices[0]) ? (float) $outcomePrices[0] : 0.5;
-                                            $yesPrice = isset($outcomePrices[1]) ? (float) $outcomePrices[1] : 0.5;
-                                            $chance = round($yesPrice * 100);
-                                            $noPriceCents = round($noPrice * 100);
-                                            $yesPriceCents = round($yesPrice * 100);
-                                            $change = rand(-5, 5);
-                                        @endphp
-                                        <div class="market-card-modern">
-                                            <div class="market-card-header">
-                                                <div class="market-image-wrapper">
-                                                    <img src="{{ $market->icon ? (str_starts_with($market->icon, 'http') ? $market->icon : asset('storage/' . $market->icon)) : asset('backend/assets/images/avatar.png') }}"
-                                                        alt="{{ $market->question }}"
-                                                        onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
-                                                </div>
-                                                <div class="market-info">
-                                                    <h4 class="market-question-modern">{{ $market->question }}</h4>
-                                                    @if ($market->groupItem_title)
-                                                        <p class="market-group-title">{{ $market->groupItem_title }}
-                                                        </p>
+                            <!-- Comments Section -->
+                            <div class="comments-section-box">
+                                <div class="box-body">
+                                    <h3 class="comments-section-title">
+                                        <i class="fa fa-comments"></i>
+                                        Event Comments
+                                        <span class="comments-count-info">
+                                            (Total: {{ $event->comments->count() }})
+                                        </span>
+                                    </h3>
+
+                                    @forelse($event->comments as $comment)
+                                        <div
+                                            class="comment-item {{ isset($comment->is_active) && !$comment->is_active ? 'comment-inactive' : '' }}">
+                                            <div class="comment-header">
+                                                <div class="comment-avatar">
+                                                    @if ($comment->user && $comment->user->avatar)
+                                                        <img src="{{ $comment->user->avatar }}"
+                                                            alt="{{ $comment->user->name }}">
+                                                    @else
+                                                        <div class="comment-avatar-initials">
+                                                            {{ $comment->user ? strtoupper(substr($comment->user->name, 0, 1)) : 'U' }}
+                                                        </div>
                                                     @endif
                                                 </div>
-                                            </div>
-                                            <div class="market-card-body">
-                                                <div class="market-chance">
-                                                    <span class="chance-value">{{ $chance }}%</span>
-                                                    @if ($change > 0)
-                                                        <span class="chance-change positive">▲{{ abs($change) }}</span>
-                                                    @elseif ($change < 0)
-                                                        <span class="chance-change negative">▼{{ abs($change) }}</span>
-                                                    @endif
-                                                </div>
-                                                <div class="market-actions">
-                                                    <button class="btn-yes" data-market-id="{{ $market->id }}">
-                                                        Yes {{ $yesPriceCents }}¢
-                                                    </button>
-                                                    <button class="btn-no" data-market-id="{{ $market->id }}">
-                                                        No {{ $noPriceCents }}¢
-                                                    </button>
+                                                <div class="comment-meta">
+                                                    <div class="comment-author-name">
+                                                        {{ $comment->user ? $comment->user->name : 'Unknown User' }}
+                                                    </div>
+                                                    <div class="comment-date">
+                                                        <i class="fa fa-clock"></i>
+                                                        {{ $comment->created_at->format('M d, Y h:i A') }}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div class="comment-body">
+                                                {{ $comment->comment_text }}
+                                            </div>
+                                            <div class="comment-stats">
+                                                <span class="comment-likes">
+                                                    <i class="fa fa-heart"></i>
+                                                    {{ $comment->likes_count ?? 0 }} likes
+                                                </span>
+                                                @if ($comment->replies->count() > 0)
+                                                    <span class="comment-replies-count">
+                                                        <i class="fa fa-reply"></i>
+                                                        {{ $comment->replies->count() }}
+                                                        {{ $comment->replies->count() == 1 ? 'reply' : 'replies' }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            <!-- Comment Actions -->
+                                            <div class="comment-actions-admin">
+                                                <livewire:backend.comment-actions :commentId="$comment->id" :isActive="$comment->is_active ?? true"
+                                                    :eventId="$event->id" :key="'comment-actions-' . $comment->id" />
+                                            </div>
+
+                                            <!-- Replies -->
+                                            @if ($comment->replies->count() > 0)
+                                                <div class="comment-replies">
+                                                    @foreach ($comment->replies as $reply)
+                                                        <div class="comment-reply-item">
+                                                            <div class="comment-reply-header">
+                                                                <div class="comment-reply-avatar">
+                                                                    @if ($reply->user && $reply->user->avatar)
+                                                                        <img src="{{ $reply->user->avatar }}"
+                                                                            alt="{{ $reply->user->name }}">
+                                                                    @else
+                                                                        <div class="comment-reply-avatar-initials">
+                                                                            {{ $reply->user ? strtoupper(substr($reply->user->name, 0, 1)) : 'U' }}
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+                                                                <div class="comment-reply-meta">
+                                                                    <div class="comment-reply-author-name">
+                                                                        {{ $reply->user ? $reply->user->name : 'Unknown User' }}
+                                                                    </div>
+                                                                    <div class="comment-reply-date">
+                                                                        <i class="fa fa-clock"></i>
+                                                                        {{ $reply->created_at->format('M d, Y h:i A') }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="comment-reply-body">
+                                                                {{ $reply->comment_text }}
+                                                            </div>
+                                                            <div class="comment-reply-stats">
+                                                                <span class="comment-reply-likes">
+                                                                    <i class="fa fa-heart"></i>
+                                                                    {{ $reply->likes_count ?? 0 }} likes
+                                                                </span>
+                                                            </div>
+                                                            <!-- Reply Actions -->
+                                                            <div class="comment-reply-actions-admin">
+                                                                <livewire:backend.comment-actions :commentId="$reply->id"
+                                                                    :isActive="$reply->is_active ?? true" :eventId="$event->id" :key="'reply-actions-' . $reply->id" />
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endforeach
+                                    @empty
+                                        <div class="no-comments">
+                                            <i class="fa fa-comment-slash fa-3x"></i>
+                                            <p>No comments yet</p>
+                                        </div>
+                                    @endforelse
                                 </div>
-                                @if ($markets->count() > 3)
-                                    <div class="more-markets-link">
-                                        <a href="#">
-                                            <i class="fa fa-chevron-down"></i> More markets
-                                        </a>
-                                    </div>
-                                @endif
                             </div>
                         @else
                             <div class="no-markets-box">
@@ -192,580 +306,108 @@
                         @endif
                     </div>
 
-                    <!-- Right Sidebar - Trading Widget -->
+                    <!-- Right Sidebar -->
                     <div class="col-lg-4">
+                        <!-- No Markets Alert -->
+                        @if ($event->markets->count() == 0)
+                            <div class="box mb-3"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                <div class="box-body text-center py-4">
+                                    <i class="fa fa-chart-line fa-3x text-white mb-3"></i>
+                                    <h4 class="text-white mb-2">No Markets Added Yet</h4>
+                                    <p class="text-white mb-3">This event doesn't have any markets. Add
+                                        markets to enable
+                                        trading.</p>
+                                    <a href="{{ route('admin.events.add-markets', $event) }}"
+                                        class="btn btn-light btn-lg">
+                                        <i class="fa fa-plus-circle"></i> Add Markets Now
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Markets Card -->
                         @if ($event->markets->count() > 0)
-                            @php
-                                $selectedMarket = $event->markets->first();
-                                $outcomePrices = json_decode($selectedMarket->outcome_prices, true) ?? ['0.5', '0.5'];
-                                $noPrice = isset($outcomePrices[0]) ? (float) $outcomePrices[0] : 0.5;
-                                $yesPrice = isset($outcomePrices[1]) ? (float) $outcomePrices[1] : 0.5;
-                                $noPriceCents = round($noPrice * 100);
-                                $yesPriceCents = round($yesPrice * 100);
-                            @endphp
-                            <div class="trading-widget">
-                                <div class="trading-widget-header">
-                                    <div class="trading-market-image">
-                                        <img src="{{ $selectedMarket->icon ? (str_starts_with($selectedMarket->icon, 'http') ? $selectedMarket->icon : asset('storage/' . $selectedMarket->icon)) : asset('backend/assets/images/avatar.png') }}"
-                                            alt="{{ $selectedMarket->question }}"
-                                            onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
-                                    </div>
-                                    <div class="trading-market-info">
-                                        <h4 class="trading-event-title">{{ $event->title }}</h4>
-                                        <p class="trading-market-selection">
-                                            Buy No - {{ Str::limit($selectedMarket->question, 30) }}
-                                        </p>
+                            <div class="box sidebar-card">
+                                <div class="box-body">
+                                    <h4 class="sidebar-title">
+                                        <i class="fa fa-list"></i>
+                                        All Markets ({{ $event->markets->count() }})
+                                    </h4>
+                                    <div class="markets-list">
+                                        @foreach ($event->markets as $market)
+                                            <a href="{{ route('admin.market.show', $market->id) }}">
+                                                <div class="market-item d-flex align-items-center gap-2">
+                                                    <img src="{{ $market->icon }}" width="40" height="40"
+                                                        class="rounded-circle" alt="{{ $market->question }}">
+                                                    <div class="market-question">
+                                                        <i class="fa fa-question-circle"></i>
+                                                        {{ Str::limit($market->question ?? 'N/A', 60) }}
+                                                    </div>
+                                                    @if ($market->groupItem_title)
+                                                        <div class="market-group">
+                                                            <small>{{ $market->groupItem_title }}</small>
+                                                        </div>
+                                                    @endif
+
+                                                </div>
+                                            </a>
+                                        @endforeach
                                     </div>
                                 </div>
-                                <div class="trading-widget-body">
-                                    <div class="trading-tabs">
-                                        <button class="trading-tab active" data-tab="buy">Buy</button>
-                                        <button class="trading-tab" data-tab="sell">Sell</button>
-                                    </div>
-                                    <div class="currency-selector">
-                                        <select class="form-control">
-                                            <option>Dollars</option>
-                                        </select>
-                                    </div>
-                                    <div class="trading-options">
-                                        <button class="trading-option-btn" data-option="yes">
-                                            Yes {{ $yesPriceCents }}¢
-                                        </button>
-                                        <button class="trading-option-btn active" data-option="no">
-                                            No {{ $noPriceCents }}¢
-                                        </button>
-                                    </div>
-                                    <div class="amount-input-group">
-                                        <label>Amount</label>
-                                        <div class="amount-input-wrapper">
-                                            <span class="currency-symbol">$</span>
-                                            <input type="number" class="amount-input" value="0" min="0"
-                                                step="0.01">
-                                        </div>
-                                        <small class="interest-note">
-                                            <i class="fa fa-info-circle"></i> Earn 3.5% Interest
-                                        </small>
-                                    </div>
-                                    <button class="btn-trade-primary">
-                                        <i class="fa fa-sign-in-alt"></i> Sign up to trade
-                                    </button>
-                                    =======
-                                    <!-- Event Details Section -->
-                                    <div class="col-lg-8">
-                                        <!-- Event Header Card -->
-                                        <div class="box event-detail-card">
-                                            <div class="box-body">
-                                                <!-- Event Image -->
-                                                <div class="event-detail-image-wrapper">
-                                                    <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('backend/assets/images/avatar.png') }}"
-                                                        alt="{{ $event->title }}"
-                                                        onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'">
-                                                    <div class="event-detail-overlay">
-                                                        <div class="event-detail-badges">
-                                                            @if ($event->active)
-                                                                <span class="badge badge-success badge-pulse">Active</span>
-                                                            @endif
-                                                            @if ($event->featured)
-                                                                <span class="badge badge-warning">Featured</span>
-                                                            @endif
-                                                            @if ($event->new)
-                                                                <span class="badge badge-info">New</span>
-                                                            @endif
-                                                            @if ($event->category)
-                                                                <span class="badge badge-primary"
-                                                                    style="font-size: 12px; padding: 6px 12px; font-weight: 600;">
-                                                                    <i class="fa fa-tag"></i>
-                                                                    {{ ucfirst($event->category) }}
-                                                                </span>
-                                                            @else
-                                                                <span class="badge badge-secondary"
-                                                                    style="font-size: 12px; padding: 6px 12px;">
-                                                                    <i class="fa fa-tag"></i> Uncategorized
-                                                                </span>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
+                            </div>
+                        @endif
 
-                                                <!-- Event Title -->
-                                                <h1 class="event-detail-title">
-                                                    <i class="fa fa-calendar"></i>
-                                                    {{ $event->title }}
-                                                </h1>
-
-                                                <!-- Category Display (Prominent) -->
-                                                <div class="mb-3">
-                                                    @if ($event->category)
-                                                        <span class="badge badge-primary"
-                                                            style="font-size: 14px; padding: 8px 16px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px;">
-                                                            <i class="fa fa-tag"></i> Category:
-                                                            {{ ucfirst($event->category) }}
-                                                        </span>
-                                                    @else
-                                                        <span class="badge badge-secondary"
-                                                            style="font-size: 14px; padding: 8px 16px; border-radius: 20px;">
-                                                            <i class="fa fa-tag"></i> Uncategorized
-                                                        </span>
-                                                    @endif
-                                                </div>
-
-                                                <!-- Event Description -->
-                                                @if ($event->description)
-                                                    <div class="event-detail-description">
-                                                        <p>{{ $event->description }}</p>
-                                                    </div>
-                                                @endif
-
-                                                <!-- Event Metrics -->
-                                                <div class="row event-detail-metrics">
-                                                    <div class="col-md-3 col-sm-6">
-                                                        <div class="metric-box">
-                                                            <div class="metric-icon-box">
-                                                                <i class="fa fa-dollar-sign"></i>
-                                                            </div>
-                                                            <div class="metric-content">
-                                                                <span class="metric-label">Liquidity</span>
-                                                                <span
-                                                                    class="metric-value">${{ number_format($event->liquidity ?? 0, 2) }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 col-sm-6">
-                                                        <div class="metric-box">
-                                                            <div class="metric-icon-box">
-                                                                <i class="fa fa-chart-bar"></i>
-                                                            </div>
-                                                            <div class="metric-content">
-                                                                <span class="metric-label">Volume</span>
-                                                                <span
-                                                                    class="metric-value">${{ number_format($event->volume ?? 0, 2) }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 col-sm-6">
-                                                        <div class="metric-box">
-                                                            <div class="metric-icon-box">
-                                                                <i class="fa fa-list"></i>
-                                                            </div>
-                                                            <div class="metric-content">
-                                                                <span class="metric-label">Markets</span>
-                                                                <span
-                                                                    class="metric-value">{{ $event->markets->count() }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 col-sm-6">
-                                                        <div class="metric-box">
-                                                            <div class="metric-icon-box">
-                                                                <i class="fa fa-comments"></i>
-                                                            </div>
-                                                            <div class="metric-content">
-                                                                <span class="metric-label">Comments</span>
-                                                                <span
-                                                                    class="metric-value">{{ $totalCommentsCount ?? $event->comments->count() }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Event Dates -->
-                                                <div class="event-detail-dates">
-                                                    @if ($event->start_date)
-                                                        <div class="date-box">
-                                                            <i class="fa fa-calendar-check"></i>
-                                                            <div>
-                                                                <span class="date-label">Start Date</span>
-                                                                <span
-                                                                    class="date-value">{{ format_date($event->start_date) }}</span>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                    @if ($event->end_date)
-                                                        <div class="date-box">
-                                                            <i class="fa fa-calendar-times"></i>
-                                                            <div>
-                                                                <span class="date-label">End Date</span>
-                                                                <span
-                                                                    class="date-value">{{ format_date($event->end_date) }}</span>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                </div>
-
-                                                <!-- Tags -->
-                                                @if ($event->tags->count() > 0)
-                                                    <div class="event-detail-tags">
-                                                        <span class="tags-label">Tags:</span>
-                                                        @foreach ($event->tags as $tag)
-                                                            <span class="tag-badge">{{ $tag->label }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-
-
-                                            </div>
-                                        </div>
-
-                                        <!-- Comments Section -->
-                                        <div class="box comments-section-box">
-                                            <div class="box-body">
-                                                <h3 class="comments-section-title">
-                                                    <i class="fa fa-comments"></i>
-                                                    Comments
-                                                    <span class="comments-count-info">
-                                                        (Total: {{ $totalCommentsCount ?? $event->comments->count() }},
-                                                        Active:
-                                                        {{ $activeCommentsCount ?? $event->comments->where('is_active', '!=', false)->count() }})
-                                                    </span>
-                                                </h3>
-
-                                                @forelse($event->comments as $comment)
-                                                    <div
-                                                        class="comment-item {{ isset($comment->is_active) && !$comment->is_active ? 'comment-inactive' : '' }}">
-                                                        <div class="comment-header">
-                                                            <div class="comment-avatar">
-                                                                @if ($comment->user && $comment->user->avatar)
-                                                                    <img src="{{ $comment->user->avatar }}"
-                                                                        alt="{{ $comment->user->name }}">
-                                                                @else
-                                                                    <div class="comment-avatar-initials">
-                                                                        {{ $comment->user ? strtoupper(substr($comment->user->name, 0, 1)) : 'U' }}
-                                                                    </div>
-                                                                @endif
-                                                            </div>
-                                                            <div class="comment-meta">
-                                                                <div class="comment-author-name">
-                                                                    {{ $comment->user ? $comment->user->name : 'Unknown User' }}
-                                                                </div>
-                                                                <div class="comment-date">
-                                                                    <i class="fa fa-clock"></i>
-                                                                    {{ format_date($comment->created_at) }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="comment-body">
-                                                            {{ $comment->comment_text }}
-                                                        </div>
-                                                        <div class="comment-stats">
-                                                            <span class="comment-likes">
-                                                                <i class="fa fa-heart"></i>
-                                                                {{ $comment->likes_count ?? 0 }} likes
-                                                            </span>
-                                                            @if ($comment->replies->count() > 0)
-                                                                <span class="comment-replies-count">
-                                                                    <i class="fa fa-reply"></i>
-                                                                    {{ $comment->replies->count() }}
-                                                                    {{ $comment->replies->count() == 1 ? 'reply' : 'replies' }}
-                                                                </span>
-                                                            @endif
-                                                        </div>
-
-                                                        <!-- Comment Actions -->
-                                                        <div class="comment-actions-admin">
-                                                            <livewire:backend.comment-actions :commentId="$comment->id"
-                                                                :isActive="$comment->is_active ?? true" :eventId="$event->id" :key="'comment-actions-' . $comment->id" />
-                                                        </div>
-
-                                                        <!-- Replies -->
-                                                        @if ($comment->replies->count() > 0)
-                                                            <div class="comment-replies">
-                                                                @foreach ($comment->replies as $reply)
-                                                                    <div class="comment-reply-item">
-                                                                        <div class="comment-reply-header">
-                                                                            <div class="comment-reply-avatar">
-                                                                                @if ($reply->user && $reply->user->avatar)
-                                                                                    <img src="{{ $reply->user->avatar }}"
-                                                                                        alt="{{ $reply->user->name }}">
-                                                                                @else
-                                                                                    <div
-                                                                                        class="comment-reply-avatar-initials">
-                                                                                        {{ $reply->user ? strtoupper(substr($reply->user->name, 0, 1)) : 'U' }}
-                                                                                    </div>
-                                                                                @endif
-                                                                            </div>
-                                                                            <div class="comment-reply-meta">
-                                                                                <div class="comment-reply-author-name">
-                                                                                    {{ $reply->user ? $reply->user->name : 'Unknown User' }}
-                                                                                </div>
-                                                                                <div class="comment-reply-date">
-                                                                                    <i class="fa fa-clock"></i>
-                                                                                    {{ format_date($reply->created_at) }}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="comment-reply-body">
-                                                                            {{ $reply->comment_text }}
-                                                                        </div>
-                                                                        <div class="comment-reply-stats">
-                                                                            <span class="comment-reply-likes">
-                                                                                <i class="fa fa-heart"></i>
-                                                                                {{ $reply->likes_count ?? 0 }} likes
-                                                                            </span>
-                                                                        </div>
-                                                                        <!-- Reply Actions -->
-                                                                        <div class="comment-reply-actions-admin">
-                                                                            <livewire:backend.comment-actions
-                                                                                :commentId="$reply->id" :isActive="$reply->is_active ?? true"
-                                                                                :eventId="$event->id" :key="'reply-actions-' .
-                                                                                    $reply->id" />
-                                                                        </div>
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                @empty
-                                                    <div class="no-comments">
-                                                        <i class="fa fa-comment-slash fa-3x"></i>
-                                                        <p>No comments</p>
-                                                    </div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Sidebar -->
-                                    <div class="col-lg-4">
-                                        <!-- No Markets Alert -->
-                                        @if ($event->markets->count() == 0)
-                                            <div class="box mb-3"
-                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                                                <div class="box-body text-center py-4">
-                                                    <i class="fa fa-chart-line fa-3x text-white mb-3"></i>
-                                                    <h4 class="text-white mb-2">No Markets Added Yet</h4>
-                                                    <p class="text-white mb-3">This event doesn't have any markets. Add
-                                                        markets to enable
-                                                        trading.</p>
-                                                    <a href="{{ route('admin.events.add-markets', $event) }}"
-                                                        class="btn btn-light btn-lg">
-                                                        <i class="fa fa-plus-circle"></i> Add Markets Now
-                                                    </a>
-                                                </div>
-                                            </div>
+                        <!-- Event Info Card -->
+                        <div class="info-card-modern">
+                            <h4 class="info-card-title">
+                                <i class="fa fa-info-circle"></i> Event Details
+                            </h4>
+                            <div class="info-list-modern">
+                                <div class="info-item-modern">
+                                    <span class="info-label-modern">Status:</span>
+                                    <span class="info-value-modern">
+                                        @if ($event->active)
+                                            <span class="badge badge-success">Active</span>
+                                        @else
+                                            <span class="badge badge-secondary">Inactive</span>
                                         @endif
-
-                                        <!-- Markets Card -->
-                                        @if ($event->markets->count() > 0)
-                                            <div class="box sidebar-card">
-                                                <div class="box-body">
-                                                    <h4 class="sidebar-title">
-                                                        <i class="fa fa-list"></i>
-                                                        Markets ({{ $event->markets->count() }})
-                                                    </h4>
-                                                    <div class="markets-list">
-                                                        @foreach ($event->markets as $market)
-                                                            <a href="{{ route('admin.market.show', $market->id) }}">
-                                                                <div class="market-item d-flex align-items-center gap-2">
-                                                                    <img src="{{ $market->icon }}" width="40"
-                                                                        height="40" class="rounded-circle"
-                                                                        alt="{{ $market->question }}">
-                                                                    <div class="market-question">
-                                                                        <i class="fa fa-question-circle"></i>
-                                                                        {{ Str::limit($market->question ?? 'N/A', 60) }}
-                                                                    </div>
-                                                                    @if ($market->groupItem_title)
-                                                                        <div class="market-group">
-                                                                            <small>{{ $market->groupItem_title }}</small>
-                                                                        </div>
-                                                                    @endif
-
-                                                                </div>
-                                                            </a>
-                                                        @endforeach
-                                                    </div>
-                                                    >>>>>>> 073ee0e74f61dc9c4e0fabf5061824078b34b93d
-                                                </div>
-                                            </div>
+                                        @if ($event->featured)
+                                            <span class="badge badge-warning ml-1">Featured</span>
                                         @endif
-
-                                        <!-- Event Info Card -->
-                                        <<<<<<< HEAD <div class="info-card-modern">
-                                            <h4 class="info-card-title">
-                                                <i class="fa fa-info-circle"></i> Event Information
-                                            </h4>
-                                            <div class="info-list-modern">
-                                                <div class="info-item-modern">
-                                                    <span class="info-label-modern">Status:</span>
-                                                    <span class="info-value-modern">
-                                                        @if ($event->active)
-                                                            <span class="badge badge-success">Active</span>
-                                                        @else
-                                                            <span class="badge badge-secondary">Inactive</span>
-                                                        @endif
-                                                        @if ($event->featured)
-                                                            <span class="badge badge-warning ml-1">Featured</span>
-                                                        @endif
-                                                    </span>
-                                                </div>
-                                                <div class="info-item-modern">
-                                                    <span class="info-label-modern">Markets:</span>
-                                                    <span class="info-value-modern">{{ $event->markets->count() }}</span>
-                                                </div>
-                                                <div class="info-item-modern">
-                                                    <span class="info-label-modern">Volume:</span>
-                                                    <span
-                                                        class="info-value-modern">${{ number_format($event->volume ?? 0, 2) }}</span>
-                                                </div>
-                                                <div class="info-item-modern">
-                                                    <span class="info-label-modern">Liquidity:</span>
-                                                    <span
-                                                        class="info-value-modern">${{ number_format($event->liquidity ?? 0, 2) }}</span>
-                                                </div>
-                                                @if ($event->start_date)
-                                                    <div class="info-item-modern">
-                                                        <span class="info-label-modern">Start Date:</span>
-                                                        <span
-                                                            class="info-value-modern">{{ format_date($event->start_date) }}</span>
-                                                    </div>
-                                                @endif
-                                                @if ($event->end_date)
-                                                    <div class="info-item-modern">
-                                                        <span class="info-label-modern">End Date:</span>
-                                                        <span
-                                                            class="info-value-modern">{{ format_date($event->end_date) }}</span>
-                                                    </div>
-                                                @endif
-                                                =======
-                                                <div class="box sidebar-card">
-                                                    <div class="box-body">
-                                                        <h4 class="sidebar-title">
-                                                            <i class="fa fa-info-circle"></i>
-                                                            Event Information
-                                                        </h4>
-                                                        <div class="info-list">
-                                                            <div class="info-item">
-                                                                <span class="info-label">Status:</span>
-                                                                <span class="info-value">
-                                                                    @if ($event->active)
-                                                                        <span class="badge badge-success">Active</span>
-                                                                    @else
-                                                                        <span class="badge badge-secondary">Inactive</span>
-                                                                    @endif
-                                                                </span>
-                                                            </div>
-                                                            <div class="info-item">
-                                                                <span class="info-label">Created:</span>
-                                                                <span
-                                                                    class="info-value">{{ format_date($event->created_at) }}</span>
-                                                            </div>
-                                                            <div class="info-item">
-                                                                <span class="info-label">Updated:</span>
-                                                                <span
-                                                                    class="info-value">{{ format_date($event->updated_at) }}</span>
-                                                            </div>
-                                                            @if ($event->slug)
-                                                                <div class="info-item">
-                                                                    <span class="info-label">Slug:</span>
-                                                                    <span
-                                                                        class="info-value"><code>{{ $event->slug }}</code></span>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                        >>>>>>> 073ee0e74f61dc9c4e0fabf5061824078b34b93d
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    </span>
+                                </div>
+                                <div class="info-item-modern">
+                                    <span class="info-label-modern">Markets:</span>
+                                    <span class="info-value-modern">{{ $event->markets->count() }}</span>
+                                </div>
+                                <div class="info-item-modern">
+                                    <span class="info-label-modern">Volume:</span>
+                                    <span class="info-value-modern">${{ number_format($event->volume ?? 0, 2) }}</span>
+                                </div>
+                                <div class="info-item-modern">
+                                    <span class="info-label-modern">Liquidity:</span>
+                                    <span class="info-value-modern">${{ number_format($event->liquidity ?? 0, 2) }}</span>
+                                </div>
+                                @if ($event->start_date)
+                                    <div class="info-item-modern">
+                                        <span class="info-label-modern">Start Date:</span>
+                                        <span class="info-value-modern">{{ format_date($event->start_date) }}</span>
                                     </div>
+                                @endif
+                                @if ($event->end_date)
+                                    <div class="info-item-modern">
+                                        <span class="info-label-modern">End Date:</span>
+                                        <span class="info-value-modern">{{ format_date($event->end_date) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Initialize Chart
-        @if ($event->markets->count() > 0)
-            const ctx = document.getElementById('chanceChart');
-            if (ctx) {
-                const markets = @json($event->markets->take(3));
-                const colors = ['#4caf50', '#2196f3', '#000000'];
-
-                const datasets = markets.map((market, index) => {
-                    const outcomePrices = JSON.parse(market.outcome_prices || '["0.5", "0.5"]');
-                    const baseChance = parseFloat(outcomePrices[1] || 0.5) * 100;
-
-                    // Generate sample data for last 30 days
-                    const data = [];
-                    for (let i = 30; i >= 0; i--) {
-                        const variation = (Math.random() - 0.5) * 10;
-                        data.push(Math.max(0, Math.min(100, baseChance + variation)));
-                    }
-
-                    return {
-                        label: market.question.substring(0, 20) + '...',
-                        data: data,
-                        borderColor: colors[index % colors.length],
-                        backgroundColor: colors[index % colors.length] + '20',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4
-                    };
-                });
-
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: Array.from({
-                            length: 31
-                        }, (_, i) => {
-                            const date = new Date();
-                            date.setDate(date.getDate() - (30 - i));
-                            return date.toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric'
-                            });
-                        }),
-                        datasets: datasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 40,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + '%';
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        @endif
-
-        // Time filter buttons
-        document.querySelectorAll('.time-filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.time-filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                // Here you would update the chart data based on the selected period
-            });
-        });
-
-        // Trading tabs
-        document.querySelectorAll('.trading-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.trading-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
-        // Trading option buttons
-        document.querySelectorAll('.trading-option-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.trading-option-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-    </script>
     @push('styles')
         <style>
             /* Event Header Modern */
@@ -879,60 +521,6 @@
                 color: #333;
             }
 
-            /* Chart Section */
-            .chart-section {
-                background: #ffffff;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 30px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-
-            .chart-container {
-                height: 250px;
-                margin-bottom: 15px;
-            }
-
-            .chart-footer {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .trading-volume {
-                font-size: 14px;
-                color: #666;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-
-            .time-filters {
-                display: flex;
-                gap: 8px;
-            }
-
-            .time-filter-btn {
-                padding: 6px 12px;
-                border: 1px solid #e0e0e0;
-                background: #ffffff;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: 500;
-                color: #666;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .time-filter-btn:hover {
-                background: #f5f5f5;
-            }
-
-            .time-filter-btn.active {
-                background: #667eea;
-                color: #ffffff;
-                border-color: #667eea;
-            }
 
             /* Markets Section Modern */
             .markets-section-modern {
@@ -1089,7 +677,610 @@
                 gap: 6px;
             }
 
-            /* Trading Widget */
+            .trading-widget {
+                background: #ffffff;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .trading-widget-header {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .trading-market-image {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                overflow: hidden;
+                flex-shrink: 0;
+            }
+
+            .trading-market-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .trading-event-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin: 0 0 4px 0;
+            }
+
+            .trading-market-selection {
+                font-size: 13px;
+                color: #667eea;
+                margin: 0;
+                font-weight: 500;
+            }
+
+            .trading-tabs {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            .trading-tab {
+                flex: 1;
+                padding: 10px;
+                border: 1px solid #e0e0e0;
+                background: #ffffff;
+                border-radius: 8px;
+                font-weight: 600;
+                color: #666;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .trading-tab.active {
+                background: #667eea;
+                color: #ffffff;
+                border-color: #667eea;
+            }
+
+            .currency-selector {
+                margin-bottom: 15px;
+            }
+
+            .trading-options {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            .trading-option-btn {
+                flex: 1;
+                padding: 12px;
+                border: 2px solid #e0e0e0;
+                background: #ffffff;
+                border-radius: 8px;
+                font-weight: 600;
+                color: #666;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .trading-option-btn.active {
+                background: #667eea;
+                color: #ffffff;
+                border-color: #667eea;
+            }
+
+            .amount-input-group {
+                margin-bottom: 20px;
+            }
+
+            .amount-input-group label {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                color: #666;
+                margin-bottom: 8px;
+            }
+
+            .amount-input-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .currency-symbol {
+                position: absolute;
+                left: 12px;
+                font-weight: 600;
+                color: #666;
+                z-index: 1;
+            }
+
+            .amount-input {
+                width: 100%;
+                padding: 12px 12px 12px 24px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .interest-note {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: #4caf50;
+                font-size: 12px;
+                margin-top: 6px;
+            }
+
+            .btn-trade-primary {
+                width: 100%;
+                padding: 14px;
+                background: #4caf50;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 700;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+
+            .btn-trade-primary:hover {
+                background: #45a049;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            }
+
+            /* Info Card Modern */
+            .info-card-modern {
+                background: #ffffff;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .info-card-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .info-list-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .info-item-modern {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .info-item-modern:last-child {
+                border-bottom: none;
+            }
+
+            .info-label-modern {
+                font-size: 14px;
+                color: #666;
+                font-weight: 500;
+            }
+
+            .info-value-modern {
+                font-size: 14px;
+                color: #1a1a1a;
+                font-weight: 600;
+            }
+
+            /* No Markets Box */
+            .no-markets-box {
+                text-align: center;
+                padding: 60px 20px;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .no-markets-box i {
+                color: #ccc;
+                margin-bottom: 20px;
+            }
+
+            .no-markets-box h3 {
+                color: #333;
+                margin-bottom: 10px;
+            }
+
+            .no-markets-box p {
+                color: #666;
+                margin-bottom: 20px;
+            }
+
+            @media (max-width: 768px) {
+                .event-header-modern {
+                    flex-direction: column;
+                    gap: 15px;
+                }
+
+                .markets-legend {
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .chart-footer {
+                    flex-direction: column;
+                    gap: 15px;
+                    align-items: flex-start;
+                }
+
+                .market-card-body {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 15px;
+                }
+            }
+
+            /* Sidebar */
+            .sidebar-card {
+                border-radius: 16px;
+                margin-bottom: 30px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #2c3e50;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e9ecef;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .sidebar-title i {
+                color: #667eea;
+            }
+
+            .markets-list {
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .market-item {
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 10px;
+                margin-bottom: 10px;
+                transition: all 0.3s ease;
+            }
+
+            .market-item:hover {
+                background: #e9ecef;
+            }
+
+            .market-question {
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 5px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .market-question i {
+                color: #667eea;
+            }
+
+            .market-group {
+                color: #6c757d;
+                font-size: 12px;
+                margin-bottom: 10px;
+            }
+        </style>
+    @endpush
+    <!-- No Markets Alert -->
+    @if ($event->markets->count() == 0)
+        <div class="box mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <div class="box-body text-center py-4">
+                <i class="fa fa-chart-line fa-3x text-white mb-3"></i>
+                <h4 class="text-white mb-2">No Markets Added Yet</h4>
+                <p class="text-white mb-3">This event doesn't have any markets. Add
+                    markets to enable
+                    trading.</p>
+                <a href="{{ route('admin.events.add-markets', $event) }}" class="btn btn-light btn-lg">
+                    <i class="fa fa-plus-circle"></i> Add Markets Now
+                </a>
+            </div>
+        </div>
+    @endif
+
+    @push('styles')
+        <style>
+            /* Event Header Modern */
+            .event-header-modern {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 30px;
+                padding: 20px;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .event-header-left {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                flex: 1;
+            }
+
+            .event-icon-wrapper {
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                overflow: hidden;
+                background: #f0f0f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .event-icon {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .event-title-modern {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin: 0;
+                line-height: 1.3;
+            }
+
+            .event-header-right {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .event-actions-modern {
+                display: flex;
+                gap: 8px;
+            }
+
+            .action-icon-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+                background: #ffffff;
+                color: #666;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .action-icon-btn:hover {
+                background: #f5f5f5;
+                border-color: #d0d0d0;
+            }
+
+            /* Markets Legend */
+            .markets-legend {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                flex-wrap: wrap;
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .legend-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+
+            .legend-name {
+                font-size: 14px;
+                color: #333;
+                font-weight: 500;
+            }
+
+            .legend-chance {
+                font-size: 14px;
+                font-weight: 700;
+                color: #333;
+            }
+
+
+            /* Markets Section Modern */
+            .markets-section-modern {
+                background: #ffffff;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .section-title-modern {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .markets-list-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .market-card-modern {
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 15px;
+                transition: all 0.2s ease;
+            }
+
+            .market-card-modern:hover {
+                border-color: #667eea;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            }
+
+            .market-card-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .market-image-wrapper {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                overflow: hidden;
+                flex-shrink: 0;
+            }
+
+            .market-image-wrapper img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .market-info {
+                flex: 1;
+            }
+
+            .market-question-modern {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin: 0 0 4px 0;
+            }
+
+            .market-group-title {
+                font-size: 13px;
+                color: #666;
+                margin: 0;
+            }
+
+            .market-card-body {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .market-chance {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .chance-value {
+                font-size: 20px;
+                font-weight: 700;
+                color: #1a1a1a;
+            }
+
+            .chance-change {
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .chance-change.positive {
+                color: #4caf50;
+            }
+
+            .chance-change.negative {
+                color: #f44336;
+            }
+
+            .market-actions {
+                display: flex;
+                gap: 10px;
+            }
+
+            .btn-yes,
+            .btn-no {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .btn-yes {
+                background: #e3f2fd;
+                color: #1976d2;
+            }
+
+            .btn-yes:hover {
+                background: #bbdefb;
+            }
+
+            .btn-no {
+                background: #667eea;
+                color: #ffffff;
+            }
+
+            .btn-no:hover {
+                background: #5568d3;
+            }
+
+            .more-markets-link {
+                text-align: center;
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+            }
+
+            .more-markets-link a {
+                color: #667eea;
+                text-decoration: none;
+                font-weight: 500;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
             .trading-widget {
                 background: #ffffff;
                 border-radius: 12px;
@@ -1910,6 +2101,149 @@
                     padding-left: 0;
                 }
             }
+
+            /* Market Detail Card */
+            .market-detail-card {
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                background: #ffffff;
+                transition: all 0.2s ease;
+            }
+
+            .market-detail-card:hover {
+                border-color: #667eea;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            }
+
+            .market-detail-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 15px;
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .market-detail-info {
+                flex: 1;
+            }
+
+            .market-link {
+                color: #1a1a1a;
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+
+            .market-link:hover {
+                color: #667eea;
+            }
+
+            .market-description {
+                font-size: 14px;
+                color: #666;
+                margin-top: 8px;
+                line-height: 1.6;
+            }
+
+            .market-detail-body {
+                margin-top: 15px;
+            }
+
+            .market-details-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+
+            .market-detail-item {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .detail-label {
+                font-size: 12px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+            }
+
+            .detail-value {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1a1a1a;
+            }
+
+            .chance-badge {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+            }
+
+            .market-actions-admin {
+                display: flex;
+                gap: 10px;
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            /* Markets Container New */
+            .markets-container-new {
+                border-radius: 16px;
+                margin-bottom: 30px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                background: #ffffff;
+                width: 100%;
+                max-width: 100%;
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+
+            .markets-container-new .box-body {
+                padding: 25px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .markets-list-modern {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+                box-sizing: border-box;
+            }
+
+            .market-detail-card {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+
+            .market-detail-header {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .market-detail-info {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .market-question-modern {
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                max-width: 100%;
+            }
         </style>
     @endpush
+
 @endsection

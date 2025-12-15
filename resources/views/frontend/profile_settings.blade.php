@@ -1,6 +1,7 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>Polymarket - Settings</title>
+    <title>Settings - {{ $appName }}</title>
+    <meta name="description" content="Manage your account settings on {{ $appName }}.">
 @endsection
 @section('content')
     <div class="settings-container">

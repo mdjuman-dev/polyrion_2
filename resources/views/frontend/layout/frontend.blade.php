@@ -5,6 +5,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Favicon -->
+    @if ($favicon)
+        <link rel="icon" type="image/png"
+            href="{{ str_starts_with($favicon, 'http') ? $favicon : asset('storage/' . $favicon) }}">
+    @endif
+
+    <!-- Default SEO Meta Tags -->
+    <meta name="description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}. Join the future of decentralized prediction markets.">
+    <meta name="keywords" content="prediction markets, trading, betting, events, markets, polymarket, decentralized">
+    <meta name="author" content="{{ $appName }}">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ $appUrl }}">
+    <meta property="og:title" content="{{ $appName }} - Prediction Markets & Trading Platform">
+    <meta property="og:description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}.">
+    @if ($logo)
+        <meta property="og:image" content="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}">
+    @endif
+    <meta property="og:site_name" content="{{ $appName }}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ $appUrl }}">
+    <meta property="twitter:title" content="{{ $appName }} - Prediction Markets & Trading Platform">
+    <meta property="twitter:description"
+        content="Trade on prediction markets, bet on real-world events, and explore thousands of markets on {{ $appName }}.">
+    @if ($logo)
+        <meta property="twitter:image"
+            content="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}">
+    @endif
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ $appUrl }}">
+
     @yield('meta_derails')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/bootstrap.min.css') }}">
@@ -430,43 +469,43 @@
                 </div> --}}
 
                 <div class="deposit-method-section">
-                        <label class="deposit-method-label">Payment Method</label>
-                        <div class="deposit-methods">
+                    <label class="deposit-method-label">Payment Method</label>
+                    <div class="deposit-methods">
                         <button type="button" class="deposit-method-btn active" data-method="binancepay">
-                                <i class="fas fa-coins"></i>
-                                <span>Binance Pay</span>
-                            </button>
+                            <i class="fas fa-coins"></i>
+                            <span>Binance Pay</span>
+                        </button>
 
                         <button type="button" class="deposit-method-btn" data-method="manual">
-                                <i class="fas fa-keyboard"></i>
-                                <span>Manual Payment</span>
-                            </button>
+                            <i class="fas fa-keyboard"></i>
+                            <span>Manual Payment</span>
+                        </button>
 
-                            <button type="button" class="deposit-method-btn" data-method="metamask">
-                                <i class="fas fa-mask"></i>
-                                <span>MetaMask</span>
-                            </button>
+                        <button type="button" class="deposit-method-btn" data-method="metamask">
+                            <i class="fas fa-mask"></i>
+                            <span>MetaMask</span>
+                        </button>
 
-                            <button type="button" class="deposit-method-btn" data-method="trustwallet">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Trust Wallet</span>
-                            </button>
-                        </div>
+                        <button type="button" class="deposit-method-btn" data-method="trustwallet">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Trust Wallet</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Query Code Field - Shown for manual payment -->
                 <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
-                        <label class="deposit-input-label">Transaction/Query Code</label>
-                        <div class="deposit-input-wrapper">
-                            <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
-                            <input type="text" class="deposit-input" id="queryCode"
-                                placeholder="Enter transaction or merchant trade number">
-                        </div>
-                        <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                            <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
-                            trade
-                            number
-                        </small>
+                    <label class="deposit-input-label">Transaction/Query Code</label>
+                    <div class="deposit-input-wrapper">
+                        <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
+                        <input type="text" class="deposit-input" id="queryCode"
+                            placeholder="Enter transaction or merchant trade number">
+                    </div>
+                    <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
+                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
+                        trade
+                        number
+                    </small>
                 </div>
 
                 <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
@@ -1134,7 +1173,7 @@
                     if (!outcomeName) {
                         outcomeName = $row.data('outcome-name') || '';
                     }
-                    
+
                     let marketTitle = $('.market-title').text().trim() || $('#panelMarketTitle').text().trim();
                     const $yesBtn = $row.find('.btn-yes');
                     const $noBtn = $row.find('.btn-no');
@@ -1851,11 +1890,12 @@
                             if (response.success && response.checkoutUrl) {
                                 // Close modal first
                                 closeDepositModal();
-                                
+
                                 // Redirect to Binance Pay checkout
                                 window.location.href = response.checkoutUrl;
                             } else {
-                                showError(response.message || "Failed to create payment. Please try again.",
+                                showError(response.message ||
+                                    "Failed to create payment. Please try again.",
                                     'Payment Error');
                                 $btn.prop("disabled", false).html(originalText);
                             }
@@ -1897,7 +1937,8 @@
                         success: function(response) {
                             if (response.success) {
                                 showSuccess(
-                                    response.message || `Payment verified! Your new balance is $${response.balance}`,
+                                    response.message ||
+                                    `Payment verified! Your new balance is $${response.balance}`,
                                     'Payment Verified'
                                 );
 
@@ -1922,7 +1963,8 @@
                                     window.location.reload();
                                 }, 1500);
                             } else {
-                                showError(response.message || "Verification failed. Please try again.",
+                                showError(response.message ||
+                                    "Verification failed. Please try again.",
                                     'Verification Failed');
                             }
                         },
@@ -1977,7 +2019,8 @@
 
                 // Get network selection (default to Ethereum)
                 const network = 'ethereum'; // You can add a network selector in the UI
-                const tokenAddress = null; // null for native token (ETH/BNB/MATIC), or token contract address for ERC20
+                const tokenAddress =
+                    null; // null for native token (ETH/BNB/MATIC), or token contract address for ERC20
 
                 // Step 1: Create deposit record
                 $.ajax({
@@ -1994,13 +2037,13 @@
                         if (response.success) {
                             // Close deposit modal first before showing SweetAlert
                             closeDepositModal();
-                            
+
                             // Small delay to ensure modal closes before SweetAlert opens
                             setTimeout(function() {
                                 // Show payment instructions
                                 Swal.fire({
-                                title: 'MetaMask Payment',
-                                html: `
+                                    title: 'MetaMask Payment',
+                                    html: `
                                     <div style="text-align: left; color: var(--text-primary, #333);">
                                         <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Amount:</strong> ${amount} ${response.currency}</p>
                                         <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Network:</strong> ${response.network}</p>
@@ -2026,31 +2069,34 @@
                                         </div>
                                     </div>
                                 `,
-                                icon: 'info',
-                                showCancelButton: true,
-                                confirmButtonText: 'I\'ve Sent Payment',
-                                cancelButtonText: 'Cancel',
-                                confirmButtonColor: '#3085d6',
-                                cancelButtonColor: '#d33',
-                                input: 'text',
-                                inputPlaceholder: 'Enter Transaction Hash (0x...)',
-                                inputValidator: (value) => {
-                                    if (!value) {
-                                        return 'Please enter transaction hash';
+                                    icon: 'info',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'I\'ve Sent Payment',
+                                    cancelButtonText: 'Cancel',
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    input: 'text',
+                                    inputPlaceholder: 'Enter Transaction Hash (0x...)',
+                                    inputValidator: (value) => {
+                                        if (!value) {
+                                            return 'Please enter transaction hash';
+                                        }
+                                        // Transaction hash should be 0x followed by 64 hex characters (66 total)
+                                        const txHashPattern = /^0x[a-fA-F0-9]{64}$/;
+                                        if (!txHashPattern.test(value.trim())) {
+                                            return 'Invalid transaction hash format. Must be 66 characters (0x + 64 hex characters). Example: 0x1234...abcd';
+                                        }
+                                        // Check if user entered merchant address instead
+                                        if (value.trim().toLowerCase() === response
+                                            .merchant_address.toLowerCase()) {
+                                            return 'You entered the merchant address. Please enter the transaction hash (tx hash) from MetaMask, not the wallet address.';
+                                        }
                                     }
-                                    // Transaction hash should be 0x followed by 64 hex characters (66 total)
-                                    const txHashPattern = /^0x[a-fA-F0-9]{64}$/;
-                                    if (!txHashPattern.test(value.trim())) {
-                                        return 'Invalid transaction hash format. Must be 66 characters (0x + 64 hex characters). Example: 0x1234...abcd';
-                                    }
-                                    // Check if user entered merchant address instead
-                                    if (value.trim().toLowerCase() === response.merchant_address.toLowerCase()) {
-                                        return 'You entered the merchant address. Please enter the transaction hash (tx hash) from MetaMask, not the wallet address.';
-                                    }
-                                }
                                 }).then((result) => {
                                     if (result.isConfirmed && result.value) {
-                                        verifyMetaMaskTransaction(result.value, response.deposit_id, network, $btn, originalText);
+                                        verifyMetaMaskTransaction(result.value, response
+                                            .deposit_id, network, $btn, originalText
+                                        );
                                     } else {
                                         // User cancelled - reset button
                                         $btn.prop("disabled", false).html(originalText);
@@ -2084,7 +2130,7 @@
             // Check transaction status with polling
             function checkTransactionStatus(txHash, network, depositId, $btn, originalText, attempt) {
                 const maxAttempts = 30; // 30 attempts = ~2.5 minutes
-                
+
                 $.ajax({
                     url: '{{ route('metamask.transaction.status') }}',
                     method: 'POST',
@@ -2101,10 +2147,13 @@
                             // Still pending, poll again
                             if (attempt < maxAttempts) {
                                 setTimeout(() => {
-                                    checkTransactionStatus(txHash, network, depositId, $btn, originalText, attempt + 1);
+                                    checkTransactionStatus(txHash, network, depositId, $btn,
+                                        originalText, attempt + 1);
                                 }, 5000); // Check every 5 seconds
                             } else {
-                                showError('Transaction is taking too long to confirm. Please verify manually later.', 'Timeout');
+                                showError(
+                                    'Transaction is taking too long to confirm. Please verify manually later.',
+                                    'Timeout');
                                 $btn.prop("disabled", false).html(originalText);
                             }
                         } else {
@@ -2133,13 +2182,15 @@
                     success: function(response) {
                         if (response.success) {
                             showSuccess(
-                                response.message || `Payment verified! Your new balance is $${response.balance}`,
+                                response.message ||
+                                `Payment verified! Your new balance is $${response.balance}`,
                                 'Payment Verified'
                             );
 
                             // Update balance display
                             $('.wallet-value').each(function() {
-                                if ($(this).closest('.wallet-item').find('.wallet-label').text().trim() === 'Cash') {
+                                if ($(this).closest('.wallet-item').find('.wallet-label').text()
+                                    .trim() === 'Cash') {
                                     $(this).text('$' + response.balance);
                                 }
                             });
@@ -2156,7 +2207,8 @@
                                 window.location.reload();
                             }, 1500);
                         } else {
-                            showError(response.message || "Verification failed. Please try again.", 'Verification Failed');
+                            showError(response.message || "Verification failed. Please try again.",
+                                'Verification Failed');
                             $btn.prop("disabled", false).html(originalText);
                         }
                     },
@@ -2649,7 +2701,7 @@
             try {
                 const successful = document.execCommand('copy');
                 document.body.removeChild(textarea);
-                
+
                 if (successful) {
                     // Update button text to show success
                     const btn = document.getElementById(buttonId);
@@ -2658,7 +2710,7 @@
                         btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
                         btn.style.background = '#28a745';
                         btn.style.color = '#fff';
-                        
+
                         // Reset after 2 seconds
                         setTimeout(() => {
                             btn.innerHTML = originalHTML;
@@ -2666,7 +2718,7 @@
                             btn.style.color = '#000';
                         }, 2000);
                     }
-                    
+
                     // Show toast notification
                     showSuccess('Address copied to clipboard!', 'Copied');
                 } else {
@@ -2683,7 +2735,7 @@
                             btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
                             btn.style.background = '#28a745';
                             btn.style.color = '#fff';
-                            
+
                             setTimeout(() => {
                                 btn.innerHTML = originalHTML;
                                 btn.style.background = 'var(--accent, #ffb11a)';
@@ -2841,6 +2893,55 @@
     @livewireScripts
     @stack('script')
 
+    <!-- Google Analytics -->
+    @if ($gaTrackingId)
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaTrackingId }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+            gtag('config', '{{ $gaTrackingId }}');
+        </script>
+    @endif
+
+    <!-- Facebook Pixel -->
+    @if ($fbPixelId)
+        <script>
+            ! function(f, b, e, v, n, t, s) {
+                if (f.fbq) return;
+                n = f.fbq = function() {
+                    n.callMethod ?
+                        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+                };
+                if (!f._fbq) f._fbq = n;
+                n.push = n;
+                n.loaded = !0;
+                n.version = '2.0';
+                n.queue = [];
+                t = b.createElement(e);
+                t.async = !0;
+                t.src = v;
+                s = b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t, s)
+            }(window, document, 'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '{{ $fbPixelId }}');
+            fbq('track', 'PageView');
+        </script>
+        <noscript>
+            <img height="1" width="1" style="display:none"
+                src="https://www.facebook.com/tr?id={{ $fbPixelId }}&ev=PageView&noscript=1" />
+        </noscript>
+    @endif
+
+    <!-- Tawk.to Chat Widget -->
+    @if ($tawkWidgetCode)
+        {!! $tawkWidgetCode !!}
+    @endif
 
     <style>
         .market-card-action-btn.saved {
@@ -2875,4 +2976,3 @@
 </body>
 
 </html>
-

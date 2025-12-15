@@ -1,6 +1,7 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>Polymarket - Profile</title>
+    <title>Profile - {{ $appName }}</title>
+    <meta name="description" content="View and manage your profile on {{ $appName }}.">
 @endsection
 @section('content')
     <main>
@@ -276,31 +277,36 @@
                                                         @if ($isActive)
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
-                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Open
                                                             </span>
                                                         @elseif($isClosed)
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #f59e0b;">
-                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Closed
                                                             </span>
                                                         @elseif($trade->status === 'win')
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
-                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Win
                                                             </span>
                                                         @elseif($trade->status === 'loss')
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #ef4444;">
-                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Loss
                                                             </span>
                                                         @else
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #6366f1;">
-                                                                <span style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Pending
                                                             </span>
                                                         @endif
@@ -313,7 +319,7 @@
                             @else
                                 <div class="no-positions-message" style="padding: 3rem; text-align: center;">
                                     <p style="color: var(--text-secondary); font-size: 1rem;">No positions found</p>
-                            </div>
+                                </div>
                             @endif
                         </div>
 

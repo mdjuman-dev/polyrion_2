@@ -1,6 +1,7 @@
 @extends('frontend.layout.frontend')
 @section('meta_derails')
-    <title>New - Polymarket</title>
+    <title>New Events - {{ $appName }}</title>
+    <meta name="description" content="Discover new prediction markets and events on {{ $appName }}.">
 @endsection
 @section('content')
     <main>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Admin Login | Polymarkets</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -19,10 +19,10 @@
 
                         <h4 class="text-center mb-4">Admin Login</h4>
 
-                        @if(session('error'))
-                        <div class="alert alert-danger">
-                            {{ session('error') }}
-                        </div>
+                        @if (session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
                         @endif
 
                         <form action="{{ route('admin.login.submit') }}" method="POST">
@@ -30,27 +30,21 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    class="form-control @error('email') is-invalid @enderror"
-                                    placeholder="Enter email"
+                                <input type="email" name="email"
+                                    class="form-control @error('email') is-invalid @enderror" placeholder="Enter email"
                                     required>
                                 @error('email')
-                                <span class="text-danger small">{{ $message }}</span>
+                                    <span class="text-danger small">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
+                                <input type="password" name="password"
                                     class="form-control @error('password') is-invalid @enderror"
-                                    placeholder="Enter password"
-                                    required>
+                                    placeholder="Enter password" required>
                                 @error('password')
-                                <span class="text-danger small">{{ $message }}</span>
+                                    <span class="text-danger small">{{ $message }}</span>
                                 @enderror
                             </div>
 

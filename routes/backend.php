@@ -8,6 +8,7 @@ use App\Http\Controllers\Backend\MarketController;
 use App\Http\Controllers\Backend\EventController;
 use App\Http\Controllers\Backend\CommentController;
 use App\Http\Controllers\Backend\BinancePayController;
+use App\Http\Controllers\Backend\RolePermissionController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -80,6 +81,29 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::post('/{id}/approve', 'approve')->name('approve');
             Route::post('/{id}/reject', 'reject')->name('reject');
             Route::post('/{id}/processing', 'processing')->name('processing');
+        });
+
+        // Roles and Permissions Management Routes
+        Route::controller(RolePermissionController::class)->group(function () {
+            // Roles Routes
+            Route::prefix('roles')->name('roles.')->middleware('role:admin,admin')->group(function () {
+                Route::get('/', 'roles')->name('index');
+                Route::get('/create', 'createRole')->name('create');
+                Route::post('/', 'storeRole')->name('store');
+                Route::get('/{id}/edit', 'editRole')->name('edit');
+                Route::put('/{id}', 'updateRole')->name('update');
+                Route::delete('/{id}', 'destroyRole')->name('destroy');
+            });
+
+            // Permissions Routes
+            Route::prefix('permissions')->name('permissions.')->middleware('role:admin,admin')->group(function () {
+                Route::get('/', 'permissions')->name('index');
+                Route::get('/create', 'createPermission')->name('create');
+                Route::post('/', 'storePermission')->name('store');
+                Route::get('/{id}/edit', 'editPermission')->name('edit');
+                Route::put('/{id}', 'updatePermission')->name('update');
+                Route::delete('/{id}', 'destroyPermission')->name('destroy');
+            });
         });
     });
 });

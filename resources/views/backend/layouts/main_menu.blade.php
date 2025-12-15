@@ -33,6 +33,30 @@
 
                 <li class="treeview">
                     <a href="index.html#">
+                        <i data-feather="shield"></i>
+                        <span>Roles & Permissions</span>
+                        <span class="pull-right-container">
+                            <i class="fa fa-angle-right pull-right"></i>
+                        </span>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="{{ route('admin.roles.index') }}">
+                                <i data-feather="shield"></i>
+                                <span>Roles</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('admin.permissions.index') }}">
+                                <i data-feather="key"></i>
+                                <span>Permissions</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="treeview">
+                    <a href="index.html#">
                         <i data-feather="inbox"></i>
                         <span>Forms & Tables</span>
                         <span class="pull-right-container">

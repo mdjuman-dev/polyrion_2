@@ -21,8 +21,33 @@ class GlobalSettingsController extends Controller
             'app_url' => $settings['app_url'] ?? config('app.url'),
             'app_locale' => $settings['app_locale'] ?? config('app.locale'),
             'app_timezone' => $settings['app_timezone'] ?? config('app.timezone'),
+            'app_theme' => $settings['app_theme'] ?? 'all',
+            'commission_type' => $settings['commission_type'] ?? 'commission',
+            'commission_percentage' => $settings['commission_percentage'] ?? '0',
+            'contact_email' => $settings['contact_email'] ?? '',
             'logo' => $settings['logo'] ?? null,
             'favicon' => $settings['favicon'] ?? null,
+        ];
+
+        // reCaptcha Settings
+        $recaptchaSettings = [
+            'site_key' => $settings['recaptcha_site_key'] ?? '',
+            'secret_key' => $settings['recaptcha_secret_key'] ?? '',
+        ];
+
+        // Tawk Settings
+        $tawkSettings = [
+            'widget_code' => $settings['tawk_widget_code'] ?? '',
+        ];
+
+        // Analytics Settings
+        $analyticsSettings = [
+            'tracking_id' => $settings['ga_tracking_id'] ?? '',
+        ];
+
+        // Facebook Pixel Settings
+        $facebookPixelSettings = [
+            'pixel_id' => $settings['fb_pixel_id'] ?? '',
         ];
 
         // Binance API Settings
@@ -84,6 +109,10 @@ class GlobalSettingsController extends Controller
             'awsSettings',
             'postmarkSettings',
             'resendSettings',
+            'recaptchaSettings',
+            'tawkSettings',
+            'analyticsSettings',
+            'facebookPixelSettings',
             'settings'
         ));
     }
@@ -95,8 +124,13 @@ class GlobalSettingsController extends Controller
             'app_url' => 'nullable|url',
             'app_locale' => 'nullable|string|max:10',
             'app_timezone' => 'nullable|string|max:50',
+            'app_theme' => 'nullable|string|in:all,light,dark',
+            'commission_type' => 'nullable|string|in:commission,fixed,hybrid',
+            'commission_percentage' => 'nullable|numeric|min:0|max:100',
+            'contact_email' => 'nullable|email|max:255',
             'logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:ico,png,jpg,jpeg|max:1024',
+            'site_logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
             'binance_api_key' => 'nullable|string',
             'binance_secret_key' => 'nullable|string',
             'binance_base_url' => 'nullable|url',
@@ -119,6 +153,11 @@ class GlobalSettingsController extends Controller
             'aws_default_region' => 'nullable|string',
             'postmark_api_key' => 'nullable|string',
             'resend_api_key' => 'nullable|string',
+            'recaptcha_site_key' => 'nullable|string',
+            'recaptcha_secret_key' => 'nullable|string',
+            'tawk_widget_code' => 'nullable|string',
+            'ga_tracking_id' => 'nullable|string',
+            'fb_pixel_id' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -157,6 +196,21 @@ class GlobalSettingsController extends Controller
             GlobalSetting::setValue('favicon', $faviconPath);
         }
 
+        // Handle site_logo upload
+        if ($request->hasFile('site_logo')) {
+            $siteLogo = $request->file('site_logo');
+            $siteLogoName = 'site_logo.' . $siteLogo->getClientOriginalExtension();
+            $siteLogoPath = $siteLogo->storeAs('settings', $siteLogoName, 'public');
+
+            // Delete old site logo if exists
+            $oldSiteLogo = GlobalSetting::getValue('site_logo');
+            if ($oldSiteLogo && Storage::disk('public')->exists($oldSiteLogo)) {
+                Storage::disk('public')->delete($oldSiteLogo);
+            }
+
+            GlobalSetting::setValue('site_logo', $siteLogoPath);
+        }
+
         // Update all settings
         $settingsToUpdate = [
             // General
@@ -164,6 +218,10 @@ class GlobalSettingsController extends Controller
             'app_url',
             'app_locale',
             'app_timezone',
+            'app_theme',
+            'commission_type',
+            'commission_percentage',
+            'contact_email',
             // Binance
             'binance_api_key',
             'binance_secret_key',
@@ -193,6 +251,15 @@ class GlobalSettingsController extends Controller
             'postmark_api_key',
             // Resend
             'resend_api_key',
+            // reCaptcha
+            'recaptcha_site_key',
+            'recaptcha_secret_key',
+            // Tawk
+            'tawk_widget_code',
+            // Analytics
+            'ga_tracking_id',
+            // Facebook Pixel
+            'fb_pixel_id',
         ];
 
         foreach ($settingsToUpdate as $key) {
