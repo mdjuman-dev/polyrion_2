@@ -25,19 +25,26 @@
             @php
                 $market = $event->markets->first();
                 $prices = json_decode($market->outcome_prices ?? '[]', true);
-                // Fix: Polymarket format - prices[0] = NO, prices[1] = YES
+                // Polymarket format - prices[0] = NO, prices[1] = YES
+                // Prices from Polymarket API are stored as decimals (0-1 range)
                 $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
                 $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
-                
-                // Use bestAsk/bestBid if available (more accurate from Polymarket API)
+
+                // Use bestAsk/bestBid if available (more accurate from Polymarket API order book)
+                // best_ask and best_bid are stored as decimals (0-1 range)
                 if ($market->best_ask !== null && $market->best_ask > 0) {
                     $yesPrice = floatval($market->best_ask);
                 }
                 if ($market->best_bid !== null && $market->best_bid > 0) {
-                    // bestBid is for YES, so NO = 1 - bestBid
+                    // bestBid is for YES, so NO price = 1 - bestBid
                     $noPrice = 1 - floatval($market->best_bid);
                 }
 
+                // Ensure prices are in valid range (0-1 for decimal format)
+                $yesPrice = max(0.001, min(0.999, $yesPrice));
+                $noPrice = max(0.001, min(0.999, $noPrice));
+
+                // Format prices in cents (Polymarket style) - prices are already decimals
                 $yesPriceCents = number_format($yesPrice * 100, 1);
                 $noPriceCents = number_format($noPrice * 100, 1);
             @endphp

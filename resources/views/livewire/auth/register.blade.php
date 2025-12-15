@@ -87,10 +87,11 @@
         <div class="auth-social-buttons  ">
             <a href="{{ route('google.redirect') }}" class="auth-social-btn">
                 <i class="fab fa-google"></i>
+                <span>{{ __('Continue with Google') }}</span>
             </a>
-            <a href="{{ route('facebook.redirect') }}" class="auth-social-btn ">
+            {{-- <a href="{{ route('facebook.redirect') }}" class="auth-social-btn ">
                 <i class="fab fa-facebook-f"></i>
-            </a>
+            </a> --}}
         </div>
 
         <div class="auth-footer-link">
