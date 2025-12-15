@@ -53,6 +53,32 @@
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
     @livewireStyles
     @stack('style')
+    <style>
+        /* Logo Styles */
+        .logo img {
+            display: block;
+            height: auto;
+            width: auto;
+        }
+
+        .logo-link {
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .logo-link img {
+            display: block;
+            height: auto;
+            width: auto;
+        }
+
+        .more-menu-header .logo-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0;
+        }
+    </style>
 </head>
 
 <body class="dark-theme has-bottom-nav">
@@ -62,8 +88,24 @@
             <div class="container">
                 <div class="header-content d-lg-flex d-none">
                     <a href="{{ route('home') }}" class="logo">
-                        <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-                        <span>Polyrion</span>
+                        @php
+                            $logoExists = false;
+                            if ($logo) {
+                                if (str_starts_with($logo, 'http')) {
+                                    $logoExists = true;
+                                } else {
+                                    $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+                                }
+                            }
+                        @endphp
+                        @if ($logo && $logoExists)
+                            <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
+                                alt="{{ $appName }}"
+                                style="max-height: 40px; max-width: 150px; object-fit: contain;">
+                        @else
+                            <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+                            <span>{{ $appName }}</span>
+                        @endif
                     </a>
                     <div class="search-bar" style="position: relative;">
                         <livewire:header-search />
@@ -204,10 +246,28 @@
                     <div class="row align-items-center justify-content-between">
                         <div class="col-5 text-start">
                             <a href="{{ route('home') }}" class="logo text-start">
-                                <div class="logo-icon">
-                                    <i class="fas fa-chart-line"></i>
-                                </div>
-                                <span>Polyrion</span>
+                                @php
+                                    $logoExistsMobile = false;
+                                    if ($logo) {
+                                        if (str_starts_with($logo, 'http')) {
+                                            $logoExistsMobile = true;
+                                        } else {
+                                            $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
+                                                'public',
+                                            )->exists($logo);
+                                        }
+                                    }
+                                @endphp
+                                @if ($logo && $logoExistsMobile)
+                                    <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
+                                        alt="{{ $appName }}"
+                                        style="max-height: 35px; max-width: 120px; object-fit: contain;">
+                                @else
+                                    <div class="logo-icon">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <span>{{ $appName }}</span>
+                                @endif
                             </a>
                         </div>
                         <div class="col-7">
@@ -346,7 +406,24 @@
     <div class="more-menu-overlay" id="moreMenuOverlay"></div>
     <div class="more-menu-sidebar" id="moreMenuSidebar">
         <div class="more-menu-header">
-            <h3>Menu</h3>
+            @php
+                $logoExistsSidebar = false;
+                if ($logo) {
+                    if (str_starts_with($logo, 'http')) {
+                        $logoExistsSidebar = true;
+                    } else {
+                        $logoExistsSidebar = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+                    }
+                }
+            @endphp
+            @if ($logo && $logoExistsSidebar)
+                <a href="{{ route('home') }}" class="logo-link">
+                    <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
+                        alt="{{ $appName }}" style="max-height: 35px; max-width: 120px; object-fit: contain;">
+                </a>
+            @else
+                <h3>Menu</h3>
+            @endif
             <button class="close-menu-btn" id="closeMenuBtn"><i class="fas fa-times"></i></button>
         </div>
 

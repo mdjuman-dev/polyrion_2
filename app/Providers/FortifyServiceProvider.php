@@ -41,6 +41,8 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::requestPasswordResetLinkView(fn() => view('livewire.auth.forgot-password'));
+        Fortify::resetPasswordView(fn() => view('livewire.auth.reset-password'));
 
         // Custom authentication to allow login with email or phone number
         Fortify::authenticateUsing(function (Request $request) {

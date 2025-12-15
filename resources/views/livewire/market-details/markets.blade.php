@@ -12,23 +12,30 @@
         @foreach ($event->markets as $index => $market)
             @php
                 $prices = json_decode($market->outcome_prices, true);
-                // Fix: Polymarket format - prices[0] = NO, prices[1] = YES
+                // Polymarket format - prices[0] = NO, prices[1] = YES
+                // Prices from Polymarket API are stored as decimals (0-1 range)
                 $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
                 $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
-                
-                // Use bestBid/bestAsk if available (more accurate from Polymarket API)
-                if ($market->best_ask !== null) {
+
+                // Use bestAsk/bestBid if available (more accurate from Polymarket API order book)
+                // best_ask and best_bid are stored as decimals (0-1 range)
+                if ($market->best_ask !== null && $market->best_ask > 0) {
                     $yesPrice = floatval($market->best_ask); // Best ask is the price to buy YES
                 }
-                if ($market->best_bid !== null) {
-                    // For NO price, we need to calculate: 1 - bestBid (if bestBid is for YES)
-                    // Or use the NO price from outcome_prices
+                if ($market->best_bid !== null && $market->best_bid > 0) {
+                    // bestBid is for YES, so NO price = 1 - bestBid
+                    $noPrice = 1 - floatval($market->best_bid);
                 }
-                
+
+                // Ensure prices are in valid range (0-1 for decimal format)
+                $yesPrice = max(0.001, min(0.999, $yesPrice));
+                $noPrice = max(0.001, min(0.999, $noPrice));
+
+                // Convert decimal prices (0-1) to percentages (0-100)
                 $yesProb = round($yesPrice * 100, 1);
                 $noProb = round($noPrice * 100, 1);
 
-                // Format prices in cents (Polymarket style)
+                // Format prices in cents (Polymarket style) - prices are already decimals
                 $yesPriceCents = number_format($yesPrice * 100, 1);
                 $noPriceCents = number_format($noPrice * 100, 1);
 
@@ -70,8 +77,10 @@
                 </div>
 
                 <div class="outcome-actions">
-                    <button class="btn-yes" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}">Buy Yes {{ $yesPriceCents }}¢</button>
-                    <button class="btn-no" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}">Buy No {{ $noPriceCents }}¢</button>
+                    <button class="btn-yes" data-yes-price="{{ $yesPrice }}"
+                        data-no-price="{{ $noPrice }}">Buy Yes {{ $yesPriceCents }}¢</button>
+                    <button class="btn-no" data-yes-price="{{ $yesPrice }}"
+                        data-no-price="{{ $noPrice }}">Buy No {{ $noPriceCents }}¢</button>
                 </div>
             </div>
         @endforeach

@@ -79,10 +79,10 @@
                 <i class="fab fa-google"></i>
                 <span>{{ __('Continue with Google') }}</span>
             </a>
-            <a href="{{ route('facebook.redirect') }}" class="auth-social-btn">
+            {{-- <a href="{{ route('facebook.redirect') }}" class="auth-social-btn">
                 <i class="fab fa-facebook-f"></i>
                 <span>{{ __('Continue with Facebook') }}</span>
-            </a>
+            </a> --}}
         </div>
 
         @if (Route::has('register'))

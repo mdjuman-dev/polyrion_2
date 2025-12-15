@@ -22,13 +22,25 @@
                 @foreach ($event->markets as $market)
                     @php
                         $prices = json_decode($market->outcome_prices, true);
-                        $yesProb = isset($prices[0]) ? round($prices[0] * 100) : 0;
+                        // Polymarket format - prices[0] = NO, prices[1] = YES
+                        // Prices are stored as decimals (0-1 range)
+                        $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
+
+                        // Use best_ask if available (more accurate from Polymarket API)
+                        if ($market->best_ask !== null && $market->best_ask > 0) {
+                            $yesPrice = floatval($market->best_ask);
+                        }
+
+                        // Ensure price is in valid range and convert to percentage
+                        $yesPrice = max(0.001, min(0.999, $yesPrice));
+                        $yesProb = round($yesPrice * 100, 1);
                         $outcomes = json_decode($market->outcomes, true);
                     @endphp
 
                     @if ($outcomes !== null)
                         <div class="market-card-outcome-row">
-                            <span class="market-card-outcome-label " style="color:#fff">{{ $market->groupItem_title }}</span>
+                            <span class="market-card-outcome-label "
+                                style="color:#fff">{{ $market->groupItem_title }}</span>
                             <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
                             <button class="market-card-yes-btn">{{ 'Yes' }}</button>
                             <button class="market-card-no-btn">{{ 'No' }}</button>
@@ -58,7 +70,18 @@
             $market = $event->markets->first();
             if ($market) {
                 $prices = json_decode($market->outcome_prices, true);
-                $yesProb = isset($prices[0]) ? round($prices[0] * 100) : 0;
+                // Polymarket format - prices[0] = NO, prices[1] = YES
+                // Prices are stored as decimals (0-1 range)
+                $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
+
+                // Use best_ask if available (more accurate from Polymarket API)
+                if ($market->best_ask !== null && $market->best_ask > 0) {
+                    $yesPrice = floatval($market->best_ask);
+                }
+
+                // Ensure price is in valid range and convert to percentage
+                $yesPrice = max(0.001, min(0.999, $yesPrice));
+                $yesProb = round($yesPrice * 100, 1);
                 $outcomes = json_decode($market->outcomes, true);
             }
         @endphp
@@ -76,7 +99,8 @@
                     </div>
                 </div>
                 <div class="market-chance">
-                    <span class="chance-value {{ $yesProb <= 30 ? 'danger' : ($yesProb <= 50 ? 'warning' : 'success') }}">
+                    <span
+                        class="chance-value {{ $yesProb <= 30 ? 'danger' : ($yesProb <= 50 ? 'warning' : 'success') }}">
                         {{ $yesProb }}%
                     </span>
                     <div class="chance-label">chance</div>
