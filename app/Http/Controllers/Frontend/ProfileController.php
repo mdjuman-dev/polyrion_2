@@ -18,7 +18,6 @@ class ProfileController extends Controller
 
         $wallet = $user->wallet;
         $balance = $wallet ? $wallet->balance : 0;
-        $portfolio = $wallet ? ($wallet->portfolio ?? 0) : 0;
 
         $profileImage = $user->profile_image
             ? asset('storage/' . $user->profile_image)
@@ -29,14 +28,38 @@ class ProfileController extends Controller
             ->with('market')
             ->orderBy('created_at', 'desc')
             ->get();
+        
+        // Calculate portfolio value from active/pending trades
+        $portfolio = $this->calculatePortfolioValue($trades);
 
         // Calculate stats
         $totalTrades = $trades->count();
-        $pendingTrades = $trades->where('status', 'pending')->count();
-        $winTrades = $trades->where('status', 'win')->count();
-        $lossTrades = $trades->where('status', 'loss')->count();
-        $totalPayout = $trades->where('status', 'win')->sum('payout_amount');
-        $biggestWin = $trades->where('status', 'win')->max('payout_amount') ?? 0;
+        $pendingTrades = $trades->filter(function($trade) {
+            return strtoupper($trade->status ?? '') === 'PENDING';
+        })->count();
+        $winTrades = $trades->filter(function($trade) {
+            $status = strtoupper($trade->status ?? '');
+            return $status === 'WON' || $status === 'WIN';
+        })->count();
+        $lossTrades = $trades->filter(function($trade) {
+            $status = strtoupper($trade->status ?? '');
+            return $status === 'LOST' || $status === 'LOSS';
+        })->count();
+        $closedTrades = $trades->filter(function($trade) {
+            return strtoupper($trade->status ?? '') === 'CLOSED';
+        })->count();
+        $totalPayout = $trades->filter(function($trade) {
+            $status = strtoupper($trade->status ?? '');
+            return $status === 'WON' || $status === 'WIN';
+        })->sum(function($trade) {
+            return $trade->payout ?? $trade->payout_amount ?? 0;
+        });
+        $biggestWin = $trades->filter(function($trade) {
+            $status = strtoupper($trade->status ?? '');
+            return $status === 'WON' || $status === 'WIN';
+        })->max(function($trade) {
+            return $trade->payout ?? $trade->payout_amount ?? 0;
+        }) ?? 0;
 
         $stats = [
             'positions_value' => $portfolio,
@@ -46,6 +69,10 @@ class ProfileController extends Controller
 
         // Get all positions with market info (for all trades, not just pending)
         $activePositions = $trades->map(function ($trade) {
+            $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+            $isTradeClosed = false; // Close position feature disabled
+            $isTradeSettled = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']);
+            
             return [
                 'trade' => $trade,
                 'market' => $trade->market,
@@ -55,6 +82,8 @@ class ProfileController extends Controller
                 'is_closed' => $trade->market ? $trade->market->isClosed() : false,
                 'has_result' => $trade->market ? $trade->market->hasResult() : false,
                 'final_result' => $trade->market ? $trade->market->final_result : null,
+                'is_trade_closed' => $isTradeClosed,
+                'is_trade_settled' => $isTradeSettled,
             ];
         });
 
@@ -62,6 +91,9 @@ class ProfileController extends Controller
         $withdrawals = \App\Models\Withdrawal::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Calculate profit/loss data for chart
+        $profitLossData = $this->calculateProfitLossData($trades);
 
         // Combine trades and withdrawals for activity tab
         $allActivity = collect();
@@ -81,7 +113,7 @@ class ProfileController extends Controller
         }
         $allActivity = $allActivity->sortByDesc('date');
 
-        return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'allActivity'));
+        return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'allActivity', 'profitLossData'));
     }
 
     function settings()
@@ -181,5 +213,136 @@ class ProfileController extends Controller
             'success' => true,
             'message' => 'Profile updated successfully!'
         ]);
+    }
+
+    /**
+     * Calculate profit/loss data grouped by date for chart
+     */
+    private function calculateProfitLossData($trades)
+    {
+        // Group trades by date
+        $dailyData = [];
+        $cumulativeProfit = 0;
+
+        // Get all trades sorted by date
+        $sortedTrades = $trades->sortBy('created_at');
+
+        foreach ($sortedTrades as $trade) {
+            $date = $trade->created_at->format('Y-m-d');
+            
+            // Calculate profit/loss for this trade
+            $amount = $trade->amount ?? $trade->amount_invested ?? 0;
+            $profitLoss = 0;
+
+            if (strtoupper($trade->status) === 'WON' || $trade->status === 'win') {
+                // Win: profit = payout - amount invested
+                $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+                $profitLoss = $payout - $amount;
+            } elseif (strtoupper($trade->status) === 'LOST' || $trade->status === 'loss') {
+                // Loss: lost the full amount invested
+                $profitLoss = -$amount;
+            }
+            // Pending trades don't contribute to profit/loss yet
+
+            // Group by date (if multiple trades on same day, sum them)
+            if (!isset($dailyData[$date])) {
+                $dailyData[$date] = [
+                    'date' => $date,
+                    'profit_loss' => 0,
+                ];
+            }
+            
+            $dailyData[$date]['profit_loss'] += $profitLoss;
+        }
+
+        // Calculate cumulative profit/loss over time
+        $result = [];
+        $today = now();
+        $startDate = $today->copy()->subDays(90);
+        
+        // Sort daily data by date
+        ksort($dailyData);
+        
+        // Fill in dates and calculate cumulative values
+        $lastCumulative = 0;
+        for ($date = $startDate->copy(); $date <= $today; $date->addDay()) {
+            $dateStr = $date->format('Y-m-d');
+            
+            // If there are trades on this date, add their profit/loss
+            if (isset($dailyData[$dateStr])) {
+                $lastCumulative += $dailyData[$dateStr]['profit_loss'];
+            }
+            
+            // Add data point (even if no trades, to show cumulative value)
+            $result[] = [
+                'date' => $dateStr,
+                'label' => $date->format('M d'),
+                'value' => $lastCumulative,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Calculate portfolio value from active/pending trades
+     * Portfolio = sum of current values of all pending/active positions
+     */
+    private function calculatePortfolioValue($trades)
+    {
+        $portfolioValue = 0;
+
+        foreach ($trades as $trade) {
+            // Only calculate for pending/active trades (not won or lost)
+            $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+            if (in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS'])) {
+                continue; // Skip settled trades
+            }
+
+            // Get market and current price
+            if (!$trade->market) {
+                continue;
+            }
+
+            $market = $trade->market;
+            $outcomePrices = is_string($market->outcome_prices ?? $market->outcomePrices ?? null)
+                ? json_decode($market->outcome_prices ?? $market->outcomePrices, true)
+                : ($market->outcome_prices ?? $market->outcomePrices ?? [0.5, 0.5]);
+
+            if (!is_array($outcomePrices) || count($outcomePrices) < 2) {
+                continue;
+            }
+
+            // Get average price at buy
+            $avgPrice = $trade->price_at_buy ?? $trade->price ?? 0.5;
+            if ($avgPrice <= 0) {
+                continue;
+            }
+
+            // Get outcome
+            $outcome = strtoupper($trade->outcome ?? ($trade->option === 'yes' ? 'YES' : 'NO'));
+            
+            // Get current price for the outcome
+            // outcome_prices[0] = NO price, outcome_prices[1] = YES price
+            $currentPrice = ($outcome === 'YES' && isset($outcomePrices[1])) 
+                ? $outcomePrices[1] 
+                : (($outcome === 'NO' && isset($outcomePrices[0])) 
+                    ? $outcomePrices[0] 
+                    : $avgPrice);
+
+            // Calculate shares (token_amount)
+            $shares = $trade->token_amount ?? ($trade->shares ?? 0);
+            if ($shares <= 0) {
+                // Calculate from amount invested
+                $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
+                $shares = $amountInvested / $avgPrice;
+            }
+
+            // Current value = shares * current_price
+            $currentValue = $shares * $currentPrice;
+            $portfolioValue += $currentValue;
+        }
+
+        return $portfolioValue;
     }
 }

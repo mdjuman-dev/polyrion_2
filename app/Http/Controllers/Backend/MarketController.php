@@ -67,6 +67,219 @@ class MarketController extends Controller
         return view('backend.market.show', compact('market', 'outcomePrices', 'outcomes'));
     }
 
+    /**
+     * Show the form for editing the specified market
+     */
+    public function edit($id)
+    {
+        $market = Market::with('event')->findOrFail($id);
+        
+        // Decode JSON fields
+        $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [0.5, 0.5];
+        $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
+        
+        $events = Event::orderBy('title')->get();
+        
+        return view('backend.market.edit', compact('market', 'outcomePrices', 'outcomes', 'events'));
+    }
+
+    /**
+     * Update the specified market
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'event_id' => 'nullable|exists:events,id',
+            'active' => 'boolean',
+            'closed' => 'boolean',
+            'featured' => 'boolean',
+        ]);
+
+        try {
+            $market = Market::findOrFail($id);
+            
+            $market->question = $request->question;
+            $market->description = $request->description;
+            
+            if ($request->has('event_id')) {
+                $market->event_id = $request->event_id;
+            }
+            
+            if ($request->has('active')) {
+                $market->active = $request->active;
+            }
+            
+            if ($request->has('closed')) {
+                $market->closed = $request->closed;
+            }
+            
+            if ($request->has('featured')) {
+                $market->featured = $request->featured;
+            }
+            
+            $market->save();
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market updated successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to update market', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to update market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove the specified market
+     */
+    public function delete($id)
+    {
+        try {
+            $market = Market::findOrFail($id);
+            $market->delete();
+
+            return redirect()->route('admin.market.index')
+                ->with('success', 'Market deleted successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete market', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to delete market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store a new market
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'event_id' => 'required|exists:events,id',
+            'slug' => 'nullable|string|unique:markets,slug',
+        ]);
+
+        try {
+            $market = Market::create([
+                'question' => $request->question,
+                'description' => $request->description,
+                'event_id' => $request->event_id,
+                'slug' => $request->slug ?? \Illuminate\Support\Str::slug($request->question),
+                'active' => $request->active ?? true,
+                'closed' => false,
+            ]);
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market created successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to create market', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to create market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Save market from Polymarket API
+     */
+    public function marketSave($slug)
+    {
+        try {
+            // Fetch market from Polymarket API
+            $response = Http::timeout(30)->get("https://gamma-api.polymarket.com/markets/{$slug}");
+            
+            if (!$response->successful()) {
+                return back()->with('error', 'Failed to fetch market from Polymarket API');
+            }
+
+            $marketData = $response->json();
+            
+            // Find or create event
+            $event = Event::where('slug', $marketData['event']['slug'])->first();
+            if (!$event) {
+                $event = Event::create([
+                    'slug' => $marketData['event']['slug'],
+                    'title' => $marketData['event']['title'],
+                    'description' => $marketData['event']['description'] ?? null,
+                ]);
+            }
+
+            // Create or update market
+            $market = Market::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'event_id' => $event->id,
+                    'question' => $marketData['question'] ?? null,
+                    'description' => $marketData['description'] ?? null,
+                    'outcome_prices' => json_encode($marketData['outcomePrices'] ?? []),
+                    'outcomes' => json_encode($marketData['outcomes'] ?? []),
+                    'active' => $marketData['active'] ?? true,
+                    'closed' => $marketData['closed'] ?? false,
+                ]
+            );
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market saved successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to save market from API', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to save market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get market list (for AJAX/API)
+     */
+    public function marketList(Request $request)
+    {
+        $query = Market::with('event');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        $markets = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return response()->json($markets);
+    }
+
+    /**
+     * Search markets
+     */
+    public function search(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string|min:1',
+        ]);
+
+        $searchTerm = $request->search;
+        $markets = Market::with('event')
+            ->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('slug', 'like', "%{$searchTerm}%");
+            })
+            ->orderBy('volume', 'desc')
+            ->paginate(20);
+
+        return view('backend.market.index', compact('markets'));
+    }
+
     function toMysqlDate(?string $date): ?string
     {
         if (empty($date)) {
