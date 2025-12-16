@@ -82,8 +82,9 @@
 </head>
 
 <body class="dark-theme has-bottom-nav">
-    @if(session('admin_id'))
-        <div class="admin-impersonation-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 0; text-align: center; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+    @if (session('admin_id'))
+        <div class="admin-impersonation-banner"
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 0; text-align: center; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
             <div class="container">
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
@@ -190,17 +191,6 @@
                                         <div class="header-menu-divider">
                                         </div>
                                     @endif
-
-                                    @auth
-                                        <a href="{{ route('trades.my.page') }}">
-                                            <i class="fas fa-chart-line"></i>
-                                            <span>My Trades History</span>
-                                        </a>
-                                        <a href="{{ route('withdrawal.index') }}">
-                                            <i class="fas fa-money-bill-wave"></i>
-                                            <span>Withdraw Funds</span>
-                                        </a>
-                                    @endauth
 
                                     <a href="#">
                                         <div
@@ -527,95 +517,7 @@
     <!-- Deposit Modal -->
     <div class="deposit-modal-overlay" id="depositModalOverlay"></div>
     <div class="deposit-modal-popup" id="depositModalPopup">
-        <div class="deposit-modal-header">
-            <h3>Deposit Funds</h3>
-            <button type="button" class="deposit-modal-close" id="depositModalClose" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="deposit-modal-content">
-            <form id="depositForm" action="{{ route('binance.create') }}" method="POST">
-                @csrf
-                <div class="deposit-form-container">
-                    <div class="deposit-balance-info">
-                        <div class="balance-item">
-                            <span class="balance-label">Current Balance</span>
-                            <span
-                                class="balance-value">${{ number_format(auth()->user()->wallet->balance ?? 0, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="deposit-input-group">
-                        <label class="deposit-input-label">Amount</label>
-                        <div class="deposit-input-wrapper">
-                            <span class="deposit-currency">$</span>
-                            <input type="number" name="amount" class="deposit-input" id="depositAmount"
-                                placeholder="0.00" min="0" step="0.01">
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- <div class="deposit-quick-amounts">
-                    <button type="bu    " class="quick-amount-btn" data-amount="10">$10</button>
-                        <button class="quick-amount-btn" data-amount="50">$50</button>
-                        <button class="quick-amount-btn" data-amount="100">$100</button>
-                        <button class="quick-amount-btn" data-amount="500">$500</button>
-                </div> --}}
-
-                <div class="deposit-method-section">
-                    <label class="deposit-method-label">Payment Method</label>
-                    <div class="deposit-methods">
-                        <button type="button" class="deposit-method-btn active" data-method="binancepay">
-                            <i class="fas fa-coins"></i>
-                            <span>Binance Pay</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="manual">
-                            <i class="fas fa-keyboard"></i>
-                            <span>Manual Payment</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="metamask">
-                            <i class="fas fa-mask"></i>
-                            <span>MetaMask</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="trustwallet">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Trust Wallet</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Query Code Field - Shown for manual payment -->
-                <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
-                    <label class="deposit-input-label">Transaction/Query Code</label>
-                    <div class="deposit-input-wrapper">
-                        <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
-                        <input type="text" class="deposit-input" id="queryCode"
-                            placeholder="Enter transaction or merchant trade number">
-                    </div>
-                    <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
-                        trade
-                        number
-                    </small>
-                </div>
-
-                <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
-                    <i class="fas fa-arrow-right"></i>
-                    <span>Deposit</span>
-                </button>
-
-                <div class="deposit-footer">
-                    <p class="deposit-note" style="color: #6b7280; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i>
-                        Minimum deposit: $10. Your payment will be processed securely through Binance Pay.
-                    </p>
-                </div>
-            </form>
-        </div>
+        @livewire('deposit-request')
     </div>
 
 
@@ -1943,9 +1845,15 @@
                 const method = $(this).data("method");
                 if (method === 'manual') {
                     $("#queryCodeGroup").slideDown(200);
+                    $("#depositNoteText").text("Minimum deposit: $10. Enter your transaction code for manual verification.");
+                } else if (method === 'demo') {
+                    $("#queryCodeGroup").slideUp(200);
+                    $("#queryCode").val("");
+                    $("#depositNoteText").text("Demo money for testing purposes. Amount will be added instantly to your wallet.");
                 } else {
                     $("#queryCodeGroup").slideUp(200);
                     $("#queryCode").val("");
+                    $("#depositNoteText").text("Minimum deposit: $10. Your payment will be processed securely.");
                 }
             });
 
@@ -1953,16 +1861,38 @@
             $depositSubmit.on("click", function(e) {
                 e.preventDefault();
                 const amount = parseFloat($depositAmount.val());
-                const method = $methodBtns.filter('.active').data('method') || 'binancepay';
+                const method = $methodBtns.filter('.active').data('method') || 'demo';
                 const currency = 'USDT';
 
                 if (!amount || amount <= 0) {
-                    showWarning('Please enter a valid amount', 'Invalid Amount');
+                    if (typeof showWarning !== 'undefined') {
+                        showWarning('Please enter a valid amount', 'Invalid Amount');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Amount',
+                            text: 'Please enter a valid amount',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else {
+                        alert('Please enter a valid amount');
+                    }
                     return;
                 }
 
                 if (amount < 10) {
-                    showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                    if (typeof showWarning !== 'undefined') {
+                        showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Minimum Amount Required',
+                            text: 'Minimum deposit amount is $10',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else {
+                        alert('Minimum deposit amount is $10');
+                    }
                     return;
                 }
 
@@ -1970,6 +1900,83 @@
                 const $btn = $(this);
                 const originalText = $btn.html();
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
+                // Handle Demo Money (Test Deposit)
+                if (method === 'demo') {
+                    $.ajax({
+                        url: '{{ route('wallet.deposit') }}',
+                        method: 'POST',
+                        data: {
+                            amount: amount,
+                            method: 'demo',
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // Close modal first
+                                closeDepositModal();
+                                
+                                // Show success message
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deposit Successful!',
+                                        html: `Demo money added successfully!<br><strong>Amount:</strong> $${response.amount}<br><strong>New Balance:</strong> $${response.balance}`,
+                                        confirmButtonText: 'OK',
+                                        confirmButtonColor: '#ffb11a'
+                                    }).then(() => {
+                                        // Reload page to update balance
+                                        window.location.reload();
+                                    });
+                                } else if (typeof showSuccess !== 'undefined') {
+                                    showSuccess(`Demo money added! New balance: $${response.balance}`, 'Deposit Successful');
+                                    setTimeout(() => window.location.reload(), 1000);
+                                } else {
+                                    alert(`Demo money added! New balance: $${response.balance}`);
+                                    window.location.reload();
+                                }
+                            } else {
+                                if (typeof showError !== 'undefined') {
+                                    showError(response.message || 'Deposit failed. Please try again.', 'Deposit Error');
+                                } else if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Deposit Failed',
+                                        text: response.message || 'Deposit failed. Please try again.',
+                                        confirmButtonColor: '#ffb11a'
+                                    });
+                                } else {
+                                    alert(response.message || 'Deposit failed. Please try again.');
+                                }
+                                $btn.prop("disabled", false).html(originalText);
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = "Deposit failed. Please try again.";
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                const errors = Object.values(xhr.responseJSON.errors).flat();
+                                errorMessage = errors.join('\n');
+                            }
+                            
+                            if (typeof showError !== 'undefined') {
+                                showError(errorMessage, 'Deposit Error');
+                            } else if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Deposit Error',
+                                    text: errorMessage,
+                                    confirmButtonColor: '#ffb11a'
+                                });
+                            } else {
+                                alert(errorMessage);
+                            }
+                            $btn.prop("disabled", false).html(originalText);
+                        }
+                    });
+                    return;
+                }
 
                 // Handle Binance Pay
                 if (method === 'binancepay') {
@@ -2886,6 +2893,57 @@
             });
         }
 
+        // Handle logout with confirmation popup
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all logout forms
+            const logoutForms = document.querySelectorAll('form[action*="logout"]');
+
+            logoutForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    // Show confirmation popup using SweetAlert
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'Do you want to logout?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#667eea',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, Logout',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            customClass: {
+                                popup: 'swal2-theme',
+                                title: 'swal2-title-theme',
+                                content: 'swal2-content-theme'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Show loading toast
+                                if (typeof showInfo !== 'undefined') {
+                                    showInfo('Logging out...', 'Logout');
+                                } else if (typeof toastr !== 'undefined') {
+                                    toastr.info('Logging out...', 'Logout');
+                                }
+
+                                // Submit form after a short delay
+                                setTimeout(function() {
+                                    form.submit();
+                                }, 300);
+                            }
+                        });
+                    } else {
+                        // Fallback to browser confirm if SweetAlert is not available
+                        if (confirm('Are you sure you want to logout?')) {
+                            form.submit();
+                        }
+                    }
+                });
+            });
+        });
+
         // Cleanup function for SweetAlert
         function cleanupSwal() {
             // Restore body scroll
@@ -3035,7 +3093,9 @@
 
     <!-- Tawk.to Chat Widget -->
     @if ($tawkWidgetCode)
-        {!! $tawkWidgetCode !!}
+        <script>
+            {!! $tawkWidgetCode !!}
+        </script>
     @endif
 
     <style>
