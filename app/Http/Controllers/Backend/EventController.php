@@ -47,6 +47,22 @@ class EventController extends Controller
             $query->byCategory($request->category);
         }
 
+        // Filter by status if provided
+        // IMPORTANT: Filter is applied BEFORE pagination to filter all data
+        if ($request->has('status') && !empty($request->status)) {
+            if ($request->status === 'active') {
+                // Active: active=true AND closed=false
+                $query->where('active', true)->where('closed', false);
+            } elseif ($request->status === 'closed') {
+                // Closed: closed=true
+                $query->where('closed', true);
+            } elseif ($request->status === 'inactive') {
+                // Inactive: active=false AND closed=false (not closed but not active)
+                $query->where('active', false)->where('closed', false);
+            }
+        }
+
+        // Apply pagination AFTER filtering - this ensures filter works on all data
         $events = $query->with('markets')->orderBy('volume', 'desc')->paginate(20)->withQueryString();
         $categories = $this->categoryDetector->getAvailableCategories();
 
