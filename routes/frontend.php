@@ -37,6 +37,7 @@ Route::controller(HomeController::class)->group(function () {
 Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->middleware(['auth'])->group(function () {
     Route::get('/', 'profile')->name('index');
     Route::get('/settings', 'settings')->name('settings');
+    Route::put('/update', 'update')->name('update');
 });
 
 // Wallet routes
@@ -44,11 +45,15 @@ Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->m
     Route::post('/deposit', 'deposit')->name('deposit');
 });
 
-// Withdrawal routes
+// Withdrawal routes - Redirect to profile page (withdrawal handled via modal)
 Route::controller(\App\Http\Controllers\Frontend\WithdrawalController::class)->prefix('withdrawal')->name('withdrawal.')->middleware(['auth'])->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::post('/', 'store')->name('store');
-    Route::get('/history', 'history')->name('history');
+    Route::get('/', function() {
+        return redirect()->route('profile.index')->with('open_withdrawal_modal', true);
+    })->name('index');
+    Route::post('/', 'store')->name('store'); // Keep for API compatibility
+    Route::get('/history', function() {
+        return redirect()->route('profile.index');
+    })->name('history');
 });
 
 // Trading routes

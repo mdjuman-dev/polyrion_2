@@ -457,8 +457,13 @@ class GlobalSettingsController extends Controller
         ];
 
         foreach ($settingsToUpdate as $key) {
-            if ($request->has($key) && $request->input($key) !== null) {
-                GlobalSetting::setValue($key, $request->input($key));
+            if ($request->has($key)) {
+                $value = $request->input($key);
+                // Convert empty strings, null, or whitespace-only strings to null
+                if ($value === null || (is_string($value) && trim($value) === '') || $value === '') {
+                    $value = null;
+                }
+                GlobalSetting::setValue($key, $value);
             }
         }
 

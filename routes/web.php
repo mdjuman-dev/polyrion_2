@@ -18,6 +18,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
+    
+    // Withdrawal request Livewire component (no route needed, used as component)
 
     Volt::route('settings/two-factor', 'settings.two-factor')->middleware(
         when(
