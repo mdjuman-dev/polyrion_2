@@ -106,7 +106,7 @@ class TradeService
             $wallet->balance -= $amount;
             $wallet->save();
 
-            // Create trade
+            // Create trade with both new and legacy fields for backward compatibility
             $trade = Trade::create([
                 'user_id' => $user->id,
                 'market_id' => $market->id,
@@ -115,6 +115,11 @@ class TradeService
                 'token_amount' => $tokenAmount,
                 'price_at_buy' => $outcomePrice,
                 'status' => 'PENDING',
+                // Legacy fields for backward compatibility
+                'option' => strtolower($outcome),
+                'amount' => $amount,
+                'price' => $outcomePrice,
+                'shares' => $tokenAmount,
             ]);
 
             // Create wallet transaction
@@ -191,6 +196,7 @@ class TradeService
 
                 $trade->status = 'WON';
                 $trade->payout = $payout;
+                $trade->payout_amount = $payout; // Legacy field
                 $trade->settled_at = now();
                 $trade->save();
 
@@ -215,23 +221,27 @@ class TradeService
                         'market_id' => $market->id,
                         'outcome' => $trade->outcome,
                         'payout' => $payout,
+                        'profit' => $payout - $trade->amount_invested,
                     ]
                 ]);
 
                 Log::info('Trade settled as WON', [
                     'trade_id' => $trade->id,
                     'payout' => $payout,
+                    'profit' => $payout - $trade->amount_invested,
                 ]);
 
             } else {
                 // Trade LOST
                 $trade->status = 'LOST';
                 $trade->payout = 0;
+                $trade->payout_amount = 0; // Legacy field
                 $trade->settled_at = now();
                 $trade->save();
 
                 Log::info('Trade settled as LOST', [
                     'trade_id' => $trade->id,
+                    'loss' => $trade->amount_invested,
                 ]);
             }
 
@@ -241,6 +251,61 @@ class TradeService
             DB::rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Settle all pending trades for a market
+     *
+     * @param Market $market
+     * @return array
+     */
+    public function settleMarket(Market $market): array
+    {
+        $finalOutcome = $market->final_outcome ?? strtoupper($market->final_result ?? '');
+
+        if (!$finalOutcome || !in_array($finalOutcome, ['YES', 'NO'])) {
+            throw new InvalidArgumentException('Market does not have a final outcome');
+        }
+
+        $pendingTrades = Trade::where('market_id', $market->id)
+            ->where('status', 'PENDING')
+            ->get();
+
+        $winCount = 0;
+        $lossCount = 0;
+        $totalPayout = 0;
+
+        foreach ($pendingTrades as $trade) {
+            try {
+                $this->settleTrade($trade);
+
+                // Refresh trade to get updated status
+                $trade->refresh();
+
+                if ($trade->outcome === $finalOutcome) {
+                    $winCount++;
+                    $totalPayout += $trade->payout;
+                } else {
+                    $lossCount++;
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to settle trade', [
+                    'trade_id' => $trade->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Mark market as settled
+        $market->settled = true;
+        $market->save();
+
+        return [
+            'total_trades' => $pendingTrades->count(),
+            'win_count' => $winCount,
+            'loss_count' => $lossCount,
+            'total_payout' => $totalPayout,
+        ];
     }
 }
 

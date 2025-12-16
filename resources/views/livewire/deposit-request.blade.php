@@ -55,6 +55,7 @@ new class extends Component {
 
                 // Create wallet transaction
                 \App\Models\WalletTransaction::create([
+                    'user_id' => $user->id,
                     'wallet_id' => $wallet->id,
                     'type' => 'deposit',
                     'amount' => $this->amount,
@@ -94,6 +95,7 @@ new class extends Component {
 
                 // Create wallet transaction
                 \App\Models\WalletTransaction::create([
+                    'user_id' => $user->id,
                     'wallet_id' => $wallet->id,
                     'type' => 'deposit',
                     'amount' => $this->amount,
@@ -150,24 +152,23 @@ new class extends Component {
 }; ?>
 
 <div>
-    <div class="deposit-modal-popup">
-        <div class="deposit-modal-header">
-            <h3>Deposit Funds</h3>
-            <button type="button" class="deposit-modal-close" onclick="closeDepositModal()" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="deposit-modal-content">
+    <div class="deposit-modal-header">
+        <h3>Deposit Funds</h3>
+        <button type="button" class="deposit-modal-close" onclick="closeDepositModal()" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="deposit-modal-content">
             <form wire:submit="submit" class="deposit-form-container">
                 <!-- Balance Info -->
                 <div class="deposit-balance-info">
                     <div class="balance-item">
-                        <span class="balance-label">Current Balance</span>
-                        <span class="balance-value">${{ number_format($wallet_balance, 2) }}</span>
+                        <span class="balance-label">Available Balance</span>
+                        <span class="balance-value">${{ number_format($wallet_balance, 2) }} {{ $currency }}</span>
                     </div>
                     <div class="balance-item" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
                         <span class="balance-label">Minimum Deposit</span>
-                        <span class="balance-label" style="color: var(--text-primary); font-weight: 500;">${{ $min_deposit }}</span>
+                        <span class="balance-label" style="color: var(--text-primary); font-weight: 500;">${{ $min_deposit }} {{ $currency }}</span>
                     </div>
                 </div>
 
@@ -270,94 +271,138 @@ new class extends Component {
                 </div>
             </form>
         </div>
-    </div>
-
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('deposit-submitted', (data) => {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Deposit Successful!',
-                        html: `${data.message}<br><strong>Amount:</strong> $${data.amount}<br><strong>New Balance:</strong> $${data.balance}`,
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ffb11a',
-                        background: 'var(--card-bg)',
-                        color: 'var(--text-primary)'
-                    }).then(() => {
-                        closeDepositModal();
-                        window.location.reload();
-                    });
-                } else {
-                    alert(data.message || 'Deposit successful!');
-                    closeDepositModal();
-                    window.location.reload();
-                }
-            });
-
-            Livewire.on('deposit-binance', (data) => {
-                // Handle Binance Pay redirect
-                $.ajax({
-                    url: '{{ route('binance.create') }}',
-                    method: 'POST',
-                    data: {
-                        amount: data.amount,
-                        currency: data.currency || 'USDT',
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(response) {
-                        if (response.success && response.checkoutUrl) {
-                            closeDepositModal();
-                            window.location.href = response.checkoutUrl;
-                        } else {
-                            if (typeof Swal !== 'undefined') {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Payment Error',
-                                    text: response.message || 'Failed to create payment. Please try again.',
-                                    confirmButtonColor: '#ffb11a'
-                                });
-                            } else {
-                                alert(response.message || 'Failed to create payment. Please try again.');
-                            }
-                        }
-                    },
-                    error: function(xhr) {
-                        let errorMessage = "Failed to create payment. Please try again.";
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Payment Error',
-                                text: errorMessage,
-                                confirmButtonColor: '#ffb11a'
-                            });
-                        } else {
-                            alert(errorMessage);
-                        }
-                    }
-                });
-            });
-
-            Livewire.on('deposit-metamask', (data) => {
-                // Handle MetaMask deposit
-                // This would trigger the MetaMask payment flow
-                if (typeof showInfo !== 'undefined') {
-                    showInfo('MetaMask deposit functionality will be implemented soon.', 'Coming Soon');
-                } else if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Coming Soon',
-                        text: 'MetaMask deposit functionality will be implemented soon.',
-                        confirmButtonColor: '#ffb11a'
-                    });
-                } else {
-                    alert('MetaMask deposit functionality will be implemented soon.');
-                }
-            });
-        });
-    </script>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('deposit-submitted', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deposit Successful!',
+                    html: `<div style="text-align: left;">
+                        <p style="margin-bottom: 10px;">${data.message || 'Deposit successful!'}</p>
+                        ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
+                    </div>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ffb11a',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-primary)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(data.message || 'Deposit successful!');
+                window.location.reload();
+            }
+        });
+
+        Livewire.on('deposit-binance', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            }
+        });
+
+        Livewire.on('deposit-metamask', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'MetaMask Payment Instructions',
+                    html: `<div style="text-align: left; color: var(--text-primary, #333);">
+                        <p>Please send <strong>${data.amount} ${data.currency}</strong> to the following address:</p>
+                        <p style="word-break: break-all; font-weight: bold; color: var(--accent);"><code>${data.merchant_address || 'Address will be provided'}</code></p>
+                        <p>Network: <strong>${data.network || 'Ethereum'}</strong></p>
+                        <p style="margin-top: 15px; font-size: 0.9em; color: var(--text-secondary);">
+                            Once the transaction is confirmed on the blockchain, your balance will be updated.
+                        </p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'I have sent the funds',
+                    confirmButtonColor: '#ffb11a',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-primary)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+            }
+        });
+    });
+    
+    // Also listen for Livewire 3 events
+    document.addEventListener('livewire:initialized', () => {
+        Livewire.on('deposit-submitted', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deposit Successful!',
+                    html: `<div style="text-align: left;">
+                        <p style="margin-bottom: 10px;">${data.message || 'Deposit successful!'}</p>
+                        ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
+                    </div>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ffb11a',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-primary)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(data.message || 'Deposit successful!');
+                window.location.reload();
+            }
+        });
+
+        Livewire.on('deposit-binance', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            }
+        });
+
+        Livewire.on('deposit-metamask', (data) => {
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'MetaMask Payment Instructions',
+                    html: `<div style="text-align: left; color: var(--text-primary, #333);">
+                        <p>Please send <strong>${data.amount} ${data.currency}</strong> to the following address:</p>
+                        <p style="word-break: break-all; font-weight: bold; color: var(--accent);"><code>${data.merchant_address || 'Address will be provided'}</code></p>
+                        <p>Network: <strong>${data.network || 'Ethereum'}</strong></p>
+                        <p style="margin-top: 15px; font-size: 0.9em; color: var(--text-secondary);">
+                            Once the transaction is confirmed on the blockchain, your balance will be updated.
+                        </p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'I have sent the funds',
+                    confirmButtonColor: '#ffb11a',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-primary)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+            }
+        });
+    });
+</script>
+@endpush
 

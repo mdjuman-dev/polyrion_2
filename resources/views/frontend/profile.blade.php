@@ -9,47 +9,48 @@
             <div class="row d-flex justify-content-between m-auto">
                 <!-- Left Column - User Profile -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profile-card">
-                        <div class="profile-header">
-                            <div class="profile-avatar-wrapper">
-                                <div class="profile-avatar-gradient">
+                    <div class="profile-card" style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
+                        <div class="profile-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; position: relative;">
+                            <div class="profile-avatar-wrapper" style="flex-shrink: 0;">
+                                <div class="profile-avatar-gradient" style="width: 64px; height: 64px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border);">
                                     <img src="{{ $profileImage }}" alt="{{ $user->name }}" loading="lazy"
-                                        class="img-responsive"
+                                        style="width: 100%; height: 100%; object-fit: cover;"
                                         onerror="this.src='{{ asset('frontend/assets/images/default-avatar.png') }}'">
                                 </div>
                             </div>
-                            <div class="profile-info">
-                                <div class="profile-id-wrapper d-flex justify-content-between">
-                                    <span class="profile-id">{{ $user->name }}</span>
-                                    <div class="profile-actions">
-
-                                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn-icon" title="Logout">
-                                                <i class="fas fa-arrow-right-from-bracket"></i>
-                                            </button>
-                                        </form>
-                                    </div>
+                            <div class="profile-info" style="flex: 1;">
+                                <div class="profile-id-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span class="profile-id" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $user->name }}</span>
+                                    <a href="{{ route('profile.settings') }}" class="btn-icon" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; transition: all 0.3s ease;" 
+                                       onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'"
+                                       onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'"
+                                       title="View Profile Settings">
+                                        <i class="fas fa-arrow-right" style="font-size: 14px;"></i>
+                                    </a>
                                 </div>
-                                <div class="profile-meta">
+                                <div class="profile-meta" style="color: var(--text-secondary); font-size: 0.875rem;">
                                     <span>Member since {{ $user->created_at->format('M Y') }}</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="profile-stats">
+                        
+                        <!-- Separator -->
+                        <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
+                        
+                        <div class="profile-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
                             <div class="stat-item">
-                                <div class="stat-label">Positions Value</div>
-                                <div class="stat-value">${{ number_format($stats['positions_value'], 2) }}</div>
+                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Positions Value</div>
+                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">${{ number_format($stats['positions_value'], 2) }}</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-label">Biggest Win</div>
-                                <div class="stat-value">
+                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Biggest Win</div>
+                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
                                     {{ $stats['biggest_win'] > 0 ? '$' . number_format($stats['biggest_win'], 2) : '—' }}
                                 </div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-label">Predictions</div>
-                                <div class="stat-value">{{ $stats['predictions'] }}</div>
+                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Predictions</div>
+                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $stats['predictions'] }}</div>
                             </div>
                         </div>
                     </div>
@@ -57,37 +58,37 @@
 
                 <!-- Right Column - Profit/Loss  -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profit-loss-card">
-                        <div class="profit-loss-header">
-                            <div class="profit-loss-title">
-                                <i class="fas fa-arrow-up profit-icon"></i>
-                                <span>Profit/Loss</span>
+                    <div class="profit-loss-card" style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
+                        <div class="profit-loss-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <div class="profit-loss-title" style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-arrow-up profit-icon" style="color: #00c853; font-size: 1.125rem;"></i>
+                                <span style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary);">Profit/Loss</span>
                             </div>
                             <div class="time-filters" style="display: flex; gap: 0.5rem;">
                                 <button type="button" class="time-filter-btn active" data-time="1D"
-                                    style="padding: 0.5rem 1rem; background: #ffb11a; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">1D</button>
+                                    style="padding: 0.5rem 1rem; background: #ffb11a; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;">1D</button>
                                 <button type="button" class="time-filter-btn" data-time="1W"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease;"
+                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
                                     onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
                                     onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">1W</button>
                                 <button type="button" class="time-filter-btn" data-time="1M"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease;"
+                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
                                     onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
                                     onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">1M</button>
                                 <button type="button" class="time-filter-btn" data-time="ALL"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease;"
+                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
                                     onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
                                     onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">ALL</button>
                             </div>
                         </div>
                         <div class="profit-loss-content">
-                            <div class="profit-loss-value">
-                                <span class="pl-amount" id="profitLossAmount">$0.00</span>
-                                <i class="fas fa-info-circle pl-info-icon" title="Total profit/loss"></i>
+                            <div class="profit-loss-value" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span class="pl-amount" id="profitLossAmount" style="font-size: 1.75rem; font-weight: 600; color: var(--text-primary);">$0.00</span>
+                                <i class="fas fa-info-circle pl-info-icon" title="Total profit/loss" style="color: var(--info); font-size: 1rem; cursor: help;"></i>
                             </div>
-                            <div class="profit-loss-timeframe" id="profitLossTimeframe">Past Day</div>
-                            <div class="profit-loss-chart" id="profitLossChart" style="height: 100px; margin-top: 20px;">
-                                <!-- Chart will be rendered here -->
+                            <div class="profit-loss-timeframe" id="profitLossTimeframe" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">Past Day</div>
+                            <div class="profit-loss-chart" style="height: 200px; position: relative; background: transparent; border-radius: 12px;">
+                                <canvas id="profitLossChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -178,9 +179,12 @@
                                             @foreach ($trades as $trade)
                                                 @php
                                                     $position = $activePositions->firstWhere('trade.id', $trade->id);
-                                                    $isActive = $position && $position['is_open'];
+                                                    $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+                                                    $isTradeClosed = $tradeStatus === 'CLOSED';
+                                                    $isTradeSettled = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']);
+                                                    $isActive = $position && $position['is_open'] && !$isTradeClosed && !$isTradeSettled;
                                                     $isClosed =
-                                                        $position && $position['is_closed'] && !$position['has_result'];
+                                                        $position && ($position['is_closed'] || $isTradeClosed) && !$position['has_result'];
                                                     $hasResult = $position && $position['has_result'];
 
                                                     // Calculate current value and P/L (Polymarket style - matching first image)
@@ -215,18 +219,24 @@
                                                     $currentValue = $shares * $currentPrice;
 
                                                     // Calculate P/L (matching first image format)
-                                                    if ($trade->status === 'win' && $trade->payout_amount) {
+                                                    $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
+                                                    if (($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') && ($trade->payout_amount || $trade->payout)) {
                                                         // Already settled - use actual payout
-                                                        $profitLoss = $trade->payout_amount - $trade->amount;
+                                                        $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+                                                        $profitLoss = $payout - $trade->amount;
                                                         // P/L % based on price change: ((current_price - avg_price) / avg_price) * 100
                                                         $profitLossPct =
                                                             $avgPrice > 0
                                                                 ? (($currentPrice - $avgPrice) / $avgPrice) * 100
                                                                 : 0;
-                                                    } elseif ($trade->status === 'loss') {
+                                                    } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
                                                         // Lost - lost the full amount
                                                         $profitLoss = -$trade->amount;
                                                         $profitLossPct = -100;
+                                                    } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
+                                                        // Closed position - use payout as sell value
+                                                        $profitLoss = $trade->payout - $trade->amount;
+                                                        $profitLossPct = $trade->amount > 0 ? (($profitLoss / $trade->amount) * 100) : 0;
                                                     } else {
                                                         // Pending - calculate based on current price (like first image)
                                                         $profitLoss = $currentValue - $trade->amount;
@@ -240,7 +250,7 @@
                                                 @endphp
                                                 <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; cursor: pointer;"
                                                     class="position-row"
-                                                    data-subtab="{{ $trade->status === 'pending' && $isActive ? 'active' : 'closed' }}"
+                                                    data-subtab="{{ strtoupper($trade->status ?? '') === 'PENDING' && $isActive ? 'active' : 'closed' }}"
                                                     data-market="{{ strtolower($position['market']->question ?? '') }}">
                                                     <td style="padding: 1rem; color: var(--text-primary);">
                                                         <div
@@ -278,6 +288,16 @@
                                                         ${{ number_format($currentValue, 2) }}
                                                     </td>
                                                     <td style="padding: 1rem; text-align: right;">
+                                                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.3rem;">
+                                                            <span
+                                                                style="font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; 
+                                                                background: {{ $profitLoss >= 0 ? '#10b98120' : '#ef444420' }};
+                                                                color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }};
+                                                                border: 1px solid {{ $profitLoss >= 0 ? '#10b98140' : '#ef444440' }};
+                                                            ">
+                                                                {{ $profitLoss >= 0 ? 'Profit' : 'Loss' }}
+                                                            </span>
+                                                        </div>
                                                         <div
                                                             style="font-weight: 600; font-size: 0.95rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; line-height: 1.4;">
                                                             {{ $profitLoss >= 0 ? '+' : '' }}${{ number_format($profitLoss, 2) }}
@@ -288,12 +308,19 @@
                                                         </div>
                                                     </td>
                                                     <td style="padding: 1rem; text-align: center;">
-                                                        @if ($isActive)
+                                                        @if ($isActive && strtoupper($trade->status) === 'PENDING')
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
                                                                 <span
                                                                     style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Open
+                                                            </span>
+                                                        @elseif(strtoupper($trade->status ?? '') === 'CLOSED')
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #f59e0b;">
+                                                                <span
+                                                                    style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                Closed
                                                             </span>
                                                         @elseif($isClosed)
                                                             <span
@@ -302,14 +329,14 @@
                                                                     style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Closed
                                                             </span>
-                                                        @elseif($trade->status === 'win')
+                                                        @elseif(strtoupper($trade->status ?? '') === 'WON' || strtoupper($trade->status ?? '') === 'WIN')
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #10b981;">
                                                                 <span
                                                                     style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
                                                                 Win
                                                             </span>
-                                                        @elseif($trade->status === 'loss')
+                                                        @elseif(strtoupper($trade->status ?? '') === 'LOST' || strtoupper($trade->status ?? '') === 'LOSS')
                                                             <span
                                                                 style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.9rem; color: #ef4444;">
                                                                 <span
@@ -364,11 +391,50 @@
                                 <div class="activity-list" style="margin-top: 1.5rem;">
                                     @foreach ($allActivity as $activity)
                                         @if ($activity['type'] === 'trade')
-                                            @php $trade = $activity['data']; @endphp
+                                            @php 
+                                                $trade = $activity['data'];
+                                                $amount = $trade->amount_invested ?? $trade->amount ?? 0;
+                                                $profitLoss = 0;
+                                                $profitLossLabel = '';
+                                                
+                                                $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
+                                                if ($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') {
+                                                    $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+                                                    $profitLoss = $payout - $amount;
+                                                    $profitLossLabel = 'Profit';
+                                                } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
+                                                    $profitLoss = -$amount;
+                                                    $profitLossLabel = 'Loss';
+                                                } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
+                                                    // Closed position
+                                                    $profitLoss = $trade->payout - $amount;
+                                                    $profitLossLabel = $profitLoss >= 0 ? 'Profit' : 'Loss';
+                                                } else {
+                                                    // Pending - calculate based on current market price if available
+                                                    if ($trade->market) {
+                                                        $market = $trade->market;
+                                                        $outcomePrices = is_string($market->outcome_prices ?? $market->outcomePrices ?? null) 
+                                                            ? json_decode($market->outcome_prices ?? $market->outcomePrices, true) 
+                                                            : ($market->outcome_prices ?? $market->outcomePrices ?? [0.5, 0.5]);
+                                                        
+                                                        $avgPrice = $trade->price_at_buy ?? $trade->price ?? 0.5;
+                                                        $outcome = strtoupper($trade->outcome ?? $trade->side ?? 'YES');
+                                                        $currentPrice = ($outcome === 'YES' && isset($outcomePrices[1])) ? $outcomePrices[1] : (($outcome === 'NO' && isset($outcomePrices[0])) ? $outcomePrices[0] : $avgPrice);
+                                                        
+                                                        $shares = $avgPrice > 0 ? $amount / $avgPrice : $amount;
+                                                        $currentValue = $shares * $currentPrice;
+                                                        $profitLoss = $currentValue - $amount;
+                                                        $profitLossLabel = $profitLoss >= 0 ? 'Profit' : 'Loss';
+                                                    } else {
+                                                        $profitLoss = 0;
+                                                        $profitLossLabel = 'Pending';
+                                                    }
+                                                }
+                                            @endphp
                                             <div class="activity-item"
                                                 style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;"
                                                 data-activity-type="trade" data-activity-id="{{ $trade->id }}"
-                                                data-amount="{{ $trade->amount_invested ?? ($trade->amount ?? 0) }}">
+                                                data-amount="{{ $amount }}">
                                                 <div style="flex: 1;">
                                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                                                         <div
@@ -395,9 +461,19 @@
                                                     </div>
                                                 </div>
                                                 <div style="text-align: right;">
+                                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                                        <span
+                                                            style="font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; 
+                                                            background: {{ $profitLoss >= 0 ? '#10b98120' : '#ef444420' }};
+                                                            color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }};
+                                                            border: 1px solid {{ $profitLoss >= 0 ? '#10b98140' : '#ef444440' }};
+                                                        ">
+                                                            {{ $profitLossLabel }}
+                                                        </span>
+                                                    </div>
                                                     <div
-                                                        style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">
-                                                        ${{ number_format($trade->amount_invested ?? ($trade->amount ?? 0), 2) }}
+                                                        style="font-weight: 600; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; margin-bottom: 0.25rem;">
+                                                        {{ $profitLoss >= 0 ? '+' : '' }}${{ number_format($profitLoss, 2) }}
                                                     </div>
                                                     @php $status = strtoupper($trade->status ?? 'PENDING'); @endphp
                                                     @if ($status === 'PENDING')
@@ -688,12 +764,13 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 7000;
             display: none;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .withdrawal-modal-overlay.active {
@@ -706,18 +783,18 @@
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
+            transform: translate(-50%, -50%) scale(0.9);
             width: 90%;
-            max-width: 500px;
+            max-width: 520px;
             max-height: 90vh;
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 20px;
             border: 1px solid var(--border);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 177, 26, 0.1);
             z-index: 7001;
             display: none;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
 
@@ -999,6 +1076,210 @@
                 });
             });
 
+            let profitLossChart = null;
+            
+            // Real profit/loss data from backend
+            const profitLossData = @json($profitLossData ?? []);
+
+            function getProfitLossDataForTimeframe(timeframe) {
+                if (!profitLossData || profitLossData.length === 0) {
+                    return { labels: [], data: [] };
+                }
+
+                const today = new Date();
+                let cutoffDate = new Date();
+                
+                if (timeframe === '1D') {
+                    cutoffDate.setDate(today.getDate() - 1);
+                } else if (timeframe === '1W') {
+                    cutoffDate.setDate(today.getDate() - 7);
+                } else if (timeframe === '1M') {
+                    cutoffDate.setDate(today.getDate() - 30);
+                } else {
+                    // ALL - use all data
+                    cutoffDate = null;
+                }
+
+                // Filter data based on timeframe
+                let filteredData = profitLossData;
+                if (cutoffDate) {
+                    filteredData = profitLossData.filter(item => {
+                        const itemDate = new Date(item.date);
+                        return itemDate >= cutoffDate;
+                    });
+                }
+
+                // If no data for selected timeframe, return empty
+                if (filteredData.length === 0) {
+                    return { labels: [], data: [] };
+                }
+
+                // Extract labels and values
+                const labels = filteredData.map(item => {
+                    const date = new Date(item.date);
+                    if (timeframe === '1D') {
+                        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    } else {
+                        return item.label || date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                });
+                
+                const data = filteredData.map(item => parseFloat(item.value) || 0);
+
+                return { labels, data };
+            }
+
+            function initProfitLossChart(timeframe = '1D') {
+                const ctx = document.getElementById('profitLossChart');
+                if (!ctx || typeof Chart === 'undefined') {
+                    setTimeout(() => initProfitLossChart(timeframe), 100);
+                    return;
+                }
+
+                // Destroy existing chart if it exists
+                if (profitLossChart) {
+                    profitLossChart.destroy();
+                }
+
+                const chartData = getProfitLossDataForTimeframe(timeframe);
+                
+                // If no data, show zero
+                if (chartData.data.length === 0) {
+                    $('#profitLossAmount').text('$0.00');
+                    // Create empty chart
+                    profitLossChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Profit/Loss',
+                                data: [],
+                                borderColor: '#00d4aa',
+                                backgroundColor: 'rgba(0, 212, 170, 0.2)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: false }
+                            },
+                            scales: {
+                                x: { display: false },
+                                y: { display: false }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                // Calculate total profit/loss (last value - first value, or just last value if starting from 0)
+                const firstValue = chartData.data[0] || 0;
+                const lastValue = chartData.data[chartData.data.length - 1] || 0;
+                const totalProfitLoss = lastValue - firstValue;
+
+                // Update amount display
+                $('#profitLossAmount').text('$' + lastValue.toFixed(2));
+
+                profitLossChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Profit/Loss',
+                            data: chartData.data,
+                            borderColor: '#00d4aa', // Teal-green color
+                            backgroundColor: 'rgba(0, 212, 170, 0.2)', // Teal-green with transparency
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#00d4aa',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#00d4aa',
+                                borderColor: '#00d4aa',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return '$' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(255, 255, 255, 0.05)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    font: {
+                                        size: 10
+                                    },
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: timeframe === '1D' ? 12 : timeframe === '1W' ? 7 : 10
+                                }
+                            },
+                            y: {
+                                display: true,
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(255, 255, 255, 0.05)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    font: {
+                                        size: 10
+                                    },
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                },
+                                beginAtZero: false
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        elements: {
+                            point: {
+                                radius: 0,
+                                hoverRadius: 4
+                            }
+                        }
+                    }
+                });
+            }
+
             function updateProfitLoss(timeframe) {
                 const timeframes = {
                     '1D': 'Past Day',
@@ -1009,10 +1290,23 @@
 
                 $('#profitLossTimeframe').text(timeframes[timeframe] || 'Past Day');
 
-                // TODO: Fetch actual profit/loss data via AJAX
-                // For now, show placeholder
-                $('#profitLossAmount').text('$0.00');
+                // Update chart with new timeframe data
+                initProfitLossChart(timeframe);
             }
+
+            // Initialize chart on page load
+            $(document).ready(function() {
+                // Wait for Chart.js to load
+                function checkChartJS() {
+                    if (typeof Chart !== 'undefined') {
+                        initProfitLossChart('1D');
+                    } else {
+                        setTimeout(checkChartJS, 50);
+                    }
+                }
+                checkChartJS();
+
+            });
         </script>
     @endpush
 @endsection
