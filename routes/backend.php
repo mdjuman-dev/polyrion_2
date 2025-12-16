@@ -9,6 +9,7 @@ use App\Http\Controllers\Backend\EventController;
 use App\Http\Controllers\Backend\CommentController;
 use App\Http\Controllers\Backend\BinancePayController;
 use App\Http\Controllers\Backend\RolePermissionController;
+use App\Http\Controllers\Backend\UserController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -16,6 +17,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+
+    // Return to admin route (accessible without admin auth when impersonating)
+    Route::post('/users/return-to-admin', [UserController::class, 'returnToAdmin'])->name('users.return-to-admin');
 
     Route::middleware('auth:admin')->group(function () {
         Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('backend.dashboard');
@@ -81,6 +85,15 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::post('/{id}/approve', 'approve')->name('approve');
             Route::post('/{id}/reject', 'reject')->name('reject');
             Route::post('/{id}/processing', 'processing')->name('processing');
+        });
+
+        // User Management Routes
+        Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{id}', 'show')->name('show');
+            Route::post('/{id}/login-as', 'loginAsUser')->name('login-as');
+            Route::post('/{id}/update-status', 'updateStatus')->name('update-status');
+            Route::delete('/{id}', 'destroy')->name('destroy');
         });
 
         // Roles and Permissions Management Routes

@@ -15,6 +15,43 @@ use Illuminate\Validation\Rule;
 
 class MarketController extends Controller
 {
+    /**
+     * Display a listing of markets
+     */
+    public function index(Request $request)
+    {
+        $query = Market::with('event');
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('slug', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Filter by active status if provided
+        // IMPORTANT: Filter is applied BEFORE pagination to filter all data
+        if ($request->has('status') && !empty($request->status)) {
+            if ($request->status === 'active') {
+                // Active: active=true AND closed=false
+                $query->where('active', true)->where('closed', false);
+            } elseif ($request->status === 'closed') {
+                // Closed: closed=true
+                $query->where('closed', true);
+            } elseif ($request->status === 'inactive') {
+                // Inactive: active=false AND closed=false (not closed but not active)
+                $query->where('active', false)->where('closed', false);
+            }
+        }
+
+        // Apply pagination AFTER filtering - this ensures filter works on all data
+        $markets = $query->orderBy('volume', 'desc')->paginate(20)->withQueryString();
+
+        return view('backend.market.index', compact('markets'));
+    }
 
     /**
      * Display the specified market

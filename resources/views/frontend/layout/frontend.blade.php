@@ -82,6 +82,24 @@
 </head>
 
 <body class="dark-theme has-bottom-nav">
+    @if(session('admin_id'))
+        <div class="admin-impersonation-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 0; text-align: center; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+            <div class="container">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-shield me-2"></i>
+                        <strong>You are logged in as: {{ auth()->user()->name }}</strong>
+                    </div>
+                    <form action="{{ route('admin.users.return-to-admin') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Return to Admin Panel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
     <div id="header">
         <!-- Header -->
         <header>
