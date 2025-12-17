@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -23,43 +24,35 @@ class ProfileController extends Controller
             ? asset('storage/' . $user->profile_image)
             : asset('frontend/assets/images/default-avatar.png');
 
-        // Get user's trades with market info
+        // Get user's trades with market info - eager load market.event for better performance
         $trades = \App\Models\Trade::where('user_id', $user->id)
-            ->with('market')
+            ->with(['market.event'])
             ->orderBy('created_at', 'desc')
             ->get();
         
         // Calculate portfolio value from active/pending trades
         $portfolio = $this->calculatePortfolioValue($trades);
 
-        // Calculate stats
-        $totalTrades = $trades->count();
-        $pendingTrades = $trades->filter(function($trade) {
-            return strtoupper($trade->status ?? '') === 'PENDING';
-        })->count();
-        $winTrades = $trades->filter(function($trade) {
-            $status = strtoupper($trade->status ?? '');
-            return $status === 'WON' || $status === 'WIN';
-        })->count();
-        $lossTrades = $trades->filter(function($trade) {
-            $status = strtoupper($trade->status ?? '');
-            return $status === 'LOST' || $status === 'LOSS';
-        })->count();
-        $closedTrades = $trades->filter(function($trade) {
-            return strtoupper($trade->status ?? '') === 'CLOSED';
-        })->count();
-        $totalPayout = $trades->filter(function($trade) {
-            $status = strtoupper($trade->status ?? '');
-            return $status === 'WON' || $status === 'WIN';
-        })->sum(function($trade) {
-            return $trade->payout ?? $trade->payout_amount ?? 0;
-        });
-        $biggestWin = $trades->filter(function($trade) {
-            $status = strtoupper($trade->status ?? '');
-            return $status === 'WON' || $status === 'WIN';
-        })->max(function($trade) {
-            return $trade->payout ?? $trade->payout_amount ?? 0;
-        }) ?? 0;
+        // Calculate stats using database queries instead of collection filters (much faster)
+        $totalTrades = \App\Models\Trade::where('user_id', $user->id)->count();
+        $pendingTrades = \App\Models\Trade::where('user_id', $user->id)
+            ->whereRaw('UPPER(status) = ?', ['PENDING'])
+            ->count();
+        $winTrades = \App\Models\Trade::where('user_id', $user->id)
+            ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
+            ->count();
+        $lossTrades = \App\Models\Trade::where('user_id', $user->id)
+            ->whereIn('status', ['LOST', 'LOSS', 'lost', 'loss'])
+            ->count();
+        $closedTrades = \App\Models\Trade::where('user_id', $user->id)
+            ->whereRaw('UPPER(status) = ?', ['CLOSED'])
+            ->count();
+        $totalPayout = \App\Models\Trade::where('user_id', $user->id)
+            ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
+            ->sum(\DB::raw('COALESCE(payout, payout_amount, 0)'));
+        $biggestWin = \App\Models\Trade::where('user_id', $user->id)
+            ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
+            ->max(\DB::raw('COALESCE(payout, payout_amount, 0)')) ?? 0;
 
         $stats = [
             'positions_value' => $portfolio,

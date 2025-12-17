@@ -74,7 +74,7 @@
                                                             <form
                                                                 action="{{ route('admin.permissions.destroy', $permission->id) }}"
                                                                 method="POST" class="d-inline"
-                                                                onsubmit="return confirm('Are you sure you want to delete this permission? This action cannot be undone.');">
+                                                                onsubmit="return handleDeleteConfirm(event, 'Are you sure you want to delete this permission? This action cannot be undone.');">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="btn btn-sm btn-danger"

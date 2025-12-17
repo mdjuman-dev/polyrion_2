@@ -19,7 +19,8 @@ class MarketsGrid extends Component
 
     protected $listeners = [
         'tag-selected' => 'filterByTag',
-        'filter-selected' => 'handleBrowseFilter'
+        'filter-selected' => 'handleBrowseFilter',
+        'search-query-updated' => 'updateSearch'
     ];
 
     public function mount()
@@ -29,6 +30,17 @@ class MarketsGrid extends Component
         if (request()->has('filter')) {
             $this->handleBrowseFilter(request()->get('filter'));
         }
+        
+        // Check if search query is passed via query parameter
+        if (request()->has('search')) {
+            $this->search = request()->get('search');
+        }
+    }
+    
+    public function updateSearch($query)
+    {
+        $this->search = $query;
+        $this->perPage = 20; // Reset pagination when search changes
     }
 
     public function filterByTag($tagSlug)
@@ -159,7 +171,15 @@ class MarketsGrid extends Component
             $query->where(function ($q) {
                 $q->where('title', 'like', '%' . $this->search . '%')
                     ->orWhereHas('markets', function ($marketQuery) {
-                        $marketQuery->where('groupItem_title', 'like', '%' . $this->search . '%');
+                        $marketQuery->where('closed', false)
+                          ->where(function ($query) {
+                              $query->whereNull('close_time')
+                                    ->orWhere('close_time', '>', now());
+                          })
+                          ->where(function ($mq) {
+                              $mq->where('groupItem_title', 'like', '%' . $this->search . '%')
+                                ->orWhere('question', 'like', '%' . $this->search . '%');
+                          });
                     });
             });
         }
@@ -190,6 +210,7 @@ class MarketsGrid extends Component
         }
 
         // Only show events that have at least one active (non-closed) market
+        // Note: This is already filtered in the eager loading, but we need whereHas for the main query
         $query->whereHas('markets', function ($q) {
             $q->where('closed', false)
               ->where(function ($query) {
@@ -198,7 +219,8 @@ class MarketsGrid extends Component
               });
         });
 
-        $totalCount = $query->count();
+        // Use clone for count to avoid affecting the main query
+        $totalCount = (clone $query)->count();
 
         $events = $query->take($this->perPage)
             ->get();

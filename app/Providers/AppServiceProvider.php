@@ -88,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
             $mailFromAddress = GlobalSetting::getValue('mail_from_address');
             $mailFromName = GlobalSetting::getValue('mail_from_name');
 
-            // Log what we're reading from database (for debugging - remove password)
+            // Load SMTP settings from database
             Log::info('Loading SMTP settings from database', [
                 'mailer' => $mailMailer,
                 'host' => $mailHost,

@@ -1813,6 +1813,20 @@ nav::-webkit-scrollbar {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     padding: 10px 0;
     z-index: 2002;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure modals appear above mobile bottom nav */
+@media (max-width: 768px) {
+    .deposit-modal-overlay,
+    .withdrawal-modal-overlay {
+        z-index: 7000 !important;
+    }
+
+    .deposit-modal-popup,
+    .withdrawal-modal-popup {
+        z-index: 7001 !important;
+    }
 }
 
 .mobile-nav-item {
@@ -8285,13 +8299,16 @@ input:checked + .toggle-slider:before {
         max-width: none;
         border-radius: 20px 20px 0 0;
         top: auto;
+        left: 0;
+        right: 0;
         bottom: 0;
-        transform: translate(-50%, 100%);
+        transform: translate(0, 100%);
         max-height: 85vh;
+        z-index: 7001;
     }
 
     .deposit-modal-popup.active {
-        transform: translate(-50%, 0);
+        transform: translate(0, 0) !important;
     }
 
     .deposit-modal-header {
@@ -8327,8 +8344,9 @@ input:checked + .toggle-slider:before {
         font-size: 1.1rem;
     }
 
-    .deposit-input {
-        font-size: 16px;
+    .deposit-input,
+    .withdrawal-input {
+        font-size: 16px !important; /* Prevent zoom on iOS */
     }
 
     .quick-amount-btn {

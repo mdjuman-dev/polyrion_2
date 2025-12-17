@@ -18,9 +18,73 @@
             width: 100%;
             height: 400px;
             background: #111b2b;
-            border-radius: 8px;
-            margin-bottom: 1rem;
+            border-radius: 0;
+            margin-bottom: 0;
             position: relative;
+            border: none;
+        }
+
+        .chart-container {
+            background: #111b2b;
+            border-radius: 8px;
+            padding: 0;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            background: #111b2b;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            justify-content: flex-start;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .chart-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #9ab1c6;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            white-space: nowrap;
+            min-width: 44px;
+            text-align: center;
+            line-height: 1.2;
+            position: relative;
+        }
+
+        .chart-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .chart-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ffffff;
+            border-radius: 2px 2px 0 0;
         }
 
         /* Medium screens (600px - 768px) - like 629px in image */
@@ -62,8 +126,8 @@
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
-                padding-bottom: 0.5rem;
-                gap: 0.4rem;
+                padding: 0.75rem 1rem;
+                gap: 0.5rem;
                 flex-wrap: nowrap;
             }
 
@@ -72,10 +136,15 @@
             }
 
             .chart-btn {
-                padding: 0.45rem 0.65rem;
-                font-size: 0.8rem;
+                padding: 0.45rem 0.85rem;
+                font-size: 0.75rem;
                 white-space: nowrap;
                 flex-shrink: 0;
+                min-width: 40px;
+            }
+
+            .chart-btn.active::before {
+                height: 1.5px;
             }
 
             .market-detail-header {
@@ -121,12 +190,18 @@
             }
 
             .chart-controls {
-                gap: 0.3rem;
+                gap: 0.4rem;
+                padding: 0.65rem 0.75rem;
             }
 
             .chart-btn {
-                padding: 0.4rem 0.5rem;
-                font-size: 0.75rem;
+                padding: 0.4rem 0.7rem;
+                font-size: 0.7rem;
+                min-width: 36px;
+            }
+
+            .chart-btn.active::before {
+                height: 1.5px;
             }
 
             .market-title {
@@ -985,12 +1060,11 @@
                 }
 
                 if (typeof echarts !== 'undefined') {
-                    console.log('ECharts loaded, initializing chart...');
                     const chart = initChart();
-                    if (chart) {
-                        console.log('Chart initialized successfully');
-                    } else {
-                        console.error('Chart initialization returned null');
+                    if (!chart) {
+                        if (typeof console !== 'undefined' && console.error) {
+                            console.error('Chart initialization failed');
+                        }
                     }
                 } else {
                     console.warn('ECharts not loaded yet, retrying...');
@@ -1114,10 +1188,10 @@
                     },
 
                     grid: {
-                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
-                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
-                        bottom: isMobile ? "12%" : "8%",
-                        top: isMobile ? "10%" : "15%",
+                        left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
+                        right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
+                        bottom: isMobile ? "18%" : "15%",
+                        top: isMobile ? "8%" : "10%",
                         containLabel: false
                     },
 
@@ -1135,8 +1209,9 @@
                             color: "#9ab1c6",
                             fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
                             interval: 'auto',
-                            rotate: -45, // Always rotate labels like in the image
-                            margin: 12
+                            rotate: 0, // No rotation for cleaner look
+                            margin: 8,
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         }
                     },
 
@@ -1153,12 +1228,13 @@
                         axisLabel: {
                             color: "#9ab1c6",
                             fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                            formatter: '{value}%'
+                            formatter: '{value}%',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         },
                         splitLine: {
                             show: true,
                             lineStyle: {
-                                color: "#1f2f44",
+                                color: "rgba(255, 255, 255, 0.05)",
                                 type: 'solid',
                                 width: 1
                             }
@@ -1172,8 +1248,10 @@
                         showSymbol: false,
                         data: item.data,
                         lineStyle: {
-                            width: 2,
-                            color: item.color
+                            width: 2.5,
+                            color: item.color,
+                            shadowBlur: 0,
+                            shadowColor: 'transparent'
                         },
                         areaStyle: {
                             show: true, // Show area for all markets (like image)
@@ -1185,7 +1263,11 @@
                                 y2: 1,
                                 colorStops: [{
                                         offset: 0,
-                                        color: item.color + '40' // More transparent for all lines
+                                        color: item.color + '30' // More subtle gradient
+                                    },
+                                    {
+                                        offset: 0.5,
+                                        color: item.color + '15'
                                     },
                                     {
                                         offset: 1,
@@ -1372,18 +1454,19 @@
                 // Update chart with Polymarket style
                 chart.setOption({
                     grid: {
-                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
-                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
-                        bottom: isMobile ? "15%" : "12%", // More space for rotated labels
-                        top: isMobile ? "10%" : "15%",
+                        left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
+                        right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
+                        bottom: isMobile ? "18%" : "15%",
+                        top: isMobile ? "8%" : "10%",
                         containLabel: false
                     },
                     xAxis: {
                         data: filteredLabels,
                         axisLabel: {
                             fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                            rotate: -45, // Always rotate labels like in the image
-                            margin: 12
+                            rotate: 0, // No rotation for cleaner look
+                            margin: 8,
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         }
                     },
                     yAxis: {
@@ -1399,8 +1482,10 @@
                         showSymbol: false,
                         data: item.data,
                         lineStyle: {
-                            width: 2,
-                            color: item.color
+                            width: 2.5,
+                            color: item.color,
+                            shadowBlur: 0,
+                            shadowColor: 'transparent'
                         },
                         areaStyle: {
                             show: true,
@@ -1412,7 +1497,11 @@
                                 y2: 1,
                                 colorStops: [{
                                         offset: 0,
-                                        color: item.color + '40'
+                                        color: item.color + '30'
+                                    },
+                                    {
+                                        offset: 0.5,
+                                        color: item.color + '15'
                                     },
                                     {
                                         offset: 1,
@@ -1489,7 +1578,6 @@
                     const observer = new MutationObserver(function(mutations) {
                         mutations.forEach(function(mutation) {
                             if (mutation.type === 'attributes' && mutation.attributeName === 'data-price') {
-                                console.log('Price attribute changed, recalculating...');
                                 setTimeout(function() {
                                     updateSelectedPrice();
                                     calculatePayout();
@@ -1510,7 +1598,6 @@
 
                     // Also listen for custom event from populateTradingPanel
                     document.addEventListener('tradingPriceUpdated', function(event) {
-                        console.log('Trading price updated event received', event.detail);
                         setTimeout(function() {
                             updateSelectedPrice();
                             calculatePayout();
@@ -1562,19 +1649,10 @@
                         // Try one more conversion: if rawPrice is very small (like 0.007), it might be correct
                         if (rawPrice > 0 && rawPrice < 0.01) {
                             selectedPrice = rawPrice; // Very small prices (< 1¢) are likely correct
-                            console.log('Using very small price as-is:', selectedPrice);
                         } else {
                             selectedPrice = 0.5; // Fallback
                         }
                     }
-
-                    console.log('Price updated:', {
-                        raw: rawPrice,
-                        decimal: selectedPrice,
-                        cents: (selectedPrice * 100).toFixed(1) + '¢',
-                        activeButton: yesActive ? 'YES' : (noActive ? 'NO' : 'NONE'),
-                        buttonText: yesActive ? yesBtn?.textContent : (noActive ? noBtn?.textContent : 'N/A')
-                    });
                 }
 
                 // Calculate payout using Polymarket formula
@@ -1635,24 +1713,6 @@
                     // Display "To win" - this is what you receive if you win (total payout)
                     potentialWin.textContent = "$" + payout.toFixed(2);
 
-                    // Debug log for verification
-                    const rawYesPrice = yesBtn?.getAttribute("data-price");
-                    const rawNoPrice = noBtn?.getAttribute("data-price");
-                    const buttonText = (yesBtn?.classList.contains("active") ? yesBtn : noBtn)?.textContent || 'N/A';
-
-                    console.log('Trading Calculation:', {
-                        amount: '$' + amount.toFixed(2),
-                        priceCents: (pricePerShare * 100).toFixed(1) + '¢',
-                        priceDecimal: pricePerShare,
-                        rawYesPrice: rawYesPrice,
-                        rawNoPrice: rawNoPrice,
-                        selectedPrice: selectedPrice,
-                        buttonText: buttonText,
-                        shares: shares.toFixed(6),
-                        payout: '$' + payout.toFixed(2),
-                        expectedPayoutFor1Dollar: '$' + (1 / pricePerShare).toFixed(2),
-                        formula: `$${amount} / ${pricePerShare} = ${shares.toFixed(4)} shares × $1.00 = $${payout.toFixed(2)}`
-                    });
 
                     // Warn if calculation seems wrong (payout should be > amount for prices < 0.50)
                     if (pricePerShare < 0.5 && amount === 1 && payout < 2) {

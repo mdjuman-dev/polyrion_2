@@ -129,7 +129,22 @@
                     e.preventDefault();
 
                     // Show confirmation popup
-                    if (confirm('Are you sure you want to logout?')) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'Are you sure you want to logout?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#ffb11a',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, logout',
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    } else if (confirm('Are you sure you want to logout?')) {
                         form.submit();
                     }
                 });

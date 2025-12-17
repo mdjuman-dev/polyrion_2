@@ -22,10 +22,10 @@ class HomeController extends Controller
         $totalMarkets = Market::count();
         $totalTrades = Trade::count();
         
-        // Active Statistics
+        // Active Statistics - optimize with composite index usage
         $activeEvents = Event::where('active', true)->where('closed', false)->count();
         $activeMarkets = Market::where('active', true)->where('closed', false)->count();
-        $pendingTrades = Trade::where('status', 'pending')->count();
+        $pendingTrades = Trade::whereRaw('UPPER(status) = ?', ['PENDING'])->count();
         $pendingWithdrawals = Withdrawal::where('status', 'pending')->count();
         
         // Financial Statistics

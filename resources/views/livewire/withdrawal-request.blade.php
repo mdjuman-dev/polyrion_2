@@ -30,6 +30,7 @@ new class extends Component {
     public $wallet_balance = 0;
     public $currency = 'USDT';
     public $min_withdrawal = 10;
+    public $confirm_submit = false;
 
     public function mount()
     {
@@ -41,6 +42,11 @@ new class extends Component {
 
     public function submit()
     {
+        if (!$this->confirm_submit) {
+            $this->addError('confirm_submit', 'Please confirm to submit withdrawal request.');
+            return;
+        }
+
         $this->validate();
 
         $user = Auth::user();
@@ -122,7 +128,7 @@ new class extends Component {
             ]);
 
             // Reset form
-            $this->reset(['amount', 'payment_method', 'bank_name', 'account_number', 'account_holder', 'swift_code', 'crypto_type', 'wallet_address', 'network', 'paypal_email']);
+            $this->reset(['amount', 'payment_method', 'bank_name', 'account_number', 'account_holder', 'swift_code', 'crypto_type', 'wallet_address', 'network', 'paypal_email', 'confirm_submit']);
             $this->wallet_balance = $wallet->balance;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -164,7 +170,8 @@ new class extends Component {
                 <div class="withdrawal-input-wrapper">
                     <span class="withdrawal-currency">$</span>
                     <input type="number" wire:model="amount" step="0.01" min="{{ $min_withdrawal }}"
-                        max="{{ $wallet_balance }}" placeholder="0.00" class="withdrawal-input">
+                        max="{{ $wallet_balance }}" placeholder="0.00" class="withdrawal-input"
+                        style="font-size: 16px;">
                 </div>
                 @error('amount')
                     <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
@@ -266,9 +273,17 @@ new class extends Component {
                 </div>
             @endif
 
-            <!-- Submit Button -->
+            <!-- Submit Confirmation -->
             <div class="withdrawal-submit-section">
-                <button type="submit" wire:loading.attr="disabled" class="withdrawal-submit-btn">
+                <label class="withdrawal-checkbox-label">
+                    <input type="checkbox" wire:model="confirm_submit" class="withdrawal-checkbox">
+                    <span class="withdrawal-checkbox-text">Submit Withdrawal Request</span>
+                </label>
+                @error('confirm_submit')
+                    <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
+                @enderror
+                <button type="submit" wire:loading.attr="disabled" class="withdrawal-submit-btn"
+                    @if (!$confirm_submit) disabled @endif>
                     <span wire:loading.remove>
                         <i class="fas fa-paper-plane"></i> Submit Withdrawal Request
                     </span>
@@ -290,8 +305,8 @@ new class extends Component {
 </div>
 
 @push('styles')
-<style>
-    /* Withdrawal Modal Styles */
+    <style>
+        /* Withdrawal Modal Styles - Updated Design v2 */
         .withdrawal-modal-header {
             display: flex;
             align-items: center;
@@ -337,11 +352,11 @@ new class extends Component {
         .withdrawal-form-container {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
         }
 
         .withdrawal-balance-info {
-            padding: 20px;
+            padding: 18px 20px;
             background: linear-gradient(135deg, rgba(255, 177, 26, 0.1) 0%, rgba(255, 149, 0, 0.05) 100%);
             border-radius: 12px;
             border: 1px solid rgba(255, 177, 26, 0.2);
@@ -367,16 +382,15 @@ new class extends Component {
         }
 
         .balance-value {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #ffb11a;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 4px rgba(255, 177, 26, 0.2);
+            letter-spacing: -0.3px;
         }
 
         .balance-min-value {
-            font-size: 15px;
-            color: var(--text-primary);
+            font-size: 14px;
+            color: #ffb11a;
             font-weight: 600;
         }
 
@@ -401,41 +415,62 @@ new class extends Component {
 
         .withdrawal-currency {
             position: absolute;
-            left: 16px;
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffb11a;
+            left: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
             z-index: 1;
         }
 
         .withdrawal-input,
         .withdrawal-select {
             width: 100%;
-            padding: 16px 16px 16px 40px;
-            background: var(--secondary);
-            border: 2px solid var(--border);
-            border-radius: 10px;
+            padding: 14px 16px 14px 40px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             color: var(--text-primary);
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 500;
             transition: all 0.3s ease;
         }
 
+        .withdrawal-input {
+            padding-left: 36px;
+        }
+
         .withdrawal-select {
-            padding: 16px 16px;
+            padding: 14px 40px 14px 16px;
             cursor: pointer;
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 16px center;
-            padding-right: 40px;
+            background-color: var(--card-bg);
+        }
+
+        .withdrawal-select option {
+            color: var(--text-primary);
+            background: var(--card-bg);
+        }
+
+        .withdrawal-select option[value=""] {
+            color: var(--text-secondary);
+        }
+
+        .withdrawal-select:invalid {
+            color: var(--text-secondary);
+        }
+
+        .withdrawal-select:valid {
+            color: var(--text-primary);
         }
 
         .withdrawal-input:focus,
         .withdrawal-select:focus {
             outline: none;
             border-color: #ffb11a;
-            box-shadow: 0 0 0 4px rgba(255, 177, 26, 0.15);
+            box-shadow: 0 0 0 3px rgba(255, 177, 26, 0.1);
             background: var(--card-bg);
         }
 
@@ -457,6 +492,7 @@ new class extends Component {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -499,17 +535,42 @@ new class extends Component {
         }
 
         .withdrawal-submit-section {
-            margin-top: 8px;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .withdrawal-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .withdrawal-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ffb11a;
+            flex-shrink: 0;
+        }
+
+        .withdrawal-checkbox-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
         }
 
         .withdrawal-submit-btn {
             width: 100%;
-            padding: 16px 24px;
+            padding: 14px 24px;
             background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
-            color: #000;
+            color: #fff;
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -601,18 +662,42 @@ new class extends Component {
                 font-size: 16px;
             }
         }
-</style>
+    </style>
 @endpush
 
 @push('scripts')
-<script>
-    document.addEventListener('livewire:init', () => {
+    <script>
+        // Update select styling when value changes
+        function updateSelectStyle() {
+            const select = document.querySelector('.withdrawal-select');
+            if (select) {
+                if (select.value) {
+                    select.style.color = 'var(--text-primary)';
+                } else {
+                    select.style.color = 'var(--text-secondary)';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.querySelector('.withdrawal-select');
+            if (select) {
+                select.addEventListener('change', updateSelectStyle);
+                updateSelectStyle(); // Check initial value
+            }
+        });
+
+        document.addEventListener('livewire:init', () => {
+            // Update select style after Livewire updates
+            Livewire.hook('morph.updated', () => {
+                setTimeout(updateSelectStyle, 50);
+            });
             Livewire.on('withdrawal-submitted', (data) => {
                 // Close modal first
                 if (typeof closeWithdrawalModal === 'function') {
                     closeWithdrawalModal();
                 }
-                
+
                 // Show success message
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -637,6 +722,16 @@ new class extends Component {
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
+                } else if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Withdrawal Request Submitted',
+                        text: data.message || 'Withdrawal request submitted successfully.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#ffb11a'
+                    }).then(() => {
+                        window.location.reload();
+                    });
                 } else {
                     alert(data.message || 'Withdrawal request submitted successfully.');
                     setTimeout(() => {
@@ -645,15 +740,20 @@ new class extends Component {
                 }
             });
         });
-        
+
         // Also listen for Livewire 3 events
         document.addEventListener('livewire:initialized', () => {
+            // Update select style after Livewire updates
+            Livewire.hook('morph.updated', () => {
+                setTimeout(updateSelectStyle, 50);
+            });
+
             Livewire.on('withdrawal-submitted', (data) => {
                 // Close modal first
                 if (typeof closeWithdrawalModal === 'function') {
                     closeWithdrawalModal();
                 }
-                
+
                 // Show success message
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -678,6 +778,16 @@ new class extends Component {
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
+                } else if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Withdrawal Request Submitted',
+                        text: data.message || 'Withdrawal request submitted successfully.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#ffb11a'
+                    }).then(() => {
+                        window.location.reload();
+                    });
                 } else {
                     alert(data.message || 'Withdrawal request submitted successfully.');
                     setTimeout(() => {

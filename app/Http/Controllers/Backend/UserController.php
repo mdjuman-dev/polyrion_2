@@ -10,6 +10,7 @@ use App\Models\Deposit;
 use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -55,15 +56,16 @@ class UserController extends Controller
         $user = User::with(['wallet', 'trades.market.event', 'deposits', 'withdrawals'])
             ->findOrFail($id);
 
-        // User Statistics
-        $totalTrades = $user->trades()->count();
-        $pendingTrades = $user->trades()->where('status', 'pending')->count();
-        $wonTrades = $user->trades()->whereIn('status', ['won', 'WON'])->count();
-        $lostTrades = $user->trades()->whereIn('status', ['lost', 'LOST'])->count();
+        // User Statistics - optimize with base query
+        $tradesQuery = $user->trades();
+        $totalTrades = (clone $tradesQuery)->count();
+        $pendingTrades = (clone $tradesQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
+        $wonTrades = (clone $tradesQuery)->whereIn('status', ['won', 'WON'])->count();
+        $lostTrades = (clone $tradesQuery)->whereIn('status', ['lost', 'LOST'])->count();
         
-        $totalInvested = $user->trades()->sum('amount_invested') ?? $user->trades()->sum('amount') ?? 0;
-        $totalPayouts = $user->trades()->whereIn('status', ['won', 'WON'])
-            ->sum('payout') ?? $user->trades()->whereIn('status', ['won', 'WON'])->sum('payout_amount') ?? 0;
+        $totalInvested = (clone $tradesQuery)->sum(DB::raw('COALESCE(amount_invested, amount, 0)')) ?? 0;
+        $totalPayouts = (clone $tradesQuery)->whereIn('status', ['won', 'WON'])
+            ->sum(DB::raw('COALESCE(payout, payout_amount, 0)')) ?? 0;
         
         $totalDeposits = $user->deposits()->where('status', 'completed')->sum('amount') ?? 0;
         $totalWithdrawals = $user->withdrawals()->where('status', 'approved')->sum('amount') ?? 0;
