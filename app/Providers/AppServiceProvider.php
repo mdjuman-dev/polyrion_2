@@ -31,15 +31,15 @@ class AppServiceProvider extends ServiceProvider
         // Share global settings with all views
         View::composer('*', function ($view) {
             try {
-                $view->with([
-                    'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
-                    'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
-                    'favicon' => GlobalSetting::getValue('favicon'),
-                    'logo' => GlobalSetting::getValue('logo'),
-                    'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
-                    'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
-                    'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
-                ]);
+            $view->with([
+                'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
+                'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
+                'favicon' => GlobalSetting::getValue('favicon'),
+                'logo' => GlobalSetting::getValue('logo'),
+                'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
+                'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
+                'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
+            ]);
             } catch (\Illuminate\Database\QueryException $e) {
                 // If database connection fails, use default values
                 Log::warning('Database connection failed in View composer, using defaults', [

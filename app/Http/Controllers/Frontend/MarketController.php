@@ -19,13 +19,7 @@ class MarketController extends Controller
         $this->tradeService = $tradeService;
     }
 
-    /**
-     * Buy YES or NO on a market
-     * 
-     * @param Request $request
-     * @param int $marketId
-     * @return \Illuminate\Http\JsonResponse
-     */
+    
     public function buy(Request $request, $marketId)
     {
         $request->validate([
@@ -92,12 +86,7 @@ class MarketController extends Controller
         }
     }
 
-    /**
-     * Settle all trades for a market
-     * 
-     * @param int $marketId
-     * @return \Illuminate\Http\JsonResponse
-     */
+    
     public function settleMarket($marketId)
     {
         try {
