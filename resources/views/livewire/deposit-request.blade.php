@@ -9,8 +9,8 @@ new class extends Component {
     #[Validate('required|numeric|min:10|max:1000000')]
     public $amount = '';
 
-    #[Validate('required|string|in:demo,binancepay,manual,metamask')]
-    public $payment_method = 'demo';
+    #[Validate('required|string|in:binancepay,manual,metamask')]
+    public $payment_method = 'binancepay';
 
     public $query_code = '';
 
@@ -22,13 +22,11 @@ new class extends Component {
     {
         $user = Auth::user();
 
-        if (!$user) {
-            abort(403, 'You must be logged in to access this page.');
+        if ($user) {
+            $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']);
+            $this->wallet_balance = $wallet->balance;
+            $this->currency = $wallet->currency;
         }
-
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']);
-        $this->wallet_balance = $wallet->balance;
-        $this->currency = $wallet->currency;
     }
 
     public function setQuickAmount($amount)
@@ -66,40 +64,6 @@ new class extends Component {
 
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
-
-            // Handle Demo Money (instant deposit)
-            if ($this->payment_method === 'demo') {
-                $balanceBefore = (float) $wallet->balance;
-                $wallet->balance += $this->amount;
-                $wallet->save();
-
-                // Create wallet transaction
-                \App\Models\WalletTransaction::create([
-                    'user_id' => $user->id,
-                    'wallet_id' => $wallet->id,
-                    'type' => 'deposit',
-                    'amount' => $this->amount,
-                    'balance_before' => $balanceBefore,
-                    'balance_after' => $wallet->balance,
-                    'description' => 'Demo money deposit - Test',
-                    'metadata' => [
-                        'payment_method' => 'demo',
-                    ],
-                ]);
-
-                \Illuminate\Support\Facades\DB::commit();
-
-                $this->dispatch('deposit-submitted', [
-                    'message' => 'Demo money added successfully!',
-                    'balance' => number_format($wallet->balance, 2),
-                    'amount' => number_format($this->amount, 2),
-                ]);
-
-                // Reset form
-                $this->reset(['amount', 'query_code']);
-                $this->wallet_balance = $wallet->balance;
-                return;
-            }
 
             // Handle Manual Payment
             if ($this->payment_method === 'manual') {
@@ -178,6 +142,7 @@ new class extends Component {
         </button>
     </div>
     <div class="deposit-modal-content">
+        @auth
         <form wire:submit="submit" class="deposit-form-container">
             <!-- Balance Info -->
             <div class="deposit-balance-info">
@@ -223,11 +188,6 @@ new class extends Component {
             <div class="deposit-method-section">
                 <label class="deposit-method-label">Payment Method</label>
                 <div class="deposit-methods">
-                    <button type="button" class="deposit-method-btn {{ $payment_method === 'demo' ? 'active' : '' }}"
-                        wire:click="$set('payment_method', 'demo')">
-                        <i class="fas fa-flask"></i>
-                        <span>Demo Money (Test)</span>
-                    </button>
                     <button type="button"
                         class="deposit-method-btn {{ $payment_method === 'binancepay' ? 'active' : '' }}"
                         wire:click="$set('payment_method', 'binancepay')">
@@ -287,9 +247,7 @@ new class extends Component {
                 <p class="deposit-note">
                     <i class="fas fa-info-circle"></i>
                     <span>
-                        @if ($payment_method === 'demo')
-                            Demo money for testing purposes. Amount will be added instantly to your wallet.
-                        @elseif($payment_method === 'manual')
+                        @if($payment_method === 'manual')
                             Minimum deposit: ${{ $min_deposit }}. Enter your transaction code for manual verification.
                         @else
                             Minimum deposit: ${{ $min_deposit }}. Your payment will be processed securely.
@@ -298,6 +256,25 @@ new class extends Component {
                 </p>
             </div>
         </form>
+        @else
+        <div class="deposit-form-container" style="text-align: center; padding: 2rem;">
+            <div style="margin-bottom: 1.5rem;">
+                <i class="fas fa-lock" style="font-size: 3rem; color: var(--text-secondary, #666); margin-bottom: 1rem;"></i>
+            </div>
+            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Login Required</h4>
+            <p style="color: var(--text-secondary, #666); margin-bottom: 2rem;">
+                You must be logged in to make a deposit.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{{ route('login') }}" class="deposit-submit-btn" style="text-decoration: none; display: inline-block;">
+                    <i class="fas fa-sign-in-alt"></i> Log In
+                </a>
+                <a href="{{ route('register') }}" class="deposit-submit-btn" style="text-decoration: none; display: inline-block; background: var(--accent, #ffb11a);">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            </div>
+        </div>
+        @endauth
     </div>
 </div>
 

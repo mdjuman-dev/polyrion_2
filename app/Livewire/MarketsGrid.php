@@ -102,7 +102,13 @@ class MarketsGrid extends Component
 
     public function render()
     {
-        $query = Event::with('markets');
+        $query = Event::with(['markets' => function ($q) {
+            $q->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
+        }]);
 
         // Filter by tag if selected
         if (!empty($this->selectedTag)) {
@@ -182,6 +188,15 @@ class MarketsGrid extends Component
             default:
                 $query->orderBy('volume_24hr', 'desc');
         }
+
+        // Only show events that have at least one active (non-closed) market
+        $query->whereHas('markets', function ($q) {
+            $q->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
+        });
 
         $totalCount = $query->count();
 
