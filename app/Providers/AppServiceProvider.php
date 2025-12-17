@@ -30,15 +30,45 @@ class AppServiceProvider extends ServiceProvider
 
         // Share global settings with all views
         View::composer('*', function ($view) {
-            $view->with([
-                'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
-                'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
-                'favicon' => GlobalSetting::getValue('favicon'),
-                'logo' => GlobalSetting::getValue('logo'),
-                'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
-                'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
-                'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
-            ]);
+            try {
+                $view->with([
+                    'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
+                    'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
+                    'favicon' => GlobalSetting::getValue('favicon'),
+                    'logo' => GlobalSetting::getValue('logo'),
+                    'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
+                    'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
+                    'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // If database connection fails, use default values
+                Log::warning('Database connection failed in View composer, using defaults', [
+                    'error' => $e->getMessage()
+                ]);
+                $view->with([
+                    'appName' => config('app.name', 'Polyrion'),
+                    'appUrl' => config('app.url', url('/')),
+                    'favicon' => null,
+                    'logo' => null,
+                    'gaTrackingId' => null,
+                    'fbPixelId' => null,
+                    'tawkWidgetCode' => null,
+                ]);
+            } catch (\Exception $e) {
+                // Catch any other exceptions
+                Log::error('Error loading global settings in View composer', [
+                    'error' => $e->getMessage()
+                ]);
+                $view->with([
+                    'appName' => config('app.name', 'Polyrion'),
+                    'appUrl' => config('app.url', url('/')),
+                    'favicon' => null,
+                    'logo' => null,
+                    'gaTrackingId' => null,
+                    'fbPixelId' => null,
+                    'tawkWidgetCode' => null,
+                ]);
+            }
         });
     }
 
@@ -143,16 +173,17 @@ class AppServiceProvider extends ServiceProvider
                 config(['mail.from.name' => trim($mailFromName)]);
                 Log::info('From name set from database', ['name' => $mailFromName]);
             }
-        } catch (\Exception $e) {
-            // If database is not ready or table doesn't exist, use default config
-            // This prevents errors during migrations
-            Log::error('Error loading SMTP settings from database', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Database\QueryException $e) {
+            // If database connection fails, use default config
+            Log::warning('Database connection failed while loading SMTP settings, using defaults', [
+                'message' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
             // If database is not ready or table doesn't exist, use default config
             // This prevents errors during migrations
+            Log::error('Error loading SMTP settings from database', [
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
