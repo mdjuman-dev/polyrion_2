@@ -9,48 +9,58 @@
             <div class="row d-flex justify-content-between m-auto">
                 <!-- Left Column - User Profile -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profile-card" style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
-                        <div class="profile-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; position: relative;">
+                    <div class="profile-card"
+                        style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
+                        <div class="profile-header"
+                            style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; position: relative;">
                             <div class="profile-avatar-wrapper" style="flex-shrink: 0;">
-                                <div class="profile-avatar-gradient" style="width: 64px; height: 64px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border);">
+                                <div class="profile-avatar-gradient"
+                                    style="width: 64px; height: 64px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border);">
                                     <img src="{{ $profileImage }}" alt="{{ $user->name }}" loading="lazy"
                                         style="width: 100%; height: 100%; object-fit: cover;"
                                         onerror="this.src='{{ asset('frontend/assets/images/default-avatar.png') }}'">
                                 </div>
                             </div>
                             <div class="profile-info" style="flex: 1;">
-                                <div class="profile-id-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <span class="profile-id" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $user->name }}</span>
-                                    <a href="{{ route('profile.settings') }}" class="btn-icon" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; transition: all 0.3s ease;" 
-                                       onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'"
-                                       onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'"
-                                       title="View Profile Settings">
-                                        <i class="fas fa-arrow-right" style="font-size: 14px;"></i>
-                                    </a>
+                                <div class="profile-id-wrapper"
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span class="profile-id"
+                                        style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $user->name }}</span>
                                 </div>
                                 <div class="profile-meta" style="color: var(--text-secondary); font-size: 0.875rem;">
                                     <span>Member since {{ $user->created_at->format('M Y') }}</span>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Separator -->
                         <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
-                        
+
                         <div class="profile-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
                             <div class="stat-item">
-                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Positions Value</div>
-                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">${{ number_format($stats['positions_value'], 2) }}</div>
+                                <div class="stat-label"
+                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Positions
+                                    Value</div>
+                                <div class="stat-value"
+                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
+                                    ${{ number_format($stats['positions_value'], 2) }}</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Biggest Win</div>
-                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
+                                <div class="stat-label"
+                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Biggest
+                                    Win</div>
+                                <div class="stat-value"
+                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
                                     {{ $stats['biggest_win'] > 0 ? '$' . number_format($stats['biggest_win'], 2) : '—' }}
                                 </div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-label" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Predictions</div>
-                                <div class="stat-value" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $stats['predictions'] }}</div>
+                                <div class="stat-label"
+                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">
+                                    Predictions</div>
+                                <div class="stat-value"
+                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
+                                    {{ $stats['predictions'] }}</div>
                             </div>
                         </div>
                     </div>
@@ -58,11 +68,14 @@
 
                 <!-- Right Column - Profit/Loss  -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profit-loss-card" style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
-                        <div class="profit-loss-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div class="profit-loss-card"
+                        style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
+                        <div class="profit-loss-header"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                             <div class="profit-loss-title" style="display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-arrow-up profit-icon" style="color: #00c853; font-size: 1.125rem;"></i>
-                                <span style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary);">Profit/Loss</span>
+                                <span
+                                    style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary);">Profit/Loss</span>
                             </div>
                             <div class="time-filters" style="display: flex; gap: 0.5rem;">
                                 <button type="button" class="time-filter-btn active" data-time="1D"
@@ -82,12 +95,18 @@
                             </div>
                         </div>
                         <div class="profit-loss-content">
-                            <div class="profit-loss-value" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span class="pl-amount" id="profitLossAmount" style="font-size: 1.75rem; font-weight: 600; color: var(--text-primary);">$0.00</span>
-                                <i class="fas fa-info-circle pl-info-icon" title="Total profit/loss" style="color: var(--info); font-size: 1rem; cursor: help;"></i>
+                            <div class="profit-loss-value"
+                                style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span class="pl-amount" id="profitLossAmount"
+                                    style="font-size: 1.75rem; font-weight: 600; color: var(--text-primary);">$0.00</span>
+                                <i class="fas fa-info-circle pl-info-icon" title="Total profit/loss"
+                                    style="color: var(--info); font-size: 1rem; cursor: help;"></i>
                             </div>
-                            <div class="profit-loss-timeframe" id="profitLossTimeframe" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">Past Day</div>
-                            <div class="profit-loss-chart" style="height: 200px; position: relative; background: transparent; border-radius: 12px;">
+                            <div class="profit-loss-timeframe" id="profitLossTimeframe"
+                                style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">Past Day
+                            </div>
+                            <div class="profit-loss-chart"
+                                style="height: 200px; position: relative; background: transparent; border-radius: 12px;">
                                 <canvas id="profitLossChart"></canvas>
                             </div>
                         </div>
@@ -130,8 +149,8 @@
                                         <div class="filter-dropdown-menu" id="sortFilterMenu">
                                             <a href="#" class="filter-dropdown-item active"
                                                 data-sort="value">Value</a>
-                                            <a href="#" class="filter-dropdown-item" data-sort="profit">Profit/Loss
-                                                $</a>
+                                            <a href="#" class="filter-dropdown-item"
+                                                data-sort="profit">Profit/Loss</a>
                                             <a href="#" class="filter-dropdown-item"
                                                 data-sort="profit_pct">Profit/Loss %</a>
                                             <a href="#" class="filter-dropdown-item" data-sort="bet">Bet</a>
@@ -181,10 +200,21 @@
                                                     $position = $activePositions->firstWhere('trade.id', $trade->id);
                                                     $tradeStatus = strtoupper($trade->status ?? 'PENDING');
                                                     $isTradeClosed = $tradeStatus === 'CLOSED';
-                                                    $isTradeSettled = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']);
-                                                    $isActive = $position && $position['is_open'] && !$isTradeClosed && !$isTradeSettled;
+                                                    $isTradeSettled = in_array($tradeStatus, [
+                                                        'WON',
+                                                        'WIN',
+                                                        'LOST',
+                                                        'LOSS',
+                                                    ]);
+                                                    $isActive =
+                                                        $position &&
+                                                        $position['is_open'] &&
+                                                        !$isTradeClosed &&
+                                                        !$isTradeSettled;
                                                     $isClosed =
-                                                        $position && ($position['is_closed'] || $isTradeClosed) && !$position['has_result'];
+                                                        $position &&
+                                                        ($position['is_closed'] || $isTradeClosed) &&
+                                                        !$position['has_result'];
                                                     $hasResult = $position && $position['has_result'];
 
                                                     // Calculate current value and P/L (Polymarket style - matching first image)
@@ -220,23 +250,32 @@
 
                                                     // Calculate P/L (matching first image format)
                                                     $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
-                                                    if (($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') && ($trade->payout_amount || $trade->payout)) {
+                                                    if (
+                                                        ($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') &&
+                                                        ($trade->payout_amount || $trade->payout)
+                                                    ) {
                                                         // Already settled - use actual payout
-                                                        $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+                                                        $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
                                                         $profitLoss = $payout - $trade->amount;
                                                         // P/L % based on price change: ((current_price - avg_price) / avg_price) * 100
                                                         $profitLossPct =
                                                             $avgPrice > 0
                                                                 ? (($currentPrice - $avgPrice) / $avgPrice) * 100
                                                                 : 0;
-                                                    } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
+                                                    } elseif (
+                                                        $tradeStatusUpper === 'LOST' ||
+                                                        $tradeStatusUpper === 'LOSS'
+                                                    ) {
                                                         // Lost - lost the full amount
                                                         $profitLoss = -$trade->amount;
                                                         $profitLossPct = -100;
                                                     } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
                                                         // Closed position - use payout as sell value
                                                         $profitLoss = $trade->payout - $trade->amount;
-                                                        $profitLossPct = $trade->amount > 0 ? (($profitLoss / $trade->amount) * 100) : 0;
+                                                        $profitLossPct =
+                                                            $trade->amount > 0
+                                                                ? ($profitLoss / $trade->amount) * 100
+                                                                : 0;
                                                     } else {
                                                         // Pending - calculate based on current price (like first image)
                                                         $profitLoss = $currentValue - $trade->amount;
@@ -251,7 +290,11 @@
                                                 <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; cursor: pointer;"
                                                     class="position-row"
                                                     data-subtab="{{ strtoupper($trade->status ?? '') === 'PENDING' && $isActive ? 'active' : 'closed' }}"
-                                                    data-market="{{ strtolower($position['market']->question ?? '') }}">
+                                                    data-market="{{ strtolower($position['market']->question ?? '') }}"
+                                                    data-value="{{ $currentValue }}" data-profit="{{ $profitLoss }}"
+                                                    data-profit-pct="{{ $profitLossPct }}"
+                                                    data-bet="{{ $trade->amount }}" data-avg-price="{{ $avgPrice }}"
+                                                    data-current-price="{{ $currentPrice }}">
                                                     <td style="padding: 1rem; color: var(--text-primary);">
                                                         <div
                                                             style="font-weight: 500; font-size: 0.95rem; max-width: 450px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;">
@@ -288,7 +331,8 @@
                                                         ${{ number_format($currentValue, 2) }}
                                                     </td>
                                                     <td style="padding: 1rem; text-align: right;">
-                                                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.3rem;">
+                                                        <div
+                                                            style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.3rem;">
                                                             <span
                                                                 style="font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; 
                                                                 background: {{ $profitLoss >= 0 ? '#10b98120' : '#ef444420' }};
@@ -391,18 +435,21 @@
                                 <div class="activity-list" style="margin-top: 1.5rem;">
                                     @foreach ($allActivity as $activity)
                                         @if ($activity['type'] === 'trade')
-                                            @php 
+                                            @php
                                                 $trade = $activity['data'];
-                                                $amount = $trade->amount_invested ?? $trade->amount ?? 0;
+                                                $amount = $trade->amount_invested ?? ($trade->amount ?? 0);
                                                 $profitLoss = 0;
                                                 $profitLossLabel = '';
-                                                
+
                                                 $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
                                                 if ($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') {
-                                                    $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+                                                    $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
                                                     $profitLoss = $payout - $amount;
                                                     $profitLossLabel = 'Profit';
-                                                } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
+                                                } elseif (
+                                                    $tradeStatusUpper === 'LOST' ||
+                                                    $tradeStatusUpper === 'LOSS'
+                                                ) {
                                                     $profitLoss = -$amount;
                                                     $profitLossLabel = 'Loss';
                                                 } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
@@ -413,14 +460,27 @@
                                                     // Pending - calculate based on current market price if available
                                                     if ($trade->market) {
                                                         $market = $trade->market;
-                                                        $outcomePrices = is_string($market->outcome_prices ?? $market->outcomePrices ?? null) 
-                                                            ? json_decode($market->outcome_prices ?? $market->outcomePrices, true) 
-                                                            : ($market->outcome_prices ?? $market->outcomePrices ?? [0.5, 0.5]);
-                                                        
-                                                        $avgPrice = $trade->price_at_buy ?? $trade->price ?? 0.5;
-                                                        $outcome = strtoupper($trade->outcome ?? $trade->side ?? 'YES');
-                                                        $currentPrice = ($outcome === 'YES' && isset($outcomePrices[1])) ? $outcomePrices[1] : (($outcome === 'NO' && isset($outcomePrices[0])) ? $outcomePrices[0] : $avgPrice);
-                                                        
+                                                        $outcomePrices = is_string(
+                                                            $market->outcome_prices ?? ($market->outcomePrices ?? null),
+                                                        )
+                                                            ? json_decode(
+                                                                $market->outcome_prices ?? $market->outcomePrices,
+                                                                true,
+                                                            )
+                                                            : $market->outcome_prices ??
+                                                                ($market->outcomePrices ?? [0.5, 0.5]);
+
+                                                        $avgPrice = $trade->price_at_buy ?? ($trade->price ?? 0.5);
+                                                        $outcome = strtoupper(
+                                                            $trade->outcome ?? ($trade->side ?? 'YES'),
+                                                        );
+                                                        $currentPrice =
+                                                            $outcome === 'YES' && isset($outcomePrices[1])
+                                                                ? $outcomePrices[1]
+                                                                : ($outcome === 'NO' && isset($outcomePrices[0])
+                                                                    ? $outcomePrices[0]
+                                                                    : $avgPrice);
+
                                                         $shares = $avgPrice > 0 ? $amount / $avgPrice : $amount;
                                                         $currentValue = $shares * $currentPrice;
                                                         $profitLoss = $currentValue - $amount;
@@ -461,7 +521,8 @@
                                                     </div>
                                                 </div>
                                                 <div style="text-align: right;">
-                                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                                    <div
+                                                        style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.25rem;">
                                                         <span
                                                             style="font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; 
                                                             background: {{ $profitLoss >= 0 ? '#10b98120' : '#ef444420' }};
@@ -888,41 +949,146 @@
                         'font-weight': '600'
                     });
 
-                    // Filter positions by subtab
+                    // Filter positions by subtab - works with search
+                    const searchTerm = $('.search-input').val().toLowerCase();
                     $('.position-row').each(function() {
-                        const rowSubtab = $(this).data('subtab');
-                        if (subtab === 'active') {
-                            $(this).toggle(rowSubtab === 'active');
-                        } else {
-                            $(this).toggle(rowSubtab === 'closed');
-                        }
+                        const $row = $(this);
+                        const rowSubtab = $row.data('subtab');
+                        const marketText = ($row.data('market') || '').toLowerCase();
+                        const matchesSubtab = subtab === 'active' ? rowSubtab === 'active' :
+                            rowSubtab === 'closed';
+                        const matchesSearch = !searchTerm || marketText.includes(searchTerm);
+
+                        $row.toggle(matchesSubtab && matchesSearch);
                     });
                 });
 
                 // Filter dropdown
                 $('#sortFilterBtn').on('click', function(e) {
                     e.stopPropagation();
-                    $('#sortFilterMenu').toggle();
+                    const $wrapper = $(this).closest('.filter-dropdown-wrapper');
+                    $('.filter-dropdown-wrapper').not($wrapper).removeClass('active');
+                    $wrapper.toggleClass('active');
                 });
 
-                $(document).on('click', function() {
-                    $('#sortFilterMenu').hide();
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('.filter-dropdown-wrapper').length) {
+                        $('.filter-dropdown-wrapper').removeClass('active');
+                    }
                 });
 
-                $('.filter-dropdown-item').on('click', function(e) {
+                $('.filter-dropdown-item[data-sort]').on('click', function(e) {
                     e.preventDefault();
-                    $('.filter-dropdown-item').removeClass('active');
+                    $('.filter-dropdown-item[data-sort]').removeClass('active');
                     $(this).addClass('active');
                     const sort = $(this).data('sort');
                     $('#sortFilterBtn span').text($(this).text());
-                    $('#sortFilterMenu').hide();
-                    // TODO: Sort positions
+                    $(this).closest('.filter-dropdown-wrapper').removeClass('active');
+
+                    // Sort positions - only sort visible rows
+                    const $visibleRows = $('.position-row:visible').toArray();
+                    if ($visibleRows.length === 0) {
+                        // If no visible rows, sort all rows
+                        const $allRows = $('.position-row').toArray();
+                        $allRows.sort(function(a, b) {
+                            const $a = $(a);
+                            const $b = $(b);
+                            let valA, valB;
+
+                            switch (sort) {
+                                case 'value':
+                                    valA = parseFloat($a.data('value')) || 0;
+                                    valB = parseFloat($b.data('value')) || 0;
+                                    return valB - valA; // Descending
+                                case 'profit':
+                                    valA = parseFloat($a.data('profit')) || 0;
+                                    valB = parseFloat($b.data('profit')) || 0;
+                                    return valB - valA; // Descending
+                                case 'profit_pct':
+                                    valA = parseFloat($a.data('profitPct')) || 0;
+                                    valB = parseFloat($b.data('profitPct')) || 0;
+                                    return valB - valA; // Descending
+                                case 'bet':
+                                    valA = parseFloat($a.data('bet')) || 0;
+                                    valB = parseFloat($b.data('bet')) || 0;
+                                    return valB - valA; // Descending
+                                case 'alphabetical':
+                                    valA = ($a.data('market') || '').toLowerCase();
+                                    valB = ($b.data('market') || '').toLowerCase();
+                                    return valA.localeCompare(valB); // Ascending
+                                case 'avg_price':
+                                    valA = parseFloat($a.data('avgPrice')) || 0;
+                                    valB = parseFloat($b.data('avgPrice')) || 0;
+                                    return valB - valA; // Descending
+                                case 'current_price':
+                                    valA = parseFloat($a.data('currentPrice')) || 0;
+                                    valB = parseFloat($b.data('currentPrice')) || 0;
+                                    return valB - valA; // Descending
+                                default:
+                                    return 0;
+                            }
+                        });
+
+                        // Re-append sorted rows
+                        const $tbody = $('.positions-table tbody');
+                        $tbody.empty();
+                        $allRows.forEach(row => $tbody.append(row));
+                    } else {
+                        // Sort only visible rows
+                        $visibleRows.sort(function(a, b) {
+                            const $a = $(a);
+                            const $b = $(b);
+                            let valA, valB;
+
+                            switch (sort) {
+                                case 'value':
+                                    valA = parseFloat($a.data('value')) || 0;
+                                    valB = parseFloat($b.data('value')) || 0;
+                                    return valB - valA; // Descending
+                                case 'profit':
+                                    valA = parseFloat($a.data('profit')) || 0;
+                                    valB = parseFloat($b.data('profit')) || 0;
+                                    return valB - valA; // Descending
+                                case 'profit_pct':
+                                    valA = parseFloat($a.data('profitPct')) || 0;
+                                    valB = parseFloat($b.data('profitPct')) || 0;
+                                    return valB - valA; // Descending
+                                case 'bet':
+                                    valA = parseFloat($a.data('bet')) || 0;
+                                    valB = parseFloat($b.data('bet')) || 0;
+                                    return valB - valA; // Descending
+                                case 'alphabetical':
+                                    valA = ($a.data('market') || '').toLowerCase();
+                                    valB = ($b.data('market') || '').toLowerCase();
+                                    return valA.localeCompare(valB); // Ascending
+                                case 'avg_price':
+                                    valA = parseFloat($a.data('avgPrice')) || 0;
+                                    valB = parseFloat($b.data('avgPrice')) || 0;
+                                    return valB - valA; // Descending
+                                case 'current_price':
+                                    valA = parseFloat($a.data('currentPrice')) || 0;
+                                    valB = parseFloat($b.data('currentPrice')) || 0;
+                                    return valB - valA; // Descending
+                                default:
+                                    return 0;
+                            }
+                        });
+
+                        // Re-append sorted visible rows, then append hidden rows
+                        const $tbody = $('.positions-table tbody');
+                        const $hiddenRows = $('.position-row:hidden').toArray();
+                        $tbody.empty();
+                        $visibleRows.forEach(row => $tbody.append(row));
+                        $hiddenRows.forEach(row => $tbody.append(row));
+                    }
                 });
 
                 // Amount filter dropdown
                 $('#amountFilterBtn').on('click', function(e) {
                     e.stopPropagation();
-                    $('#amountFilterMenu').toggle();
+                    const $wrapper = $(this).closest('.filter-dropdown-wrapper');
+                    $('.filter-dropdown-wrapper').not($wrapper).removeClass('active');
+                    $wrapper.toggleClass('active');
                 });
 
                 $('.filter-dropdown-item[data-amount]').on('click', function(e) {
@@ -931,45 +1097,104 @@
                     $(this).addClass('active');
                     const amount = $(this).data('amount');
                     $('#amountFilterBtn span').text($(this).text());
-                    $('#amountFilterMenu').hide();
-                    // TODO: Filter activity by amount
+                    $(this).closest('.filter-dropdown-wrapper').removeClass('active');
+
+                    // Filter activity by amount - works with search
+                    const searchTerm = $('#activitySearchInput').val().toLowerCase();
+                    const $activityItems = $('.activity-item');
+
+                    $activityItems.each(function() {
+                        const $item = $(this);
+                        const itemAmount = parseFloat($item.data('amount')) || 0;
+                        const activityId = $item.data('activity-id') || '';
+                        const activityText = $item.text().toLowerCase();
+
+                        // Check amount filter
+                        let matchesAmount = true;
+                        if (amount !== 'all') {
+                            const minAmount = parseFloat(amount);
+                            matchesAmount = itemAmount >= minAmount;
+                        }
+
+                        // Check search filter
+                        const matchesSearch = !searchTerm || activityId.toString().includes(
+                            searchTerm) || activityText.includes(searchTerm);
+
+                        $item.toggle(matchesAmount && matchesSearch);
+                    });
                 });
 
-                // Search functionality for positions
+                // Search functionality for positions - works with Active/Closed filter
                 $('.search-input').on('input', function() {
                     const searchTerm = $(this).val().toLowerCase();
+                    const activeSubtab = $('.subtab-btn.active').data('subtab') || 'active';
+
                     $('.position-row').each(function() {
-                        const marketText = $(this).data('market') || '';
-                        $(this).toggle(marketText.includes(searchTerm));
+                        const $row = $(this);
+                        const marketText = ($row.data('market') || '').toLowerCase();
+                        const rowSubtab = $row.data('subtab');
+                        const matchesSearch = !searchTerm || marketText.includes(searchTerm);
+                        const matchesSubtab = activeSubtab === 'active' ? rowSubtab === 'active' :
+                            rowSubtab === 'closed';
+
+                        $row.toggle(matchesSearch && matchesSubtab);
                     });
                 });
 
-                // Activity search
+                // Activity search - works with amount filter
                 $('#activitySearchInput').on('input', function() {
                     const searchTerm = $(this).val().toLowerCase();
+                    const selectedAmount = $('.filter-dropdown-item[data-amount].active').data('amount') ||
+                        'all';
+
                     $('.activity-item').each(function() {
-                        const activityId = $(this).data('activity-id') || '';
-                        const activityText = $(this).text().toLowerCase();
-                        $(this).toggle(activityId.toString().includes(searchTerm) || activityText
-                            .includes(searchTerm));
+                        const $item = $(this);
+                        const activityId = $item.data('activity-id') || '';
+                        const activityText = $item.text().toLowerCase();
+                        const matchesSearch = !searchTerm || activityId.toString().includes(
+                            searchTerm) || activityText.includes(searchTerm);
+
+                        // Check amount filter
+                        let matchesAmount = true;
+                        if (selectedAmount !== 'all') {
+                            const itemAmount = parseFloat($item.data('amount')) || 0;
+                            matchesAmount = itemAmount >= parseFloat(selectedAmount);
+                        }
+
+                        $item.toggle(matchesSearch && matchesAmount);
                     });
                 });
 
-                // Withdrawal search
+                // Withdrawal search - works with status filter
                 $('#withdrawalSearchInput').on('input', function() {
                     const searchTerm = $(this).val().toLowerCase();
+                    const selectedStatus = $('.filter-dropdown-item[data-status].active').data('status') ||
+                        'all';
+
                     $('.withdrawal-item').each(function() {
-                        const withdrawalId = $(this).data('withdrawal-id') || '';
-                        const withdrawalText = $(this).text().toLowerCase();
-                        $(this).toggle(withdrawalId.toString().includes(searchTerm) || withdrawalText
-                            .includes(searchTerm));
+                        const $item = $(this);
+                        const withdrawalId = $item.data('withdrawal-id') || '';
+                        const withdrawalText = $item.text().toLowerCase();
+                        const matchesSearch = !searchTerm || withdrawalId.toString().includes(
+                            searchTerm) || withdrawalText.includes(searchTerm);
+
+                        // Check status filter
+                        let matchesStatus = true;
+                        if (selectedStatus !== 'all') {
+                            const itemStatus = $item.data('status');
+                            matchesStatus = itemStatus === selectedStatus;
+                        }
+
+                        $item.toggle(matchesSearch && matchesStatus);
                     });
                 });
 
                 // Withdrawal status filter
                 $('#withdrawalStatusFilterBtn').on('click', function(e) {
                     e.stopPropagation();
-                    $('#withdrawalStatusFilterMenu').toggle();
+                    const $wrapper = $(this).closest('.filter-dropdown-wrapper');
+                    $('.filter-dropdown-wrapper').not($wrapper).removeClass('active');
+                    $wrapper.toggleClass('active');
                 });
 
                 $('.filter-dropdown-item[data-status]').on('click', function(e) {
@@ -978,16 +1203,30 @@
                     $(this).addClass('active');
                     const status = $(this).data('status');
                     $('#withdrawalStatusFilterBtn span').text($(this).text());
-                    $('#withdrawalStatusFilterMenu').hide();
+                    $(this).closest('.filter-dropdown-wrapper').removeClass('active');
 
-                    if (status === 'all') {
-                        $('.withdrawal-item').show();
-                    } else {
-                        $('.withdrawal-item').each(function() {
-                            const itemStatus = $(this).data('status');
-                            $(this).toggle(itemStatus === status);
-                        });
-                    }
+                    // Filter withdrawal by status - works with search
+                    const searchTerm = $('#withdrawalSearchInput').val().toLowerCase();
+                    const $withdrawalItems = $('.withdrawal-item');
+
+                    $withdrawalItems.each(function() {
+                        const $item = $(this);
+                        const itemStatus = $item.data('status');
+                        const withdrawalId = $item.data('withdrawal-id') || '';
+                        const withdrawalText = $item.text().toLowerCase();
+
+                        // Check status filter
+                        let matchesStatus = true;
+                        if (status !== 'all') {
+                            matchesStatus = itemStatus === status;
+                        }
+
+                        // Check search filter
+                        const matchesSearch = !searchTerm || withdrawalId.toString().includes(
+                            searchTerm) || withdrawalText.includes(searchTerm);
+
+                        $item.toggle(matchesStatus && matchesSearch);
+                    });
                 });
 
                 // Initialize profit/loss
@@ -1077,18 +1316,21 @@
             });
 
             let profitLossChart = null;
-            
+
             // Real profit/loss data from backend
             const profitLossData = @json($profitLossData ?? []);
 
             function getProfitLossDataForTimeframe(timeframe) {
                 if (!profitLossData || profitLossData.length === 0) {
-                    return { labels: [], data: [] };
+                    return {
+                        labels: [],
+                        data: []
+                    };
                 }
 
                 const today = new Date();
                 let cutoffDate = new Date();
-                
+
                 if (timeframe === '1D') {
                     cutoffDate.setDate(today.getDate() - 1);
                 } else if (timeframe === '1W') {
@@ -1111,22 +1353,34 @@
 
                 // If no data for selected timeframe, return empty
                 if (filteredData.length === 0) {
-                    return { labels: [], data: [] };
+                    return {
+                        labels: [],
+                        data: []
+                    };
                 }
 
                 // Extract labels and values
                 const labels = filteredData.map(item => {
                     const date = new Date(item.date);
                     if (timeframe === '1D') {
-                        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        return date.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
                     } else {
-                        return item.label || date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        return item.label || date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric'
+                        });
                     }
                 });
-                
+
                 const data = filteredData.map(item => parseFloat(item.value) || 0);
 
-                return { labels, data };
+                return {
+                    labels,
+                    data
+                };
             }
 
             function initProfitLossChart(timeframe = '1D') {
@@ -1142,7 +1396,7 @@
                 }
 
                 const chartData = getProfitLossDataForTimeframe(timeframe);
-                
+
                 // If no data, show zero
                 if (chartData.data.length === 0) {
                     $('#profitLossAmount').text('$0.00');
@@ -1165,12 +1419,20 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: false },
-                                tooltip: { enabled: false }
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
+                                }
                             },
                             scales: {
-                                x: { display: false },
-                                y: { display: false }
+                                x: {
+                                    display: false
+                                },
+                                y: {
+                                    display: false
+                                }
                             }
                         }
                     });

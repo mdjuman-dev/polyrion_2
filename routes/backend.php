@@ -78,6 +78,14 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::post('/deposit/{depositId}/process', 'manualProcess')->name('deposit.manual.process');
         });
 
+        // Deposit Management Routes
+        Route::controller(\App\Http\Controllers\Backend\DepositController::class)->prefix('deposits')->name('deposits.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{id}', 'show')->name('show');
+            Route::post('/{id}/approve', 'approve')->name('approve');
+            Route::post('/{id}/reject', 'reject')->name('reject');
+        });
+
         // Withdrawal Management Routes
         Route::controller(\App\Http\Controllers\Backend\WithdrawalController::class)->prefix('withdrawal')->name('withdrawal.')->group(function () {
             Route::get('/', 'index')->name('index');

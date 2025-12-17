@@ -902,10 +902,38 @@
 
                                                     <div class="row">
                                                         <div class="col-md-12">
-                                                            <button type="button" class="btn btn-danger"
-                                                                onclick="confirm('Are you sure you want to clear the database?') && this.form.submit()">
+                                                            <button type="button" class="btn btn-danger" id="clearDatabaseBtn">
                                                                 <i data-feather="trash-2"></i> Clear Database
                                                             </button>
+                                                            <script>
+                                                                document.addEventListener('DOMContentLoaded', function() {
+                                                                    const clearBtn = document.getElementById('clearDatabaseBtn');
+                                                                    if (clearBtn) {
+                                                                        clearBtn.addEventListener('click', function(e) {
+                                                                            e.preventDefault();
+                                                                            const form = this.closest('form');
+                                                                            if (typeof Swal !== 'undefined') {
+                                                                                Swal.fire({
+                                                                                    title: 'Are you sure?',
+                                                                                    text: 'Are you sure you want to clear the database? This action cannot be undone!',
+                                                                                    icon: 'warning',
+                                                                                    showCancelButton: true,
+                                                                                    confirmButtonColor: '#d33',
+                                                                                    cancelButtonColor: '#6c757d',
+                                                                                    confirmButtonText: 'Yes, clear database',
+                                                                                    cancelButtonText: 'Cancel'
+                                                                                }).then((result) => {
+                                                                                    if (result.isConfirmed && form) {
+                                                                                        form.submit();
+                                                                                    }
+                                                                                });
+                                                                            } else if (confirm('Are you sure you want to clear the database?') && form) {
+                                                                                form.submit();
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                });
+                                                            </script>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2004,7 +2032,26 @@
         });
         // Reset form function (preserve file inputs)
         function resetForm() {
-            if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to reset all form fields? This will clear any unsaved changes.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, reset',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performReset();
+                    }
+                });
+            } else if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+                performReset();
+            }
+            
+            function performReset() {
                 const form = document.getElementById('settingsForm');
                 const logoInput = document.getElementById('site_logo');
                 const faviconInput = document.getElementById('favicon');
@@ -2032,6 +2079,26 @@
                 // Clear previews
                 removeLogoPreview();
                 removeFaviconPreview();
+            }
+            
+            // Call confirmation first
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to reset all form fields? This will clear any unsaved changes.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, reset',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performReset();
+                    }
+                });
+            } else if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+                performReset();
             }
         }
 

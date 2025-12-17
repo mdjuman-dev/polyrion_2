@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="{{ asset('backend/assets/images/favicon.ico') }}">
 
     <title>@yield('title') | Polymarkets</title>
@@ -739,6 +740,36 @@
             } else {
                 // Fallback to default confirm if SweetAlert is not available
                 return confirm(message || 'Are you sure?');
+            }
+        }
+
+        // Handle delete confirmation for form submissions
+        function handleDeleteConfirm(event, message) {
+            event.preventDefault();
+            const form = event.target;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed && form) {
+                        form.submit();
+                    }
+                });
+                return false;
+            } else {
+                if (confirm(message || 'Are you sure?')) {
+                    form.submit();
+                    return true;
+                }
+                return false;
             }
         }
 

@@ -171,7 +171,7 @@ class Comments extends Component
             ->limit(10) // Limit to 10 comments for initial load (reduced from 20)
             ->get();
 
-        // Use cached count or simple count query
+        // Optimize count query - reuse same conditions as main query
         $commentsCount = EventComment::where('event_id', $this->event->id)
             ->whereNull('parent_comment_id')
             ->where(function ($q) {

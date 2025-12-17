@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Favicon -->
@@ -177,15 +177,17 @@
                                             </div>
                                             <div class="header-user-info">
                                                 <a href="{{ route('profile.index') }}">
-                                                    <div class="header-user-name">
+                                                    @if (auth()->user()->name)
+                                                        <div class="header-user-name">
+                                                            {{ auth()->user()->name }}
+                                                        </div>
+                                                    @endif
+
+                                                    <div class="header-user-name text-muted">
                                                         {{ auth()->user()->username }}
                                                     </div>
                                                 </a>
-                                                @if (auth()->user()->email)
-                                                    <div class="header-user-sub">
-                                                        {{ auth()->user()->email }}
-                                                    </div>
-                                                @endif
+
                                             </div>
                                         </div>
                                         <div class="header-menu-divider">
@@ -386,7 +388,7 @@
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav d-lg-none d-flex">
-        <a href="{{ route('home') }}    " class="mobile-nav-item active">
+        <a href="{{ route('home') }}" class="mobile-nav-item active">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
@@ -1845,15 +1847,13 @@
                 const method = $(this).data("method");
                 if (method === 'manual') {
                     $("#queryCodeGroup").slideDown(200);
-                    $("#depositNoteText").text("Minimum deposit: $10. Enter your transaction code for manual verification.");
-                } else if (method === 'demo') {
-                    $("#queryCodeGroup").slideUp(200);
-                    $("#queryCode").val("");
-                    $("#depositNoteText").text("Demo money for testing purposes. Amount will be added instantly to your wallet.");
+                    $("#depositNoteText").text(
+                        "Minimum deposit: $10. Enter your transaction code for manual verification.");
                 } else {
                     $("#queryCodeGroup").slideUp(200);
                     $("#queryCode").val("");
-                    $("#depositNoteText").text("Minimum deposit: $10. Your payment will be processed securely.");
+                    $("#depositNoteText").text(
+                        "Minimum deposit: $10. Your payment will be processed securely.");
                 }
             });
 
@@ -1861,12 +1861,19 @@
             $depositSubmit.on("click", function(e) {
                 e.preventDefault();
                 const amount = parseFloat($depositAmount.val());
-                const method = $methodBtns.filter('.active').data('method') || 'demo';
+                const method = $methodBtns.filter('.active').data('method') || 'binancepay';
                 const currency = 'USDT';
 
                 if (!amount || amount <= 0) {
                     if (typeof showWarning !== 'undefined') {
                         showWarning('Please enter a valid amount', 'Invalid Amount');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Amount',
+                            text: 'Please enter a valid amount',
+                            confirmButtonColor: '#ffb11a'
+                        });
                     } else if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
@@ -1890,6 +1897,13 @@
                             text: 'Minimum deposit amount is $10',
                             confirmButtonColor: '#ffb11a'
                         });
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Minimum Amount Required',
+                            text: 'Minimum deposit amount is $10',
+                            confirmButtonColor: '#ffb11a'
+                        });
                     } else {
                         alert('Minimum deposit amount is $10');
                     }
@@ -1900,83 +1914,6 @@
                 const $btn = $(this);
                 const originalText = $btn.html();
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
-
-                // Handle Demo Money (Test Deposit)
-                if (method === 'demo') {
-                    $.ajax({
-                        url: '{{ route('wallet.deposit') }}',
-                        method: 'POST',
-                        data: {
-                            amount: amount,
-                            method: 'demo',
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                // Close modal first
-                                closeDepositModal();
-                                
-                                // Show success message
-                                if (typeof Swal !== 'undefined') {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Deposit Successful!',
-                                        html: `Demo money added successfully!<br><strong>Amount:</strong> $${response.amount}<br><strong>New Balance:</strong> $${response.balance}`,
-                                        confirmButtonText: 'OK',
-                                        confirmButtonColor: '#ffb11a'
-                                    }).then(() => {
-                                        // Reload page to update balance
-                                        window.location.reload();
-                                    });
-                                } else if (typeof showSuccess !== 'undefined') {
-                                    showSuccess(`Demo money added! New balance: $${response.balance}`, 'Deposit Successful');
-                                    setTimeout(() => window.location.reload(), 1000);
-                                } else {
-                                    alert(`Demo money added! New balance: $${response.balance}`);
-                                    window.location.reload();
-                                }
-                            } else {
-                                if (typeof showError !== 'undefined') {
-                                    showError(response.message || 'Deposit failed. Please try again.', 'Deposit Error');
-                                } else if (typeof Swal !== 'undefined') {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Deposit Failed',
-                                        text: response.message || 'Deposit failed. Please try again.',
-                                        confirmButtonColor: '#ffb11a'
-                                    });
-                                } else {
-                                    alert(response.message || 'Deposit failed. Please try again.');
-                                }
-                                $btn.prop("disabled", false).html(originalText);
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMessage = "Deposit failed. Please try again.";
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                                const errors = Object.values(xhr.responseJSON.errors).flat();
-                                errorMessage = errors.join('\n');
-                            }
-                            
-                            if (typeof showError !== 'undefined') {
-                                showError(errorMessage, 'Deposit Error');
-                            } else if (typeof Swal !== 'undefined') {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Deposit Error',
-                                    text: errorMessage,
-                                    confirmButtonColor: '#ffb11a'
-                                });
-                            } else {
-                                alert(errorMessage);
-                            }
-                            $btn.prop("disabled", false).html(originalText);
-                        }
-                    });
-                    return;
-                }
 
                 // Handle Binance Pay
                 if (method === 'binancepay') {

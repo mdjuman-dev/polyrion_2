@@ -121,23 +121,27 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info
+        // Get all trades with market info - eager load market.event
         $trades = Trade::where('user_id', $user->id)
-            ->with('market')
+            ->with('market.event')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Calculate statistics
-        $totalTrades = Trade::where('user_id', $user->id)->count();
-        $totalAmount = Trade::where('user_id', $user->id)->sum('amount');
-        $pendingTrades = Trade::where('user_id', $user->id)->where('status', 'pending')->count();
-        $winTrades = Trade::where('user_id', $user->id)->where('status', 'win')->count();
-        $lossTrades = Trade::where('user_id', $user->id)->where('status', 'loss')->count();
-        $totalPayout = Trade::where('user_id', $user->id)->where('status', 'win')->sum('payout_amount');
+        // Calculate statistics - optimize with base query
+        $baseQuery = Trade::where('user_id', $user->id);
+        $totalTrades = (clone $baseQuery)->count();
+        $totalAmount = (clone $baseQuery)->sum('amount');
+        $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
+        $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
+        $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
         
-        // Get first and last trade dates
-        $firstTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'asc')->first();
-        $lastTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
+        // Get first and last trade dates - optimize with single query
+        $tradeDates = (clone $baseQuery)
+            ->selectRaw('MIN(created_at) as first_trade, MAX(created_at) as last_trade')
+            ->first();
+        $firstTrade = $tradeDates ? (object)['created_at' => $tradeDates->first_trade] : null;
+        $lastTrade = $tradeDates ? (object)['created_at' => $tradeDates->last_trade] : null;
 
         return response()->json([
             'success' => true,
@@ -162,23 +166,27 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info
+        // Get all trades with market info - eager load market.event
         $trades = Trade::where('user_id', $user->id)
-            ->with('market')
+            ->with('market.event')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Calculate statistics
-        $totalTrades = Trade::where('user_id', $user->id)->count();
-        $totalAmount = Trade::where('user_id', $user->id)->sum('amount');
-        $pendingTrades = Trade::where('user_id', $user->id)->where('status', 'pending')->count();
-        $winTrades = Trade::where('user_id', $user->id)->where('status', 'win')->count();
-        $lossTrades = Trade::where('user_id', $user->id)->where('status', 'loss')->count();
-        $totalPayout = Trade::where('user_id', $user->id)->where('status', 'win')->sum('payout_amount');
+        // Calculate statistics - optimize with base query
+        $baseQuery = Trade::where('user_id', $user->id);
+        $totalTrades = (clone $baseQuery)->count();
+        $totalAmount = (clone $baseQuery)->sum('amount');
+        $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
+        $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
+        $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
         
-        // Get first and last trade dates
-        $firstTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'asc')->first();
-        $lastTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
+        // Get first and last trade dates - optimize with single query
+        $tradeDates = (clone $baseQuery)
+            ->selectRaw('MIN(created_at) as first_trade, MAX(created_at) as last_trade')
+            ->first();
+        $firstTrade = $tradeDates ? (object)['created_at' => $tradeDates->first_trade] : null;
+        $lastTrade = $tradeDates ? (object)['created_at' => $tradeDates->last_trade] : null;
 
         return view('frontend.trades_history', compact('trades', 'totalTrades', 'totalAmount', 'pendingTrades', 'winTrades', 'lossTrades', 'totalPayout', 'firstTrade', 'lastTrade'));
     }

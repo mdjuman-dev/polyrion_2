@@ -31,6 +31,13 @@
                     </a>
                 </li>
 
+                <li class="{{ request()->routeIs('admin.deposits.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.deposits.index') }}">
+                        <i data-feather="credit-card"></i>
+                        <span>Deposits</span>
+                    </a>
+                </li>
+
                 <li class="{{ request()->routeIs('admin.withdrawal.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.withdrawal.index') }}">
                         <i data-feather="dollar-sign"></i>

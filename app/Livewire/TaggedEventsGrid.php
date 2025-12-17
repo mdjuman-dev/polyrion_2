@@ -41,7 +41,19 @@ class TaggedEventsGrid extends Component
 
         $query = Event::whereHas('tags', function ($q) use ($tag) {
             $q->where('tags.id', $tag->id);
-        })->with('markets');
+        })->with(['markets' => function ($q) {
+            $q->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
+        }])->whereHas('markets', function ($q) {
+            $q->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
+        });
 
         if (!empty($this->search)) {
             $query->where(function ($q) {
@@ -52,7 +64,7 @@ class TaggedEventsGrid extends Component
             });
         }
 
-        $totalCount = $query->count();
+        $totalCount = (clone $query)->count();
 
         $events = $query->orderBy('volume', 'desc')
             ->take($this->perPage)
