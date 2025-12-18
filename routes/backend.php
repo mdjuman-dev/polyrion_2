@@ -10,6 +10,7 @@ use App\Http\Controllers\Backend\CommentController;
 use App\Http\Controllers\Backend\BinancePayController;
 use App\Http\Controllers\Backend\RolePermissionController;
 use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\Backend\PaymentSettingsController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -71,6 +72,12 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
             Route::get('/setting', 'setting')->name('setting');
             Route::post('/setting/update', 'settingUpdate')->name('setting.update');
+        });
+
+        // Payment Settings Routes
+        Route::controller(PaymentSettingsController::class)->prefix('payment')->name('payment.')->group(function () {
+            Route::get('/settings', 'index')->name('settings');
+            Route::post('/settings', 'update')->name('settings.update');
         });
 
         // Binance Pay Management Routes
