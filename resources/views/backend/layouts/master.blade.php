@@ -8,7 +8,11 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" href="{{ asset('backend/assets/images/favicon.ico') }}">
+    @php
+        $siteFavicon = \App\Models\GlobalSetting::getValue('favicon');
+        $siteLogo = \App\Models\GlobalSetting::getValue('logo');
+    @endphp
+    <link rel="icon" href="{{ $siteFavicon ? asset('storage/' . $siteFavicon) : asset('backend/assets/images/favicon.ico') }}">
 
     <title>@yield('title') | Polymarkets</title>
 
@@ -198,19 +202,19 @@
         <header class=" main-header">
             <div class="d-flex align-items-center logo-box justify-content-start">
                 <!-- Logo -->
-                <a href="index.html" class="logo">
+                <a href="{{ route('admin.backend.dashboard') }}" class="logo">
                     <!-- logo-->
                     <div class="logo-mini w-30">
-                        <span class="light-logo"><img src="{{ asset('backend/assets/images/logo-letter.png') }}"
-                                alt="logo"></span>
-                        <span class="dark-logo"><img src="{{ asset('backend/assets/images/logo-letter.png') }}"
-                                alt="logo"></span>
+                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                                alt="logo" style="max-height: 30px;"></span>
+                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                                alt="logo" style="max-height: 30px;"></span>
                     </div>
                     <div class="logo-lg">
-                        <span class="light-logo"><img src="{{ asset('backend/assets/images/logo-dark-text.png') }}"
-                                alt="logo"></span>
-                        <span class="dark-logo"><img src="{{ asset('backend/assets/images/logo-light-text.png') }}"
-                                alt="logo"></span>
+                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-dark-text.png') }}"
+                                alt="logo" style="max-height: 40px;"></span>
+                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-light-text.png') }}"
+                                alt="logo" style="max-height: 40px;"></span>
                     </div>
                 </a>
             </div>

@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Deposit;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Models\GlobalSetting;
 
 class MetaMaskController extends Controller
 {
@@ -774,12 +775,12 @@ class MetaMaskController extends Controller
     {
         switch (strtolower($network)) {
             case 'bsc':
-                return env('BSCSCAN_API_KEY') ?: env('ETHERSCAN_API_KEY');
+                return GlobalSetting::getValue('bscscan_api_key') ?: GlobalSetting::getValue('etherscan_api_key') ?: env('BSCSCAN_API_KEY') ?: env('ETHERSCAN_API_KEY');
             case 'polygon':
-                return env('POLYGONSCAN_API_KEY') ?: env('ETHERSCAN_API_KEY');
+                return GlobalSetting::getValue('polygonscan_api_key') ?: GlobalSetting::getValue('etherscan_api_key') ?: env('POLYGONSCAN_API_KEY') ?: env('ETHERSCAN_API_KEY');
             case 'ethereum':
             default:
-                return env('ETHERSCAN_API_KEY');
+                return GlobalSetting::getValue('etherscan_api_key') ?: env('ETHERSCAN_API_KEY');
         }
     }
 
@@ -790,12 +791,12 @@ class MetaMaskController extends Controller
     {
         switch (strtolower($network)) {
             case 'bsc':
-                return env('MERCHANT_ADDRESS_BSC') ?: env('MERCHANT_ADDRESS');
+                return GlobalSetting::getValue('merchant_address_bsc') ?: GlobalSetting::getValue('merchant_address') ?: env('MERCHANT_ADDRESS_BSC') ?: env('MERCHANT_ADDRESS');
             case 'polygon':
-                return env('MERCHANT_ADDRESS_POLYGON') ?: env('MERCHANT_ADDRESS');
+                return GlobalSetting::getValue('merchant_address_polygon') ?: GlobalSetting::getValue('merchant_address') ?: env('MERCHANT_ADDRESS_POLYGON') ?: env('MERCHANT_ADDRESS');
             case 'ethereum':
             default:
-                return env('MERCHANT_ADDRESS');
+                return GlobalSetting::getValue('merchant_address') ?: env('MERCHANT_ADDRESS');
         }
     }
 

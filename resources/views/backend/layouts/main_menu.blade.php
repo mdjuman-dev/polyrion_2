@@ -52,6 +52,13 @@
                     </a>
                 </li>
 
+                <li class="{{ request()->routeIs('admin.payment.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.payment.settings') }}">
+                        <i data-feather="credit-card"></i>
+                        <span>Payment Settings</span>
+                    </a>
+                </li>
+
                 <li class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.roles.index') }}">
                         <i data-feather="shield"></i>
