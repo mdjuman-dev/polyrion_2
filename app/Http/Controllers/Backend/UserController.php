@@ -20,6 +20,7 @@ class UserController extends Controller
     {
         // Don't require admin auth for returnToAdmin method
         $this->middleware('auth:admin')->except(['returnToAdmin']);
+        // Permission checks are handled in routes
     }
 
     /**

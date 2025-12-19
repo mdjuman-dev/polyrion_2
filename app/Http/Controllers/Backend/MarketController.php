@@ -15,6 +15,11 @@ use Illuminate\Validation\Rule;
 
 class MarketController extends Controller
 {
+    public function __construct()
+    {
+        // Permission checks are handled in routes
+    }
+
     /**
      * Display a listing of markets
      */

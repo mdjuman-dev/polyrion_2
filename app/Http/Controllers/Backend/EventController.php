@@ -22,6 +22,7 @@ class EventController extends Controller
         $this->categoryDetector = $categoryDetector;
         // Ensure only authenticated admins can access
         $this->middleware('auth:admin')->except([]);
+        // Permission checks are handled in routes
     }
 
     /**

@@ -21,9 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Register Spatie permission middleware aliases
+        // Use custom permission middleware that bypasses super admin
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'permission' => \App\Http\Middleware\SuperAdminPermission::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
     })

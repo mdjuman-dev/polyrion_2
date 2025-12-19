@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentSettingsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:manage payment settings,admin');
+    }
+
     public function index()
     {
         $settings = GlobalSetting::getAllSettings();

@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Log;
 
 class WithdrawalController extends Controller
 {
+    public function __construct()
+    {
+        // Permission checks are handled in routes
+    }
+
     /**
      * Display all withdrawal requests
      */

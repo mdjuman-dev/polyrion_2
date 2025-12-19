@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\File;
 
 class GlobalSettingsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:manage global settings,admin');
+    }
+
     public function setting()
     {
         // Get all settings grouped by category
