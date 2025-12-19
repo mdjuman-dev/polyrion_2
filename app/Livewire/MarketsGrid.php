@@ -112,35 +112,16 @@ class MarketsGrid extends Component
 
     public function render()
     {
-        // Eager load markets based on status filter (same logic as admin panel)
+        // Frontend always shows only active events
+        // Eager load only active markets
         $query = Event::with(['markets' => function ($q) {
-            if ($this->status === 'closed') {
-                // Closed: closed=true (same as admin panel)
-                $q->where('closed', true);
-            } elseif ($this->status === 'active') {
-                // Active: active=true AND closed=false
-                $q->where('active', true)
-                  ->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            } elseif ($this->status === 'pending') {
-                // Inactive: active=false AND closed=false
-                $q->where('active', false)
-                  ->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            } else {
-                // Default: load non-closed markets
-                $q->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            }
+            // Only active markets: active=true AND closed=false
+            $q->where('active', true)
+              ->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
         }]);
 
         // Filter by tag if selected
@@ -150,17 +131,8 @@ class MarketsGrid extends Component
             });
         }
 
-        // Filter by status (same logic as admin panel)
-        if ($this->status === 'active') {
-            // Active: active=true AND closed=false
-            $query->where('active', true)->where('closed', false);
-        } elseif ($this->status === 'closed') {
-            // Closed: closed=true (same as admin panel)
-            $query->where('closed', true);
-        } elseif ($this->status === 'pending') {
-            // Inactive: active=false AND closed=false (not closed but not active)
-            $query->where('active', false)->where('closed', false);
-        }
+        // Frontend always shows only active events
+        $query->where('active', true)->where('closed', false);
 
         // Filter by frequency (based on end_date)
         if ($this->frequency === 'daily') {
@@ -195,38 +167,17 @@ class MarketsGrid extends Component
             $query->where(function ($q) {
                 $q->where('title', 'like', '%' . $this->search . '%')
                     ->orWhereHas('markets', function ($marketQuery) {
-                        // Apply status filter to market search (same as admin panel)
-                        if ($this->status === 'closed') {
-                            // Closed: closed=true
-                            $marketQuery->where('closed', true);
-                        } elseif ($this->status === 'active') {
-                            // Active: active=true AND closed=false
-                            $marketQuery->where('active', true)
-                              ->where('closed', false)
-                              ->where(function ($query) {
-                                  $query->whereNull('close_time')
-                                        ->orWhere('close_time', '>', now());
-                              });
-                        } elseif ($this->status === 'pending') {
-                            // Inactive: active=false AND closed=false
-                            $marketQuery->where('active', false)
-                              ->where('closed', false)
-                              ->where(function ($query) {
-                                  $query->whereNull('close_time')
-                                        ->orWhere('close_time', '>', now());
-                              });
-                        } else {
-                            $marketQuery->where('closed', false)
-                              ->where(function ($query) {
-                                  $query->whereNull('close_time')
-                                        ->orWhere('close_time', '>', now());
-                              });
-                        }
-                        
-                        $marketQuery->where(function ($mq) {
-                            $mq->where('groupItem_title', 'like', '%' . $this->search . '%')
-                              ->orWhere('question', 'like', '%' . $this->search . '%');
-                        });
+                        // Only search in active markets
+                        $marketQuery->where('active', true)
+                          ->where('closed', false)
+                          ->where(function ($query) {
+                              $query->whereNull('close_time')
+                                    ->orWhere('close_time', '>', now());
+                          })
+                          ->where(function ($mq) {
+                              $mq->where('groupItem_title', 'like', '%' . $this->search . '%')
+                                ->orWhere('question', 'like', '%' . $this->search . '%');
+                          });
                     });
             });
         }
@@ -256,36 +207,15 @@ class MarketsGrid extends Component
                 $query->orderBy('volume_24hr', 'desc');
         }
 
-        // Only show events that have at least one market matching the status filter
-        // Note: This is already filtered in the eager loading, but we need whereHas for the main query
+        // Only show events that have at least one active market
         $query->whereHas('markets', function ($q) {
-            if ($this->status === 'closed') {
-                // Closed: closed=true (same as admin panel)
-                $q->where('closed', true);
-            } elseif ($this->status === 'active') {
-                // Active: active=true AND closed=false
-                $q->where('active', true)
-                  ->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            } elseif ($this->status === 'pending') {
-                // Inactive: active=false AND closed=false
-                $q->where('active', false)
-                  ->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            } else {
-                // Default: show events with non-closed markets
-                $q->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            }
+            // Only active markets: active=true AND closed=false
+            $q->where('active', true)
+              ->where('closed', false)
+              ->where(function ($query) {
+                  $query->whereNull('close_time')
+                        ->orWhere('close_time', '>', now());
+              });
         });
 
         // Use clone for count to avoid affecting the main query

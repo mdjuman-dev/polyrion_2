@@ -39,21 +39,30 @@ class TaggedEventsGrid extends Component
     {
         $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
 
-        $query = Event::whereHas('tags', function ($q) use ($tag) {
-            $q->where('tags.id', $tag->id);
-        })->with(['markets' => function ($q) {
-            $q->where('closed', false)
-              ->where(function ($query) {
-                  $query->whereNull('close_time')
-                        ->orWhere('close_time', '>', now());
-              });
-        }])->whereHas('markets', function ($q) {
-            $q->where('closed', false)
-              ->where(function ($query) {
-                  $query->whereNull('close_time')
-                        ->orWhere('close_time', '>', now());
-              });
-        });
+        // Frontend always shows only active events
+        $query = Event::where('active', true)
+            ->where('closed', false)
+            ->whereHas('tags', function ($q) use ($tag) {
+                $q->where('tags.id', $tag->id);
+            })
+            ->with(['markets' => function ($q) {
+                // Only active markets
+                $q->where('active', true)
+                  ->where('closed', false)
+                  ->where(function ($query) {
+                      $query->whereNull('close_time')
+                            ->orWhere('close_time', '>', now());
+                  });
+            }])
+            ->whereHas('markets', function ($q) {
+                // Only events with at least one active market
+                $q->where('active', true)
+                  ->where('closed', false)
+                  ->where(function ($query) {
+                      $query->whereNull('close_time')
+                            ->orWhere('close_time', '>', now());
+                  });
+            });
 
         if (!empty($this->search)) {
             $query->where(function ($q) {

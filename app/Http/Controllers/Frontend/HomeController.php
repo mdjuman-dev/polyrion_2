@@ -287,6 +287,14 @@ class HomeController extends Controller
 
             // Use series_color from database if available, otherwise use color palette
             $marketColor = $market->series_color ?? $marketColors[$index % count($marketColors)];
+            
+            // Ensure color is not empty and has # prefix
+            if (empty($marketColor) || trim($marketColor) === '') {
+                $marketColor = $marketColors[$index % count($marketColors)];
+            }
+            if (!str_starts_with($marketColor, '#')) {
+                $marketColor = '#' . $marketColor;
+            }
 
             // Restore full data structure for chart compatibility
             $seriesData[] = [

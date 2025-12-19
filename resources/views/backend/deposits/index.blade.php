@@ -6,6 +6,23 @@
             <section class="content">
                 <div class="row">
                     <div class="col-12">
+                        <!-- Success/Error Messages -->
+                        @if (session('success'))
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <strong>Success!</strong> {{ session('success') }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        @endif
+                        @if (session('error'))
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong>Error!</strong> {{ session('error') }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        @endif
                         <!-- Header -->
                         <div class="box mb-3">
                             <div class="box-body">
@@ -207,16 +224,29 @@
                                                                 <i class="fa fa-eye"></i>
                                                             </a>
                                                             @if ($deposit->status == 'pending')
-                                                                <button type="button"
-                                                                    class="btn btn-sm btn-success approve-btn"
-                                                                    data-id="{{ $deposit->id }}" title="Approve">
-                                                                    <i class="fa fa-check"></i>
-                                                                </button>
-                                                                <button type="button"
-                                                                    class="btn btn-sm btn-danger reject-btn"
-                                                                    data-id="{{ $deposit->id }}" title="Reject">
-                                                                    <i class="fa fa-times"></i>
-                                                                </button>
+                                                                <form
+                                                                    action="{{ route('admin.deposits.approve', $deposit->id) }}"
+                                                                    method="POST" style="display: inline-block;"
+                                                                    onsubmit="return confirm('Are you sure you want to approve this deposit? This will add ${{ number_format($deposit->amount, 2) }} to user wallet.');">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-sm btn-success"
+                                                                        title="Approve">
+                                                                        <i class="fa fa-check"></i>
+                                                                    </button>
+                                                                </form>
+                                                                <form
+                                                                    action="{{ route('admin.deposits.reject', $deposit->id) }}"
+                                                                    method="POST" style="display: inline-block;"
+                                                                    onsubmit="var reason = prompt('Please provide a rejection reason:'); if(!reason || !reason.trim()) { alert('Rejection reason is required'); return false; } document.getElementById('reject_reason_{{ $deposit->id }}').value = reason; return true;">
+                                                                    @csrf
+                                                                    <input type="hidden" name="admin_note"
+                                                                        id="reject_reason_{{ $deposit->id }}"
+                                                                        value="">
+                                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                                        title="Reject">
+                                                                        <i class="fa fa-times"></i>
+                                                                    </button>
+                                                                </form>
                                                             @elseif ($deposit->status == 'completed')
                                                                 <span class="badge bg-success">
                                                                     <i class="fa fa-check-circle"></i> Approved
@@ -254,196 +284,4 @@
         </div>
     </div>
 
-    <!-- Approve Modal -->
-    <div class="modal fade" id="approveModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Approve Deposit</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="approveForm">
-                    <div class="modal-body">
-                        <input type="hidden" id="approve_deposit_id" name="deposit_id">
-                        <div class="mb-3">
-                            <label class="form-label">Admin Note (Optional)</label>
-                            <textarea class="form-control" id="approve_admin_note" name="admin_note" rows="3"></textarea>
-                            <small class="text-muted">This will add the deposit amount to user's wallet balance.</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Approve & Add Balance</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reject Modal -->
-    <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Reject Deposit</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="rejectForm">
-                    <div class="modal-body">
-                        <input type="hidden" id="reject_deposit_id" name="deposit_id">
-                        <div class="mb-3">
-                            <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="reject_admin_note" name="admin_note" rows="3" required></textarea>
-                            <small class="text-muted">This reason will be stored for record keeping.</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">Reject</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    @push('script')
-        <script>
-            $(document).ready(function() {
-                // Approve button
-                $(document).on('click', '.approve-btn', function(e) {
-                    e.preventDefault();
-                    const id = $(this).data('id');
-                    $('#approve_deposit_id').val(id);
-                    $('#approve_admin_note').val('');
-                    $('#approveModal').modal('show');
-                });
-
-                // Reject button
-                $(document).on('click', '.reject-btn', function(e) {
-                    e.preventDefault();
-                    const id = $(this).data('id');
-                    $('#reject_deposit_id').val(id);
-                    $('#reject_admin_note').val('');
-                    $('#rejectModal').modal('show');
-                });
-
-                // Approve form submission
-                $('#approveForm').on('submit', function(e) {
-                    e.preventDefault();
-                    const id = $('#approve_deposit_id').val();
-                    const adminNote = $('#approve_admin_note').val();
-
-                    $.ajax({
-                        url: `/admin/deposits/${id}/approve`,
-                        method: 'POST',
-                        data: {
-                            admin_note: adminNote
-                        },
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                            'Accept': 'application/json'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                if (typeof Swal !== 'undefined') {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Success!',
-                                        text: response.message,
-                                        confirmButtonColor: '#28a745'
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    toastr.success(response.message);
-                                    setTimeout(() => location.reload(), 1000);
-                                }
-                                // Close modal
-                                $('#approveModal').modal('hide');
-                            } else {
-                                toastr.error(response.message || 'Failed to approve deposit');
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMsg = 'An error occurred';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMsg = xhr.responseJSON.message;
-                            } else if (xhr.status === 422) {
-                                errorMsg = 'Validation error. Please check your input.';
-                            } else if (xhr.status === 404) {
-                                errorMsg = 'Deposit not found.';
-                            } else if (xhr.status === 500) {
-                                errorMsg = 'Server error. Please try again.';
-                            }
-                            toastr.error(errorMsg);
-                            console.error('Deposit approval error:', xhr);
-                        }
-                    });
-                });
-
-                // Reject form submission
-                $('#rejectForm').on('submit', function(e) {
-                    e.preventDefault();
-                    const id = $('#reject_deposit_id').val();
-                    const adminNote = $('#reject_admin_note').val();
-
-                    if (!adminNote.trim()) {
-                        toastr.error('Please provide a rejection reason');
-                        return;
-                    }
-
-                    $.ajax({
-                        url: `/admin/deposits/${id}/reject`,
-                        method: 'POST',
-                        data: {
-                            admin_note: adminNote
-                        },
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                            'Accept': 'application/json'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                if (typeof Swal !== 'undefined') {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Rejected!',
-                                        text: response.message,
-                                        confirmButtonColor: '#dc3545'
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    toastr.success(response.message);
-                                    setTimeout(() => location.reload(), 1000);
-                                }
-                                // Close modal
-                                $('#rejectModal').modal('hide');
-                            } else {
-                                toastr.error(response.message || 'Failed to reject deposit');
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMsg = 'An error occurred';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMsg = xhr.responseJSON.message;
-                            } else if (xhr.status === 422) {
-                                errorMsg = 'Validation error. Please check your input.';
-                            } else if (xhr.status === 404) {
-                                errorMsg = 'Deposit not found.';
-                            } else if (xhr.status === 500) {
-                                errorMsg = 'Server error. Please try again.';
-                            }
-                            toastr.error(errorMsg);
-                            console.error('Deposit rejection error:', xhr);
-                        }
-                    });
-                });
-            });
-        </script>
-    @endpush
 @endsection

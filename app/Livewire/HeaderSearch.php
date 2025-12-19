@@ -110,7 +110,9 @@ class HeaderSearch extends Component
         if (!empty($this->query)) {
             // Get search suggestions - only active, non-closed events with active markets
             $suggestions = Event::with(['markets' => function ($q) {
-                $q->where('closed', false)
+                // Only active markets
+                $q->where('active', true)
+                  ->where('closed', false)
                   ->where(function ($query) {
                       $query->whereNull('close_time')
                             ->orWhere('close_time', '>', now());
@@ -119,7 +121,9 @@ class HeaderSearch extends Component
                 ->where('active', true)
                 ->where('closed', false)
                 ->whereHas('markets', function ($q) {
-                    $q->where('closed', false)
+                    // Only events with at least one active market
+                    $q->where('active', true)
+                      ->where('closed', false)
                       ->where(function ($query) {
                           $query->whereNull('close_time')
                                 ->orWhere('close_time', '>', now());
@@ -128,7 +132,9 @@ class HeaderSearch extends Component
                 ->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->query . '%')
                         ->orWhereHas('markets', function ($marketQuery) {
-                            $marketQuery->where('closed', false)
+                            // Only search in active markets
+                            $marketQuery->where('active', true)
+                              ->where('closed', false)
                               ->where(function ($query) {
                                   $query->whereNull('close_time')
                                         ->orWhere('close_time', '>', now());

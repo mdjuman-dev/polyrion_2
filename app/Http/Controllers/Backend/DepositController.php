@@ -81,26 +81,20 @@ class DepositController extends Controller
             $deposit = Deposit::lockForUpdate()->findOrFail($id);
 
             if ($deposit->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Deposit is not in pending status. Current status: ' . $deposit->status
-                ], 400);
+                return redirect()->route('admin.deposits.index')
+                    ->with('error', 'Deposit is not in pending status. Current status: ' . $deposit->status);
             }
 
             $user = $deposit->user;
 
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found for deposit'
-                ], 404);
+                return redirect()->route('admin.deposits.index')
+                    ->with('error', 'User not found for deposit');
             }
 
             if ($deposit->amount <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid deposit amount: ' . $deposit->amount
-                ], 400);
+                return redirect()->route('admin.deposits.index')
+                    ->with('error', 'Invalid deposit amount: ' . $deposit->amount);
             }
 
             // Get or create wallet
@@ -164,11 +158,8 @@ class DepositController extends Controller
                 'balance_after' => $newBalance,
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Deposit approved and balance added successfully.',
-                'deposit' => $deposit->load('user')
-            ]);
+            return redirect()->route('admin.deposits.index')
+                ->with('success', 'Deposit approved and balance added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -178,10 +169,8 @@ class DepositController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve deposit: ' . $e->getMessage()
-            ], 500);
+            return redirect()->route('admin.deposits.index')
+                ->with('error', 'Failed to approve deposit: ' . $e->getMessage());
         }
     }
 
@@ -200,10 +189,8 @@ class DepositController extends Controller
             $deposit = Deposit::lockForUpdate()->findOrFail($id);
 
             if ($deposit->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Deposit is not in pending status.'
-                ], 400);
+                return redirect()->route('admin.deposits.index')
+                    ->with('error', 'Deposit is not in pending status.');
             }
 
             $admin = Auth::guard('admin')->user();
@@ -231,11 +218,8 @@ class DepositController extends Controller
                 'user_id' => $deposit->user_id
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Deposit rejected successfully.',
-                'deposit' => $deposit->load('user')
-            ]);
+            return redirect()->route('admin.deposits.index')
+                ->with('success', 'Deposit rejected successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -245,10 +229,8 @@ class DepositController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject deposit: ' . $e->getMessage()
-            ], 500);
+            return redirect()->route('admin.deposits.index')
+                ->with('error', 'Failed to reject deposit: ' . $e->getMessage());
         }
     }
 }
