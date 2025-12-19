@@ -50,6 +50,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
         // Event Management Routes
         Route::controller(EventController::class)->group(function () {
             Route::get('/events', 'index')->name('events.index');
+            Route::get('/events/create', 'create')->name('events.create');
             Route::get('/events/create-with-markets', 'createWithMarkets')->name('events.create-with-markets');
             Route::post('/events', 'store')->name('events.store');
             Route::post('/events/with-markets', 'storeWithMarkets')->name('events.store-with-markets');
@@ -108,6 +109,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::get('/{id}', 'show')->name('show');
             Route::post('/{id}/login-as', 'loginAsUser')->name('login-as');
             Route::post('/{id}/update-status', 'updateStatus')->name('update-status');
+            Route::post('/{id}/test-deposit', 'addTestDeposit')->name('test-deposit');
             Route::delete('/{id}', 'destroy')->name('destroy');
         });
 

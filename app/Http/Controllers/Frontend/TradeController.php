@@ -31,8 +31,11 @@ class TradeController extends Controller
     {
         $request->validate([
             'option' => ['required', Rule::in(['yes', 'no'])],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
             'price' => ['nullable', 'numeric', 'min:0.0001', 'max:0.9999'],
+        ], [
+            'amount.min' => 'Minimum trade amount is $0.01',
+            'amount.max' => 'Maximum trade amount is $100,000',
         ]);
 
         try {
@@ -206,6 +209,50 @@ class TradeController extends Controller
         return response()->json([
             'success' => true,
             'trades' => $trades,
+        ]);
+    }
+
+    /**
+     * Get a specific trade by ID
+     * API endpoint: GET /api/trades/{id}
+     */
+    public function getTrade($id)
+    {
+        $user = Auth::user();
+        
+        $trade = Trade::where('id', $id)
+            ->where('user_id', $user->id) // Only allow users to see their own trades
+            ->with(['market.event', 'user'])
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'trade' => [
+                'id' => $trade->id,
+                'market' => [
+                    'id' => $trade->market->id,
+                    'question' => $trade->market->question,
+                    'slug' => $trade->market->slug,
+                    'event' => $trade->market->event ? [
+                        'id' => $trade->market->event->id,
+                        'title' => $trade->market->event->title,
+                        'slug' => $trade->market->event->slug,
+                    ] : null,
+                ],
+                'outcome' => $trade->outcome,
+                'amount_invested' => $trade->amount_invested,
+                'token_amount' => $trade->token_amount,
+                'shares' => $trade->shares ?? $trade->token_amount,
+                'price_at_buy' => $trade->price_at_buy,
+                'status' => $trade->status,
+                'payout' => $trade->payout ?? 0,
+                'settled_at' => $trade->settled_at,
+                'created_at' => $trade->created_at,
+                'updated_at' => $trade->updated_at,
+                'is_pending' => $trade->isPending(),
+                'is_win' => $trade->isWin(),
+                'is_loss' => $trade->isLoss(),
+            ],
         ]);
     }
 

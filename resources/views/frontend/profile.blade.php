@@ -848,10 +848,10 @@
             width: 90%;
             max-width: 520px;
             max-height: 90vh;
-            background: var(--card-bg);
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 177, 26, 0.1);
+            background: #2a2a2a;
+            border-radius: 12px;
+            border: 1px solid #ffb11a;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 177, 26, 0.3);
             z-index: 7001;
             display: none;
             opacity: 0;

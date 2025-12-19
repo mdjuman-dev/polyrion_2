@@ -8,9 +8,11 @@ use App\Models\Trade;
 use App\Models\Wallet;
 use App\Models\Deposit;
 use App\Models\Withdrawal;
+use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -175,6 +177,115 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
+    }
+
+    /**
+     * Add test deposit to user wallet (for testing purposes)
+     */
+    public function addTestDeposit(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01|max:100000',
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($id);
+            $admin = Auth::guard('admin')->user();
+
+            // Get or create wallet
+            $wallet = Wallet::lockForUpdate()
+                ->firstOrCreate(
+                    ['user_id' => $user->id],
+                    ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
+                );
+
+            $balanceBefore = (float) $wallet->balance;
+            $amount = (float) $request->amount;
+            $newBalance = $balanceBefore + $amount;
+
+            // Update wallet balance
+            $wallet->balance = $newBalance;
+            $wallet->save();
+
+            // Create test deposit record
+            $deposit = Deposit::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'currency' => $wallet->currency ?? 'USDT',
+                'payment_method' => 'test',
+                'status' => 'completed',
+                'completed_at' => now(),
+                'response_data' => [
+                    'test_deposit' => true,
+                    'added_by_admin' => $admin->id,
+                    'admin_name' => $admin->name,
+                    'note' => $request->note ?? 'Test deposit for testing purposes',
+                    'added_at' => now()->toDateTimeString(),
+                ],
+            ]);
+
+            // Create wallet transaction
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'wallet_id' => $wallet->id,
+                'type' => 'deposit',
+                'amount' => $amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $newBalance,
+                'reference_type' => Deposit::class,
+                'reference_id' => $deposit->id,
+                'description' => 'Test Deposit' . ($request->note ? ' - ' . $request->note : ''),
+                'metadata' => [
+                    'test_deposit' => true,
+                    'added_by_admin' => $admin->id,
+                    'admin_name' => $admin->name,
+                    'note' => $request->note,
+                ],
+            ]);
+
+            DB::commit();
+
+            Log::info('Test deposit added', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'admin_id' => $admin->id,
+                'admin_name' => $admin->name,
+                'amount' => $amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $newBalance,
+                'note' => $request->note,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test deposit added successfully.',
+                'data' => [
+                    'amount' => number_format($amount, 2),
+                    'balance_before' => number_format($balanceBefore, 2),
+                    'balance_after' => number_format($newBalance, 2),
+                    'deposit_id' => $deposit->id,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Failed to add test deposit', [
+                'user_id' => $id,
+                'admin_id' => Auth::guard('admin')->id(),
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add test deposit: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
 

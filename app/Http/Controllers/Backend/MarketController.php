@@ -296,14 +296,14 @@ class MarketController extends Controller
     function storeEvents()
     {
         $startTime = time();
-        $maxExecutionTime = 300; // Increased to 5 minutes
+        $maxExecutionTime = 300; 
         $limit = 100;
         $offset = 0;
-        $maxBatches = 100; // Increased from 10 to 100 (can fetch up to 10,000 events)
+        $maxBatches = 100;
         $batchCount = 0;
         $totalProcessed = 0;
         $consecutiveEmptyBatches = 0;
-        $maxConsecutiveEmpty = 3; // Stop after 3 consecutive empty batches
+        $maxConsecutiveEmpty = 3; 
 
         Log::info("=== Starting event fetch process at " . date('Y-m-d H:i:s') . " ===");
 
@@ -323,7 +323,6 @@ class MarketController extends Controller
                         return $exception instanceof \Illuminate\Http\Client\ConnectionException;
                     })
                     ->get('https://gamma-api.polymarket.com/events', [
-                        'closed' => false,
                         'limit' => $limit,
                         'offset' => $offset,
                         'ascending' => false,
@@ -424,6 +423,40 @@ class MarketController extends Controller
 
                     // Save markets
                     foreach ($ev['markets'] as $mk) {
+                        // Determine market resolution/outcome from Polymarket API
+                        // Polymarket API may provide: resolved, outcome, finalOutcome, or resolution fields
+                        $outcomeResult = null;
+                        $finalOutcome = null;
+                        $finalResult = null;
+                        
+                        // Check various possible fields from Polymarket API
+                        if (isset($mk['resolved']) && $mk['resolved'] === true) {
+                            // Market is resolved, check for outcome
+                            if (isset($mk['outcome'])) {
+                                $outcomeResult = strtolower($mk['outcome']); // 'yes' or 'no'
+                                $finalOutcome = strtoupper($mk['outcome']); // 'YES' or 'NO'
+                                $finalResult = $outcomeResult;
+                            } elseif (isset($mk['finalOutcome'])) {
+                                $outcomeResult = strtolower($mk['finalOutcome']);
+                                $finalOutcome = strtoupper($mk['finalOutcome']);
+                                $finalResult = $outcomeResult;
+                            } elseif (isset($mk['resolution'])) {
+                                $outcomeResult = strtolower($mk['resolution']);
+                                $finalOutcome = strtoupper($mk['resolution']);
+                                $finalResult = $outcomeResult;
+                            }
+                        }
+                        
+                        // Also check if market is closed and has resolution info
+                        if (($mk['closed'] ?? false) && !$outcomeResult) {
+                            // Try to infer from other fields
+                            if (isset($mk['winningOutcome'])) {
+                                $outcomeResult = strtolower($mk['winningOutcome']);
+                                $finalOutcome = strtoupper($mk['winningOutcome']);
+                                $finalResult = $outcomeResult;
+                            }
+                        }
+
                         Market::updateOrCreate(
                             ['slug' => $mk['slug']],
                             [
@@ -469,6 +502,14 @@ class MarketController extends Controller
                                 'new' => $mk['new'] ?? null,
                                 'restricted' => $mk['restricted'] ?? null,
                                 'approved' => $mk['approved'] ?? null,
+
+                                // Market resolution fields (if available from API)
+                                'outcome_result' => $outcomeResult,
+                                'final_outcome' => $finalOutcome,
+                                'final_result' => $finalResult,
+                                'result_set_at' => ($outcomeResult && !isset($mk['result_set_at'])) ? now() : ($mk['result_set_at'] ?? null),
+                                'is_closed' => $mk['closed'] ?? false,
+                                'settled' => ($outcomeResult && $mk['closed'] ?? false) ? false : null, // Will be set to true after settlement
 
                                 'start_date' => toMysqlDate($mk['startDate'] ?? null),
                                 'end_date' => toMysqlDate($mk['endDate'] ?? null),
@@ -539,15 +580,20 @@ class MarketController extends Controller
         try {
             $market = Market::findOrFail($id);
 
-            // Set final result
-            $market->final_result = $request->final_result;
+            // Set all result fields (for compatibility)
+            $result = strtolower($request->final_result);
+            $market->final_result = $result;
+            $market->outcome_result = $result; // Required for SettlementService
+            $market->final_outcome = strtoupper($request->final_result); // YES/NO format
             $market->result_set_at = now();
             $market->closed = true;
+            $market->is_closed = true;
+            $market->settled = false; // Will be set to true after settlement
             $market->save();
 
             // Settle all pending trades
             $settlementService = new SettlementService();
-            $settlementResult = $settlementService->settleMarket($market);
+            $settlementResult = $settlementService->settleMarket($market->id);
 
             return response()->json([
                 'success' => true,

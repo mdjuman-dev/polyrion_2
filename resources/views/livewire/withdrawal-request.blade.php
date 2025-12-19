@@ -145,10 +145,12 @@ new class extends Component {
 
 <div>
     <div class="withdrawal-modal-header">
-        <h3>Request Withdrawal</h3>
-        <button type="button" class="withdrawal-modal-close" onclick="closeWithdrawalModal()" aria-label="Close">
-            <i class="fas fa-times"></i>
-        </button>
+        <div class="withdrawal-header-left">
+            <h3>Request Withdrawal</h3>
+            <button type="button" class="withdrawal-modal-close" onclick="closeWithdrawalModal()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
     <div class="withdrawal-modal-content">
         <form wire:submit="submit" class="withdrawal-form-container">
@@ -275,28 +277,32 @@ new class extends Component {
 
             <!-- Submit Confirmation -->
             <div class="withdrawal-submit-section">
-                <label class="withdrawal-checkbox-label">
-                    <input type="checkbox" wire:model="confirm_submit" class="withdrawal-checkbox">
-                    <span class="withdrawal-checkbox-text">Submit Withdrawal Request</span>
-                </label>
+                <div class="withdrawal-submit-row">
+                    <label class="withdrawal-checkbox-label">
+                        <input type="checkbox" wire:model="confirm_submit" class="withdrawal-checkbox">
+                        <span class="withdrawal-checkbox-text">Submit Withdrawal Request</span>
+                    </label>
+                    <button type="submit" wire:loading.attr="disabled" class="withdrawal-submit-btn"
+                        @if (!$confirm_submit) disabled @endif>
+                        <span wire:loading.remove>
+                            Submit Withdrawal Request
+                        </span>
+                        <span wire:loading>
+                            <i class="fas fa-spinner fa-spin"></i> Processing...
+                        </span>
+                    </button>
+                </div>
                 @error('confirm_submit')
                     <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
                 @enderror
-                <button type="submit" wire:loading.attr="disabled" class="withdrawal-submit-btn"
-                    @if (!$confirm_submit) disabled @endif>
-                    <span wire:loading.remove>
-                        <i class="fas fa-paper-plane"></i> Submit Withdrawal Request
-                    </span>
-                    <span wire:loading>
-                        <i class="fas fa-spinner fa-spin"></i> Processing...
-                    </span>
-                </button>
             </div>
 
             <!-- Footer Note -->
             <div class="withdrawal-footer">
                 <p class="withdrawal-note">
-                    <i class="fas fa-info-circle"></i>
+                    <span class="withdrawal-note-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
                     Your withdrawal request will be reviewed by admin and processed within 24-48 hours.
                 </p>
             </div>
@@ -306,45 +312,50 @@ new class extends Component {
 
 @push('styles')
     <style>
-        /* Withdrawal Modal Styles - Updated Design v2 */
+        /* Withdrawal Modal Styles - Matching Image Design */
         .withdrawal-modal-header {
+            padding: 0;
+            border-bottom: none;
+            background: transparent;
+        }
+
+        .withdrawal-header-left {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 12px;
             padding: 24px 24px 20px 24px;
-            border-bottom: 1px solid var(--border);
-            background: linear-gradient(to bottom, rgba(255, 177, 26, 0.05), transparent);
         }
 
         .withdrawal-modal-header h3 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: var(--text-primary);
+            color: #ffffff;
             margin: 0;
             letter-spacing: -0.5px;
         }
 
         .withdrawal-modal-close {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
             border: none;
-            background: transparent;
-            color: var(--text-secondary);
+            background: #000000;
+            color: #ffffff;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            font-size: 14px;
         }
 
         .withdrawal-modal-close:hover {
-            background: var(--hover);
-            color: var(--text-primary);
+            background: #1a1a1a;
+            color: #ffffff;
         }
 
         .withdrawal-modal-content {
-            padding: 24px;
+            padding: 0 24px 24px 24px;
             overflow-y: auto;
             max-height: calc(90vh - 100px);
         }
@@ -356,33 +367,34 @@ new class extends Component {
         }
 
         .withdrawal-balance-info {
-            padding: 18px 20px;
-            background: linear-gradient(135deg, rgba(255, 177, 26, 0.1) 0%, rgba(255, 149, 0, 0.05) 100%);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 177, 26, 0.2);
-            backdrop-filter: blur(10px);
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+            border: none;
+            backdrop-filter: none;
         }
 
         .balance-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 12px;
         }
 
         .balance-item-min {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 177, 26, 0.15);
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
         }
 
         .balance-label {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: #ffffff;
             font-weight: 500;
         }
 
         .balance-value {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             color: #ffb11a;
             letter-spacing: -0.3px;
@@ -390,8 +402,8 @@ new class extends Component {
 
         .balance-min-value {
             font-size: 14px;
-            color: #ffb11a;
-            font-weight: 600;
+            color: #ffffff;
+            font-weight: 500;
         }
 
         .withdrawal-input-group {
@@ -403,7 +415,7 @@ new class extends Component {
         .withdrawal-input-label {
             font-size: 14px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #ffffff;
             margin-bottom: 2px;
         }
 
@@ -418,7 +430,7 @@ new class extends Component {
             left: 14px;
             font-size: 16px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #ffffff;
             z-index: 1;
         }
 
@@ -426,10 +438,10 @@ new class extends Component {
         .withdrawal-select {
             width: 100%;
             padding: 14px 16px 14px 40px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            color: var(--text-primary);
+            color: #ffffff;
             font-size: 16px;
             font-weight: 500;
             transition: all 0.3s ease;
@@ -446,24 +458,24 @@ new class extends Component {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 16px center;
-            background-color: var(--card-bg);
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
         .withdrawal-select option {
-            color: var(--text-primary);
-            background: var(--card-bg);
+            color: #ffffff;
+            background: #2a2a2a;
         }
 
         .withdrawal-select option[value=""] {
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .withdrawal-select:invalid {
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .withdrawal-select:valid {
-            color: var(--text-primary);
+            color: #ffffff;
         }
 
         .withdrawal-input:focus,
@@ -471,19 +483,19 @@ new class extends Component {
             outline: none;
             border-color: #ffb11a;
             box-shadow: 0 0 0 3px rgba(255, 177, 26, 0.1);
-            background: var(--card-bg);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .withdrawal-input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.5;
+            color: rgba(255, 255, 255, 0.5);
+            opacity: 1;
         }
 
         .withdrawal-payment-details {
             padding: 20px;
-            background: var(--secondary);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             animation: slideDown 0.3s ease;
         }
 
@@ -502,7 +514,7 @@ new class extends Component {
         .withdrawal-details-title {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #ffffff;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -541,12 +553,20 @@ new class extends Component {
             gap: 12px;
         }
 
+        .withdrawal-submit-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
         .withdrawal-checkbox-label {
             display: flex;
             align-items: center;
             gap: 12px;
             cursor: pointer;
             user-select: none;
+            flex: 1;
         }
 
         .withdrawal-checkbox {
@@ -560,30 +580,31 @@ new class extends Component {
         .withdrawal-checkbox-text {
             font-size: 14px;
             font-weight: 500;
-            color: var(--text-primary);
+            color: #ffffff;
         }
 
         .withdrawal-submit-btn {
-            width: 100%;
-            padding: 14px 24px;
-            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
-            color: #fff;
-            border: none;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: not-allowed;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(255, 177, 26, 0.3);
+            gap: 8px;
             letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         .withdrawal-submit-btn:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ff9500 0%, #ffb11a 100%);
+            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
+            color: #ffffff;
+            border-color: #ffb11a;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 177, 26, 0.4);
         }
@@ -599,28 +620,47 @@ new class extends Component {
             transform: none;
         }
 
+        .withdrawal-submit-btn:not(:disabled) {
+            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
+            color: #ffffff;
+            border-color: #ffb11a;
+            cursor: pointer;
+            opacity: 1;
+        }
+
         .withdrawal-footer {
-            text-align: center;
+            text-align: left;
+            margin-top: 16px;
         }
 
         .withdrawal-note {
             font-size: 13px;
-            color: var(--text-secondary);
+            color: #ffffff;
             margin: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 0;
+            background: transparent;
+            border: none;
+        }
+
+        .withdrawal-note-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #000000;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 12px 16px;
-            background: rgba(255, 177, 26, 0.08);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 177, 26, 0.15);
+            flex-shrink: 0;
+            font-size: 12px;
+            margin-top: 2px;
         }
 
-        .withdrawal-note i {
-            font-size: 16px;
-            color: #ffb11a;
-            flex-shrink: 0;
+        .withdrawal-note-icon i {
+            color: #ffffff;
         }
 
         /* Responsive */

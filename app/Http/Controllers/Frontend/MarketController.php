@@ -24,7 +24,10 @@ class MarketController extends Controller
     {
         $request->validate([
             'outcome' => ['required', Rule::in(['YES', 'NO'])],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
+        ], [
+            'amount.min' => 'Minimum trade amount is $0.01',
+            'amount.max' => 'Maximum trade amount is $100,000',
         ]);
 
         try {
@@ -82,6 +85,91 @@ class MarketController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to place trade: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get trade preview/estimate
+     * API endpoint: GET /api/market/{marketId}/trade-preview
+     */
+    public function getTradePreview(Request $request, $marketId)
+    {
+        $request->validate([
+            'outcome' => ['required', Rule::in(['YES', 'NO'])],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
+        ]);
+
+        try {
+            $market = Market::findOrFail($marketId);
+
+            if (!$market->isOpenForTrading()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Market is closed for trading',
+                ], 400);
+            }
+
+            $preview = $this->tradeService->getTradePreview(
+                $market,
+                $request->outcome,
+                (float) $request->amount
+            );
+
+            return response()->json([
+                'success' => true,
+                'preview' => $preview,
+            ]);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (\Exception $e) {
+            Log::error('Trade preview failed', [
+                'market_id' => $marketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get trade preview: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get current market prices
+     * API endpoint: GET /api/market/{marketId}/prices
+     */
+    public function getMarketPrices($marketId)
+    {
+        try {
+            $market = Market::findOrFail($marketId);
+
+            $prices = $this->tradeService->getMarketPrices($market);
+
+            return response()->json([
+                'success' => true,
+                'prices' => $prices,
+                'market' => [
+                    'id' => $market->id,
+                    'question' => $market->question,
+                    'slug' => $market->slug,
+                    'is_open' => $market->isOpenForTrading(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get market prices failed', [
+                'market_id' => $marketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get market prices: ' . $e->getMessage(),
             ], 500);
         }
     }
