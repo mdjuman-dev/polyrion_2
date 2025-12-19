@@ -338,8 +338,8 @@ new class extends Component {
 @push('styles')
     <style>
         /* ============================================
-               WITHDRAWAL MODAL - COMPLETE REDESIGN
-               ============================================ */
+                       WITHDRAWAL MODAL - COMPLETE REDESIGN
+                       ============================================ */
 
         .withdrawal-modal-wrapper {
             width: 100%;
