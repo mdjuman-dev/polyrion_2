@@ -22,7 +22,7 @@ class Admin extends Authenticatable
      * @var string
      */
     protected $guard_name = 'admin';
-
+    
     /**
      * Check if admin is super admin
      *
@@ -91,7 +91,7 @@ class Admin extends Authenticatable
         // Use the trait's hasRole method for other admins
         return $this->traitHasRole($role, $guardName ?? $this->guard_name);
     }
-
+    
     /**
      * Override hasAnyRole to allow super admin
      *
