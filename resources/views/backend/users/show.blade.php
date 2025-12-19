@@ -196,6 +196,24 @@
                                 </h4>
                             </div>
                             <div class="box-body" style="padding: 25px;">
+                                <!-- Test Deposit Button -->
+                                <div class="mb-4" style="padding: 15px; background: #fef3c7; border-radius: 10px; border: 2px dashed #fbbf24;">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <h5 class="mb-1" style="color: #92400e; font-weight: 700;">
+                                                <i class="fa fa-flask me-2"></i>Test Deposit
+                                            </h5>
+                                            <p class="mb-0" style="color: #78350f; font-size: 13px;">
+                                                Add test funds to user wallet for testing
+                                            </p>
+                                        </div>
+                                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
+                                            data-bs-target="#testDepositModal"
+                                            style="font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+                                            <i class="fa fa-plus me-2"></i>Add Test Deposit
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-borderless mb-0">
                                         <tbody>
@@ -584,4 +602,146 @@
             gap: 12px;
         }
     </style>
+
+    <!-- Test Deposit Modal -->
+    <div class="modal fade" id="testDepositModal" tabindex="-1" aria-labelledby="testDepositModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header"
+                    style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 15px 15px 0 0; border: none; padding: 20px 25px;">
+                    <h5 class="modal-title" id="testDepositModalLabel" style="color: #fff; font-weight: 700;">
+                        <i class="fa fa-flask me-2"></i>Add Test Deposit
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form id="testDepositForm">
+                    @csrf
+                    <div class="modal-body" style="padding: 25px;">
+                        <div class="mb-3">
+                            <label for="testDepositAmount" class="form-label" style="font-weight: 600; color: #374151;">
+                                Amount <span style="color: #ef4444;">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background: #f3f4f6; border-right: none;">
+                                    <i class="fa fa-dollar-sign"></i>
+                                </span>
+                                <input type="number" class="form-control" id="testDepositAmount" name="amount"
+                                    step="0.01" min="0.01" max="100000" placeholder="0.00" required
+                                    style="border-left: none; padding: 12px 15px; font-size: 16px; font-weight: 500;">
+                            </div>
+                            <small class="text-muted">Minimum: $0.01 | Maximum: $100,000</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="testDepositNote" class="form-label" style="font-weight: 600; color: #374151;">
+                                Note (Optional)
+                            </label>
+                            <textarea class="form-control" id="testDepositNote" name="note" rows="3"
+                                placeholder="Add a note for this test deposit..."
+                                style="padding: 12px 15px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+                        <div class="alert alert-warning mb-0" style="background: #fef3c7; border: 1px solid #fbbf24; color: #92400e;">
+                            <i class="fa fa-exclamation-triangle me-2"></i>
+                            <strong>Test Deposit:</strong> This will add funds directly to the user's wallet. This is for testing purposes only.
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #e5e7eb; padding: 20px 25px;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            style="font-weight: 600; padding: 10px 20px; border-radius: 8px;">Cancel</button>
+                        <button type="submit" class="btn btn-warning" id="submitTestDeposit"
+                            style="font-weight: 600; padding: 10px 25px; border-radius: 8px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border: none;">
+                            <i class="fa fa-check me-2"></i>Add Deposit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('testDepositForm');
+            const submitBtn = document.getElementById('submitTestDeposit');
+            const modal = new bootstrap.Modal(document.getElementById('testDepositModal'));
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const amount = document.getElementById('testDepositAmount').value;
+                const note = document.getElementById('testDepositNote').value;
+
+                if (!amount || parseFloat(amount) <= 0) {
+                    alert('Please enter a valid amount');
+                    return;
+                }
+
+                // Disable submit button
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Processing...';
+
+                // Make AJAX request
+                fetch('{{ route('admin.users.test-deposit', $user->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        note: note || null
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                html: `
+                                    <div style="text-align: left;">
+                                        <p><strong>Test deposit added successfully!</strong></p>
+                                        <p style="margin-top: 10px;">Amount: <strong>$${data.data.amount}</strong></p>
+                                        <p>Previous Balance: <strong>$${data.data.balance_before}</strong></p>
+                                        <p>New Balance: <strong>$${data.data.balance_after}</strong></p>
+                                    </div>
+                                `,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#fbbf24'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            alert('Test deposit added successfully!\nAmount: $' + data.data.amount + '\nNew Balance: $' + data.data.balance_after);
+                            location.reload();
+                        }
+                    } else {
+                        throw new Error(data.message || 'Failed to add test deposit');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to add test deposit. Please try again.',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    } else {
+                        alert('Error: ' + error.message);
+                    }
+                })
+                .finally(() => {
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa fa-check me-2"></i>Add Deposit';
+                });
+            });
+        });
+    </script>
 @endsection
