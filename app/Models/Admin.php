@@ -7,7 +7,12 @@ use Spatie\Permission\Traits\HasRoles;
 
 class Admin extends Authenticatable
 {
-    use HasRoles;
+    use HasRoles {
+        HasRoles::hasPermissionTo as traitHasPermissionTo;
+        HasRoles::hasRole as traitHasRole;
+        HasRoles::hasAnyRole as traitHasAnyRole;
+        HasRoles::hasAllRoles as traitHasAllRoles;
+    }
 
     protected $fillable = ['name', 'email', 'password'];
 
@@ -42,7 +47,12 @@ class Admin extends Authenticatable
             return true;
         }
 
-        // Use parent can method for other admins
+        // For permission strings, use hasPermissionTo
+        if (is_string($permission)) {
+            return $this->hasPermissionTo($permission, $guardName ?? $this->guard_name);
+        }
+
+        // Use parent can method for other cases (policies, etc.)
         return parent::can($permission, $guardName ?? $this->guard_name);
     }
 
@@ -60,8 +70,8 @@ class Admin extends Authenticatable
             return true;
         }
 
-        // Use parent hasPermissionTo method for other admins
-        return parent::hasPermissionTo($permission, $guardName ?? $this->guard_name);
+        // Use the trait's hasPermissionTo method for other admins
+        return $this->traitHasPermissionTo($permission, $guardName ?? $this->guard_name);
     }
 
     /**
@@ -78,8 +88,8 @@ class Admin extends Authenticatable
             return true;
         }
 
-        // Use parent hasRole method for other admins
-        return parent::hasRole($role, $guardName ?? $this->guard_name);
+        // Use the trait's hasRole method for other admins
+        return $this->traitHasRole($role, $guardName ?? $this->guard_name);
     }
 
     /**
@@ -96,8 +106,8 @@ class Admin extends Authenticatable
             return true;
         }
 
-        // Use parent hasAnyRole method for other admins
-        return parent::hasAnyRole($roles, $guardName ?? $this->guard_name);
+        // Use the trait's hasAnyRole method for other admins
+        return $this->traitHasAnyRole($roles, $guardName ?? $this->guard_name);
     }
 
     /**
@@ -114,7 +124,7 @@ class Admin extends Authenticatable
             return true;
         }
 
-        // Use parent hasAllRoles method for other admins
-        return parent::hasAllRoles($roles, $guardName ?? $this->guard_name);
+        // Use the trait's hasAllRoles method for other admins
+        return $this->traitHasAllRoles($roles, $guardName ?? $this->guard_name);
     }
 }

@@ -26,6 +26,14 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::middleware('auth:admin')->group(function () {
         Route::get('/dashboard', [HomeController::class, 'dashboard'])->middleware('permission:view dashboard,admin')->name('backend.dashboard');
         Route::post('/search', [HomeController::class, 'search'])->middleware('permission:view dashboard,admin')->name('search');
+        Route::post('/clear-cache', [HomeController::class, 'clearCache'])->name('clear-cache');
+
+        // Admin Profile Routes
+        Route::controller(\App\Http\Controllers\Backend\AdminProfileController::class)->prefix('profile')->name('profile.')->group(function () {
+            Route::get('/', 'show')->name('show');
+            Route::get('/edit', 'edit')->name('edit');
+            Route::put('/', 'update')->name('update');
+        });
 
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
