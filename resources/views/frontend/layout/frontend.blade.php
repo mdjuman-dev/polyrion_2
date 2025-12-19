@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Favicon -->
@@ -82,6 +82,25 @@
 </head>
 
 <body class="dark-theme has-bottom-nav">
+    @if (session('admin_id'))
+        <div class="admin-impersonation-banner"
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 0; text-align: center; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+            <div class="container">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-shield me-2"></i>
+                        <strong>You are logged in as: {{ auth()->user()->name }}</strong>
+                    </div>
+                    <form action="{{ route('admin.users.return-to-admin') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Return to Admin Panel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
     <div id="header">
         <!-- Header -->
         <header>
@@ -158,31 +177,22 @@
                                             </div>
                                             <div class="header-user-info">
                                                 <a href="{{ route('profile.index') }}">
-                                                    <div class="header-user-name">
+                                                    @if (auth()->user()->name)
+                                                        <div class="header-user-name">
+                                                            {{ auth()->user()->name }}
+                                                        </div>
+                                                    @endif
+
+                                                    <div class="header-user-name text-muted">
                                                         {{ auth()->user()->username }}
                                                     </div>
                                                 </a>
-                                                @if (auth()->user()->email)
-                                                    <div class="header-user-sub">
-                                                        {{ auth()->user()->email }}
-                                                    </div>
-                                                @endif
+
                                             </div>
                                         </div>
                                         <div class="header-menu-divider">
                                         </div>
                                     @endif
-
-                                    @auth
-                                        <a href="{{ route('trades.my.page') }}">
-                                            <i class="fas fa-chart-line"></i>
-                                            <span>My Trades History</span>
-                                        </a>
-                                        <a href="{{ route('withdrawal.index') }}">
-                                            <i class="fas fa-money-bill-wave"></i>
-                                            <span>Withdraw Funds</span>
-                                        </a>
-                                    @endauth
 
                                     <a href="#">
                                         <div
@@ -378,7 +388,7 @@
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav d-lg-none d-flex">
-        <a href="{{ route('home') }}    " class="mobile-nav-item active">
+        <a href="{{ route('home') }}" class="mobile-nav-item active">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
@@ -509,95 +519,7 @@
     <!-- Deposit Modal -->
     <div class="deposit-modal-overlay" id="depositModalOverlay"></div>
     <div class="deposit-modal-popup" id="depositModalPopup">
-        <div class="deposit-modal-header">
-            <h3>Deposit Funds</h3>
-            <button type="button" class="deposit-modal-close" id="depositModalClose" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="deposit-modal-content">
-            <form id="depositForm" action="{{ route('binance.create') }}" method="POST">
-                @csrf
-                <div class="deposit-form-container">
-                    <div class="deposit-balance-info">
-                        <div class="balance-item">
-                            <span class="balance-label">Current Balance</span>
-                            <span
-                                class="balance-value">${{ number_format(auth()->user()->wallet->balance ?? 0, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="deposit-input-group">
-                        <label class="deposit-input-label">Amount</label>
-                        <div class="deposit-input-wrapper">
-                            <span class="deposit-currency">$</span>
-                            <input type="number" name="amount" class="deposit-input" id="depositAmount"
-                                placeholder="0.00" min="0" step="0.01">
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- <div class="deposit-quick-amounts">
-                    <button type="bu    " class="quick-amount-btn" data-amount="10">$10</button>
-                        <button class="quick-amount-btn" data-amount="50">$50</button>
-                        <button class="quick-amount-btn" data-amount="100">$100</button>
-                        <button class="quick-amount-btn" data-amount="500">$500</button>
-                </div> --}}
-
-                <div class="deposit-method-section">
-                    <label class="deposit-method-label">Payment Method</label>
-                    <div class="deposit-methods">
-                        <button type="button" class="deposit-method-btn active" data-method="binancepay">
-                            <i class="fas fa-coins"></i>
-                            <span>Binance Pay</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="manual">
-                            <i class="fas fa-keyboard"></i>
-                            <span>Manual Payment</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="metamask">
-                            <i class="fas fa-mask"></i>
-                            <span>MetaMask</span>
-                        </button>
-
-                        <button type="button" class="deposit-method-btn" data-method="trustwallet">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Trust Wallet</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Query Code Field - Shown for manual payment -->
-                <div class="deposit-input-group" id="queryCodeGroup" style="display: none;">
-                    <label class="deposit-input-label">Transaction/Query Code</label>
-                    <div class="deposit-input-wrapper">
-                        <span class="deposit-currency"><i class="fas fa-barcode"></i></span>
-                        <input type="text" class="deposit-input" id="queryCode"
-                            placeholder="Enter transaction or merchant trade number">
-                    </div>
-                    <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i> Enter your Binance Pay transaction code or merchant
-                        trade
-                        number
-                    </small>
-                </div>
-
-                <button type="button" class="deposit-submit-btn" id="depositSubmitBtn">
-                    <i class="fas fa-arrow-right"></i>
-                    <span>Deposit</span>
-                </button>
-
-                <div class="deposit-footer">
-                    <p class="deposit-note" style="color: #6b7280; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i>
-                        Minimum deposit: $10. Your payment will be processed securely through Binance Pay.
-                    </p>
-                </div>
-            </form>
-        </div>
+        @livewire('deposit-request')
     </div>
 
 
@@ -1925,9 +1847,13 @@
                 const method = $(this).data("method");
                 if (method === 'manual') {
                     $("#queryCodeGroup").slideDown(200);
+                    $("#depositNoteText").text(
+                        "Minimum deposit: $10. Enter your transaction code for manual verification.");
                 } else {
                     $("#queryCodeGroup").slideUp(200);
                     $("#queryCode").val("");
+                    $("#depositNoteText").text(
+                        "Minimum deposit: $10. Your payment will be processed securely.");
                 }
             });
 
@@ -1939,12 +1865,48 @@
                 const currency = 'USDT';
 
                 if (!amount || amount <= 0) {
-                    showWarning('Please enter a valid amount', 'Invalid Amount');
+                    if (typeof showWarning !== 'undefined') {
+                        showWarning('Please enter a valid amount', 'Invalid Amount');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Amount',
+                            text: 'Please enter a valid amount',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Amount',
+                            text: 'Please enter a valid amount',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else {
+                        alert('Please enter a valid amount');
+                    }
                     return;
                 }
 
                 if (amount < 10) {
-                    showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                    if (typeof showWarning !== 'undefined') {
+                        showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Minimum Amount Required',
+                            text: 'Minimum deposit amount is $10',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Minimum Amount Required',
+                            text: 'Minimum deposit amount is $10',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else {
+                        alert('Minimum deposit amount is $10');
+                    }
                     return;
                 }
 
@@ -2868,6 +2830,57 @@
             });
         }
 
+        // Handle logout with confirmation popup
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all logout forms
+            const logoutForms = document.querySelectorAll('form[action*="logout"]');
+
+            logoutForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    // Show confirmation popup using SweetAlert
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'Do you want to logout?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#667eea',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, Logout',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            customClass: {
+                                popup: 'swal2-theme',
+                                title: 'swal2-title-theme',
+                                content: 'swal2-content-theme'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Show loading toast
+                                if (typeof showInfo !== 'undefined') {
+                                    showInfo('Logging out...', 'Logout');
+                                } else if (typeof toastr !== 'undefined') {
+                                    toastr.info('Logging out...', 'Logout');
+                                }
+
+                                // Submit form after a short delay
+                                setTimeout(function() {
+                                    form.submit();
+                                }, 300);
+                            }
+                        });
+                    } else {
+                        // Fallback to browser confirm if SweetAlert is not available
+                        if (confirm('Are you sure you want to logout?')) {
+                            form.submit();
+                        }
+                    }
+                });
+            });
+        });
+
         // Cleanup function for SweetAlert
         function cleanupSwal() {
             // Restore body scroll
@@ -3017,7 +3030,9 @@
 
     <!-- Tawk.to Chat Widget -->
     @if ($tawkWidgetCode)
-        {!! $tawkWidgetCode !!}
+        <script>
+            {!! $tawkWidgetCode !!}
+        </script>
     @endif
 
     <style>

@@ -1,9 +1,14 @@
 @props(['event', 'titleLength' => 60, 'keyPrefix' => 'event', 'showNewBadge' => true, 'newBadgeThreshold' => 10])
 
 @php
-    $isMultiMarket = $event->markets->count() > 1;
+    // Filter out closed markets
+    $activeMarkets = $event->markets->filter(function($market) {
+        return !$market->isClosed() && !$market->closed;
+    });
+    $isMultiMarket = $activeMarkets->count() > 1;
 @endphp
 
+@if ($activeMarkets->count() > 0)
 @if ($isMultiMarket)
     {{-- Type 2: Multiple Markets (Fed rate cuts style) --}}
     <div class="market-card multi-market">
@@ -16,7 +21,7 @@
                 class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>
         </div>
         <div class="market-card-body">
-            @foreach ($event->markets as $market)
+            @foreach ($activeMarkets as $market)
                 @php
                     $prices = json_decode($market->outcome_prices, true);
                     // Polymarket format - prices[0] = NO, prices[1] = YES
@@ -63,7 +68,7 @@
     </div>
 @else
     @php
-        $market = $event->markets->first();
+        $market = $activeMarkets->first();
         if ($market) {
             $prices = json_decode($market->outcome_prices, true);
             // Polymarket format - prices[0] = NO, prices[1] = YES
@@ -124,4 +129,5 @@
             </div>
         </div>
     </div>
+@endif
 @endif

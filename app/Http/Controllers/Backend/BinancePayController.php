@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Deposit;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Models\GlobalSetting;
 
 class BinancePayController extends Controller
 {
@@ -21,12 +22,19 @@ class BinancePayController extends Controller
 
     public function __construct()
     {
-        // Use environment variables or config, fallback to hardcoded for backward compatibility
-        $this->apiKey = config('services.binance.api_key') ?: env('BINANCE_API_KEY', 'jCaL0Y7arCkS75CdRW5WONIaw7wifNf5QP9zA2JM0oqdSwPPIARboHjcq2AOLUva');
-        $this->secretKey = config('services.binance.secret_key') ?: env('BINANCE_SECRET_KEY', 'nte8RCgMKDoffXI4H5uM9ErrsbQASMDfgmPd6W27oJVW7kTLa0ItiAbMZaShXL34');
+        // Use database settings first, then config, then env, fallback to hardcoded for backward compatibility
+        $this->apiKey = GlobalSetting::getValue('binance_api_key') 
+            ?: config('services.binance.api_key') 
+            ?: env('BINANCE_API_KEY', 'jCaL0Y7arCkS75CdRW5WONIaw7wifNf5QP9zA2JM0oqdSwPPIARboHjcq2AOLUva');
+        
+        $this->secretKey = GlobalSetting::getValue('binance_secret_key') 
+            ?: config('services.binance.secret_key') 
+            ?: env('BINANCE_SECRET_KEY', 'nte8RCgMKDoffXI4H5uM9ErrsbQASMDfgmPd6W27oJVW7kTLa0ItiAbMZaShXL34');
         
         // Normalize base URL - remove trailing slashes to prevent double slashes in URLs
-        $baseUrl = config('services.binance.base_url') ?: env('BINANCE_BASE_URL', 'https://bpay.binanceapi.com');
+        $baseUrl = GlobalSetting::getValue('binance_base_url') 
+            ?: config('services.binance.base_url') 
+            ?: env('BINANCE_BASE_URL', 'https://bpay.binanceapi.com');
         $this->baseUrl = rtrim($baseUrl, '/');
         
         // Log configuration for debugging (without exposing secrets)

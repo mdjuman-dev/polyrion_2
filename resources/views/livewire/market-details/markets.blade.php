@@ -8,8 +8,12 @@
             </button>
         </div>
     </div>
-    @if ($event->markets->count() > 0)
-        @foreach ($event->markets as $index => $market)
+    @if ($event->markets->where('closed', false)->filter(function($market) {
+        return !$market->isClosed();
+    })->count() > 0)
+        @foreach ($event->markets->where('closed', false)->filter(function($market) {
+            return !$market->isClosed();
+        }) as $index => $market)
             @php
                 $prices = json_decode($market->outcome_prices, true);
                 // Polymarket format - prices[0] = NO, prices[1] = YES

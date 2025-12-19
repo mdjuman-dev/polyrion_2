@@ -26,6 +26,9 @@
                         <div class="box search-filter-box">
                             <div class="box-body">
                                 <form method="GET" action="{{ route('admin.events.index') }}" class="search-filter-form">
+                                    @if (request('status'))
+                                        <input type="hidden" name="status" value="{{ request('status') }}">
+                                    @endif
                                     <div class="row align-items-center">
                                         <div class="col-md-5">
                                             <div class="form-group">
@@ -55,7 +58,7 @@
                                                     icon="search">
                                                     Search
                                                 </x-backend.form-button>
-                                                @if (request('search') || (request('category') && request('category') != 'all'))
+                                                @if (request('search') || (request('category') && request('category') != 'all') || request('status'))
                                                     <a href="{{ route('admin.events.index') }}"
                                                         class="btn btn-secondary btn-sm btn-reset">
                                                         <i class="fa fa-refresh"></i> Reset
@@ -64,20 +67,69 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Status Filter Buttons -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="form-group mb-0">
+                                                <label class="form-label"
+                                                    style="font-weight: 600; color: #374151; margin-bottom: 12px;">
+                                                    <i class="fa fa-filter me-2" style="color: #667eea;"></i> Filter by
+                                                    Status
+                                                </label>
+                                                <div class="d-flex gap-2 flex-wrap">
+                                                    <a href="{{ route('admin.events.index', array_merge(request()->except('status'), ['status' => ''])) }}"
+                                                        class="btn {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}"
+                                                        style="border-radius: 10px; padding: 10px 20px; font-weight: 600; transition: all 0.3s; border: 2px solid;"
+                                                        onmouseover="this.style.transform='translateY(-2px)'"
+                                                        onmouseout="this.style.transform='translateY(0)'">
+                                                        <i class="fa fa-list me-1"></i> All
+                                                    </a>
+                                                    <a href="{{ route('admin.events.index', array_merge(request()->except('status'), ['status' => 'active'])) }}"
+                                                        class="btn {{ request('status') === 'active' ? 'btn-success' : 'btn-outline-success' }}"
+                                                        style="border-radius: 10px; padding: 10px 20px; font-weight: 600; transition: all 0.3s; border: 2px solid;"
+                                                        onmouseover="this.style.transform='translateY(-2px)'"
+                                                        onmouseout="this.style.transform='translateY(0)'">
+                                                        <i class="fa fa-check-circle me-1"></i> Active
+                                                    </a>
+                                                    <a href="{{ route('admin.events.index', array_merge(request()->except('status'), ['status' => 'inactive'])) }}"
+                                                        class="btn {{ request('status') === 'inactive' ? 'btn-warning' : 'btn-outline-warning' }}"
+                                                        style="border-radius: 10px; padding: 10px 20px; font-weight: 600; transition: all 0.3s; border: 2px solid;"
+                                                        onmouseover="this.style.transform='translateY(-2px)'"
+                                                        onmouseout="this.style.transform='translateY(0)'">
+                                                        <i class="fa fa-exclamation-circle me-1"></i> Inactive
+                                                    </a>
+                                                    <a href="{{ route('admin.events.index', array_merge(request()->except('status'), ['status' => 'closed'])) }}"
+                                                        class="btn {{ request('status') === 'closed' ? 'btn-danger' : 'btn-outline-danger' }}"
+                                                        style="border-radius: 10px; padding: 10px 20px; font-weight: 600; transition: all 0.3s; border: 2px solid;"
+                                                        onmouseover="this.style.transform='translateY(-2px)'"
+                                                        onmouseout="this.style.transform='translateY(0)'">
+                                                        <i class="fa fa-times-circle me-1"></i> Closed
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </form>
 
-                                @if (request('search') || (request('category') && request('category') != 'all'))
+                                @if (request('search') || (request('category') && request('category') != 'all') || request('status'))
                                     <div class="search-results-info">
                                         <i class="fa fa-info-circle"></i>
                                         <span>
                                             @if (request('search'))
                                                 Searching for: <strong>"{{ request('search') }}"</strong>
                                             @endif
-                                            @if (request('search') && request('category') && request('category') != 'all')
+                                            @if (request('search') && (request('category') && request('category') != 'all'))
                                                 <span class="separator">|</span>
                                             @endif
                                             @if (request('category') && request('category') != 'all')
                                                 Category: <strong>{{ ucfirst(request('category')) }}</strong>
+                                            @endif
+                                            @if ((request('search') || (request('category') && request('category') != 'all')) && request('status'))
+                                                <span class="separator">|</span>
+                                            @endif
+                                            @if (request('status'))
+                                                Status: <strong>{{ ucfirst(request('status')) }}</strong>
                                             @endif
                                             <span class="separator">|</span>
                                             Found: <strong>{{ $events->total() }}</strong> event(s)

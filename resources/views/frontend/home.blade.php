@@ -135,8 +135,8 @@
                                         onclick="setStatus('active', 'Active')">
                                         Active</li>
                                     <li class="status-option" data-status="closed"
-                                        onclick="setStatus('closed', 'Closed')">
-                                        Closed</li>
+                                        onclick="setStatus('closed', 'Resolved')">
+                                        Resolved</li>
                                     <li class="status-option" data-status="pending"
                                         onclick="setStatus('pending', 'Pending')">Pending</li>
                                 </ul>

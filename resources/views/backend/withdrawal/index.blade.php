@@ -174,10 +174,26 @@
                                                             <span class="badge bg-danger">Rejected</span>
                                                         @endif
                                                     </td>
-                                                    <td>{{ $withdrawal->created_at->format('M d, Y H:i') }}</td>
+                                                    <td>
+                                                        <div>
+                                                            <strong>{{ $withdrawal->created_at->format('M d, Y H:i') }}</strong>
+                                                            @if ($withdrawal->processed_at)
+                                                                <br><small class="text-muted">Processed:
+                                                                    {{ $withdrawal->processed_at->format('M d, Y H:i') }}</small>
+                                                            @endif
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         @if ($withdrawal->approver)
-                                                            <strong>{{ $withdrawal->approver->name }}</strong>
+                                                            <div>
+                                                                <strong>{{ $withdrawal->approver->name }}</strong>
+                                                                @if ($withdrawal->admin_note)
+                                                                    <br><small class="text-muted"
+                                                                        title="{{ $withdrawal->admin_note }}">
+                                                                        <i class="fa fa-comment"></i> Note added
+                                                                    </small>
+                                                                @endif
+                                                            </div>
                                                         @else
                                                             <span class="text-muted">—</span>
                                                         @endif
@@ -205,6 +221,18 @@
                                                                     title="Mark as Processing">
                                                                     <i class="fa fa-spinner"></i>
                                                                 </button>
+                                                            @elseif ($withdrawal->status == 'completed')
+                                                                <span class="badge bg-success">
+                                                                    <i class="fa fa-check-circle"></i> Approved
+                                                                </span>
+                                                            @elseif ($withdrawal->status == 'rejected')
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fa fa-times-circle"></i> Rejected
+                                                                </span>
+                                                            @elseif ($withdrawal->status == 'processing')
+                                                                <span class="badge bg-info">
+                                                                    <i class="fa fa-spinner fa-spin"></i> Processing
+                                                                </span>
                                                             @endif
                                                         </div>
                                                     </td>
@@ -290,17 +318,31 @@
         <script>
             $(document).ready(function() {
                 // Approve button
-                $('.approve-btn').on('click', function() {
+                $(document).on('click', '.approve-btn', function() {
                     const id = $(this).data('id');
                     $('#approve_withdrawal_id').val(id);
-                    $('#approveModal').modal('show');
+                    $('#approve_admin_note').val(''); // Reset note
+                    // Use Bootstrap 5 modal if available, otherwise jQuery modal
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+                        modal.show();
+                    } else {
+                        $('#approveModal').modal('show');
+                    }
                 });
 
                 // Reject button
-                $('.reject-btn').on('click', function() {
+                $(document).on('click', '.reject-btn', function() {
                     const id = $(this).data('id');
                     $('#reject_withdrawal_id').val(id);
-                    $('#rejectModal').modal('show');
+                    $('#reject_admin_note').val(''); // Reset note
+                    // Use Bootstrap 5 modal if available, otherwise jQuery modal
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+                        modal.show();
+                    } else {
+                        $('#rejectModal').modal('show');
+                    }
                 });
 
                 // Processing button
@@ -330,8 +372,16 @@
                                     }
                                 },
                                 error: function(xhr) {
-                                    toastr.error(xhr.responseJSON?.message ||
-                                        'An error occurred');
+                                    let errorMsg = 'An error occurred';
+                                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                                        errorMsg = xhr.responseJSON.message;
+                                    } else if (xhr.status === 0) {
+                                        errorMsg =
+                                            'Network error. Please check your connection.';
+                                    } else if (xhr.status === 500) {
+                                        errorMsg = 'Server error. Please try again later.';
+                                    }
+                                    toastr.error(errorMsg);
                                 }
                             });
                         }
@@ -356,12 +406,29 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                $('#approveModal').modal('hide');
+                                // Close modal
+                                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    const modal = bootstrap.Modal.getInstance(document
+                                        .getElementById('approveModal'));
+                                    if (modal) modal.hide();
+                                } else {
+                                    $('#approveModal').modal('hide');
+                                }
                                 setTimeout(() => location.reload(), 1000);
+                            } else {
+                                toastr.error(response.message || 'Failed to approve withdrawal');
                             }
                         },
                         error: function(xhr) {
-                            toastr.error(xhr.responseJSON?.message || 'An error occurred');
+                            let errorMsg = 'An error occurred';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMsg = xhr.responseJSON.message;
+                            } else if (xhr.status === 0) {
+                                errorMsg = 'Network error. Please check your connection.';
+                            } else if (xhr.status === 500) {
+                                errorMsg = 'Server error. Please try again later.';
+                            }
+                            toastr.error(errorMsg);
                         }
                     });
                 });
@@ -389,12 +456,29 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                $('#rejectModal').modal('hide');
+                                // Close modal
+                                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    const modal = bootstrap.Modal.getInstance(document
+                                        .getElementById('rejectModal'));
+                                    if (modal) modal.hide();
+                                } else {
+                                    $('#rejectModal').modal('hide');
+                                }
                                 setTimeout(() => location.reload(), 1000);
+                            } else {
+                                toastr.error(response.message || 'Failed to reject withdrawal');
                             }
                         },
                         error: function(xhr) {
-                            toastr.error(xhr.responseJSON?.message || 'An error occurred');
+                            let errorMsg = 'An error occurred';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMsg = xhr.responseJSON.message;
+                            } else if (xhr.status === 0) {
+                                errorMsg = 'Network error. Please check your connection.';
+                            } else if (xhr.status === 500) {
+                                errorMsg = 'Server error. Please try again later.';
+                            }
+                            toastr.error(errorMsg);
                         }
                     });
                 });

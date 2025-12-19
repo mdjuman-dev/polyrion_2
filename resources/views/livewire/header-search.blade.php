@@ -4,6 +4,7 @@
     <input type="text" placeholder="Search polyrion" class="header-search-input" wire:model.live.debounce.300ms="query"
         x-on:focus="show = true; $wire.showSuggestions = true"
         x-on:keydown.escape="show = false; $wire.closeSuggestions()"
+        x-on:keydown.enter.prevent="$wire.performSearch()"
         style="width: 100%; padding: 10px 40px 10px 40px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; transition: all 0.3s ease;">
 
     @if ($query)
@@ -80,7 +81,7 @@
                 <div class="search-section">
                     <div class="search-suggestions">
                         @foreach ($suggestions as $event)
-                            <a href="{{ route('market.details', $event->slug) }}" class="search-suggestion-item">
+                            <a href="{{ route('market.details', $event->slug) }}" class="search-suggestion-item" wire:click="selectEvent({{ $event->id }})" wire:click.stop>
                                 <img src="{{ $event->image }}" alt="{{ $event->title }}" class="suggestion-image">
                                 <div class="suggestion-content">
                                     <div class="suggestion-title">{{ $event->title }}</div>

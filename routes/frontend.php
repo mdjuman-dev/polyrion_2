@@ -37,6 +37,7 @@ Route::controller(HomeController::class)->group(function () {
 Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->middleware(['auth'])->group(function () {
     Route::get('/', 'profile')->name('index');
     Route::get('/settings', 'settings')->name('settings');
+    Route::put('/update', 'update')->name('update');
 });
 
 // Wallet routes
@@ -44,11 +45,15 @@ Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->m
     Route::post('/deposit', 'deposit')->name('deposit');
 });
 
-// Withdrawal routes
+// Withdrawal routes - Redirect to profile page (withdrawal handled via modal)
 Route::controller(\App\Http\Controllers\Frontend\WithdrawalController::class)->prefix('withdrawal')->name('withdrawal.')->middleware(['auth'])->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::post('/', 'store')->name('store');
-    Route::get('/history', 'history')->name('history');
+    Route::get('/', function() {
+        return redirect()->route('profile.index')->with('open_withdrawal_modal', true);
+    })->name('index');
+    Route::post('/', 'store')->name('store'); // Keep for API compatibility
+    Route::get('/history', function() {
+        return redirect()->route('profile.index');
+    })->name('history');
 });
 
 // Trading routes
@@ -57,10 +62,22 @@ Route::controller(TradeController::class)->prefix('trades')->name('trades.')->mi
     Route::get('/my-trades', 'myTrades')->name('my');
     Route::get('/my-trades-page', 'myTradesPage')->name('my.page'); // View page
     Route::get('/market/{marketId}', 'marketTrades')->name('market');
+    Route::get('/{id}', 'getTrade')->name('show'); // Get specific trade
+});
+
+// API Trading routes (as per guide specification)
+Route::prefix('api')->middleware(['auth'])->group(function () {
+    Route::get('/trades', [TradeController::class, 'myTrades'])->name('api.trades');
+    Route::get('/trades/{id}', [TradeController::class, 'getTrade'])->name('api.trades.show');
+    Route::post('/market/{marketId}/buy', [\App\Http\Controllers\Frontend\MarketController::class, 'buy'])->name('api.market.buy');
+    Route::get('/market/{marketId}/trade-preview', [\App\Http\Controllers\Frontend\MarketController::class, 'getTradePreview'])->name('api.market.trade-preview');
+    Route::get('/market/{marketId}/prices', [\App\Http\Controllers\Frontend\MarketController::class, 'getMarketPrices'])->name('api.market.prices');
 });
 
 // Market trading routes (Polymarket-style)
 Route::controller(\App\Http\Controllers\Frontend\MarketController::class)->prefix('market')->name('market.')->middleware(['auth'])->group(function () {
     Route::post('/{marketId}/buy', 'buy')->name('buy');
     Route::post('/{marketId}/settle', 'settleMarket')->name('settle');
+    Route::get('/{marketId}/trade-preview', 'getTradePreview')->name('trade-preview');
+    Route::get('/{marketId}/prices', 'getMarketPrices')->name('prices');
 });

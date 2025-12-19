@@ -8,7 +8,8 @@
             <i class="fas fa-search search-icon"></i>
             <input type="text" placeholder="Search polymarket" id="mobileSearchInput"
                 wire:model.live.debounce.300ms="query" x-on:focus="$wire.showSuggestions = true"
-                x-on:keydown.escape="$wire.closeSuggestions()" autocomplete="off">
+                x-on:keydown.escape="$wire.closeSuggestions()"
+                x-on:keydown.enter.prevent="$wire.performSearch()" autocomplete="off">
 
             @if ($query)
                 <button type="button" class="mobile-search-clear" wire:click="$set('query', '')"
@@ -96,7 +97,7 @@
                             <div class="mobile-search-suggestions">
                                 @foreach ($suggestions as $event)
                                     <a href="{{ route('market.details', $event->slug) }}"
-                                        class="mobile-search-suggestion-item">
+                                        class="mobile-search-suggestion-item" wire:click="selectEvent({{ $event->id }})" wire:click.stop>
                                         <img src="{{ $event->image }}" alt="{{ $event->title }}"
                                             class="mobile-suggestion-image">
                                         <div class="mobile-suggestion-content">
