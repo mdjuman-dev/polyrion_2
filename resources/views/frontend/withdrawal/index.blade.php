@@ -47,15 +47,29 @@
                             </div>
 
                             <div class="form-group-custom">
-                                <label for="payment_method" class="form-label-custom">
+                                <label class="form-label-custom">
                                     <i class="fas fa-credit-card"></i> Payment Method <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-input-custom" id="payment_method" name="payment_method" required>
-                                    <option value="">Select Payment Method</option>
-                                    <option value="bank">🏦 Bank Transfer</option>
-                                    <option value="crypto">₿ Cryptocurrency</option>
-                                    <option value="paypal">💳 PayPal</option>
-                                </select>
+                                <div class="payment-method-options">
+                                    <label class="payment-method-option" data-method="bank">
+                                        <input type="radio" name="payment_method" value="bank" required
+                                            style="display: none;">
+                                        <i class="fas fa-university"></i>
+                                        <span>Bank Transfer</span>
+                                    </label>
+                                    <label class="payment-method-option" data-method="crypto">
+                                        <input type="radio" name="payment_method" value="crypto" required
+                                            style="display: none;">
+                                        <i class="fab fa-bitcoin"></i>
+                                        <span>Cryptocurrency</span>
+                                    </label>
+                                    <label class="payment-method-option" data-method="paypal">
+                                        <input type="radio" name="payment_method" value="paypal" required
+                                            style="display: none;">
+                                        <i class="fab fa-paypal"></i>
+                                        <span>PayPal</span>
+                                    </label>
+                                </div>
                             </div>
 
                             <!-- Payment Details Fields (Dynamic) -->
@@ -93,7 +107,9 @@
                                         <i class="fab fa-bitcoin"></i> Cryptocurrency Details
                                     </div>
                                     <div class="form-group-custom">
-                                        <label for="crypto_type" class="form-label-custom">Cryptocurrency Type</label>
+                                        <label for="crypto_type" class="form-label-custom">
+                                            <i class="fab fa-bitcoin"></i> Cryptocurrency Type
+                                        </label>
                                         <select class="form-input-custom" id="crypto_type" name="crypto_type">
                                             <option value="USDT">USDT</option>
                                             <option value="BTC">Bitcoin (BTC)</option>
@@ -102,12 +118,16 @@
                                         </select>
                                     </div>
                                     <div class="form-group-custom">
-                                        <label for="wallet_address" class="form-label-custom">Wallet Address</label>
+                                        <label for="wallet_address" class="form-label-custom">
+                                            <i class="fas fa-wallet"></i> Wallet Address
+                                        </label>
                                         <input type="text" class="form-input-custom" id="wallet_address"
                                             name="wallet_address" placeholder="Enter your wallet address">
                                     </div>
                                     <div class="form-group-custom">
-                                        <label for="network" class="form-label-custom">Network</label>
+                                        <label for="network" class="form-label-custom">
+                                            <i class="fas fa-network-wired"></i> Network
+                                        </label>
                                         <select class="form-input-custom" id="network" name="network">
                                             <option value="TRC20">TRC20 (Tron)</option>
                                             <option value="ERC20">ERC20 (Ethereum)</option>
@@ -122,7 +142,9 @@
                                         <i class="fab fa-paypal"></i> PayPal Details
                                     </div>
                                     <div class="form-group-custom">
-                                        <label for="paypal_email" class="form-label-custom">PayPal Email</label>
+                                        <label for="paypal_email" class="form-label-custom">
+                                            <i class="fab fa-paypal"></i> PayPal Email
+                                        </label>
                                         <input type="email" class="form-input-custom" id="paypal_email"
                                             name="paypal_email" placeholder="your.email@example.com">
                                     </div>
@@ -622,6 +644,10 @@
                 .form-input-custom {
                     padding: 12px 14px;
                 }
+
+                .payment-method-options {
+                    grid-template-columns: 1fr;
+                }
             }
 
             /* Pagination Styling */
@@ -667,7 +693,7 @@
 
                     const formData = {
                         amount: $('#amount').val(),
-                        payment_method: $('#payment_method').val(),
+                        payment_method: $('input[name="payment_method"]:checked').val(),
                         payment_details: {}
                     };
 
@@ -728,7 +754,7 @@
                                 });
                                 submitBtn.prop('disabled', false).html(
                                     '<i class="fas fa-paper-plane"></i> Submit Withdrawal Request'
-                                    );
+                                );
                             }
                         },
                         error: function(xhr) {

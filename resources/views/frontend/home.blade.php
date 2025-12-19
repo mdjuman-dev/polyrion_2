@@ -433,6 +433,61 @@
                 }
             }
 
+            /* Event Countdown Timer */
+            .event-countdown {
+                display: flex;
+                gap: 15px;
+                padding: 12px 20px;
+                border: 2px solid #ef4444;
+                border-radius: 8px;
+                background: rgba(239, 68, 68, 0.05);
+                margin-left: auto;
+                align-items: center;
+                flex-shrink: 0;
+            }
+
+            .countdown-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-width: 50px;
+            }
+
+            .countdown-number {
+                font-size: 28px;
+                font-weight: 700;
+                color: #6c757d;
+                line-height: 1;
+                margin-bottom: 4px;
+            }
+
+            .countdown-label {
+                font-size: 11px;
+                color: #9ca3af;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            @media (max-width: 768px) {
+                .event-countdown {
+                    gap: 10px;
+                    padding: 10px 15px;
+                    margin-left: 0;
+                    margin-top: 10px;
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .countdown-number {
+                    font-size: 24px;
+                }
+
+                .countdown-item {
+                    min-width: 45px;
+                }
+            }
+
             .loader,
             .loader:before,
             .loader:after {
@@ -484,6 +539,59 @@
     @endpush
     @push('script')
         <script>
+            // Event Countdown Timer
+            function updateEventCountdowns() {
+                const countdowns = document.querySelectorAll('.event-countdown');
+                
+                countdowns.forEach(countdown => {
+                    const endDateStr = countdown.getAttribute('data-end-date');
+                    if (!endDateStr) return;
+
+                    const endDate = new Date(endDateStr);
+                    const now = new Date();
+                    const diff = endDate - now;
+
+                    if (diff <= 0) {
+                        // Event has ended
+                        const daysEl = countdown.querySelector('[data-days]');
+                        const hoursEl = countdown.querySelector('[data-hours]');
+                        const minutesEl = countdown.querySelector('[data-minutes]');
+                        if (daysEl) daysEl.textContent = '0';
+                        if (hoursEl) hoursEl.textContent = '0';
+                        if (minutesEl) minutesEl.textContent = '0';
+                        return;
+                    }
+
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                    const daysEl = countdown.querySelector('[data-days]');
+                    const hoursEl = countdown.querySelector('[data-hours]');
+                    const minutesEl = countdown.querySelector('[data-minutes]');
+                    
+                    if (daysEl) daysEl.textContent = days;
+                    if (hoursEl) hoursEl.textContent = hours;
+                    if (minutesEl) minutesEl.textContent = minutes;
+                });
+            }
+
+            // Initialize countdown on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                updateEventCountdowns();
+                // Update every minute
+                setInterval(updateEventCountdowns, 60000);
+            });
+
+            // Update countdown after Livewire updates
+            document.addEventListener('livewire:init', function() {
+                updateEventCountdowns();
+                Livewire.hook('morph.updated', () => {
+                    setTimeout(updateEventCountdowns, 100);
+                });
+            });
+
+            // Original Livewire search functionality
             document.addEventListener('livewire:init', function() {
                 const searchInput = document.getElementById('marketSearchInput');
                 const clearBtn = document.getElementById('clearSearchBtn');

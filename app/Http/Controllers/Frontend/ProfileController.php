@@ -85,6 +85,11 @@ class ProfileController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Get user's deposits
+        $deposits = \App\Models\Deposit::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Calculate profit/loss data for chart
         $profitLossData = $this->calculateProfitLossData($trades);
 
@@ -106,7 +111,7 @@ class ProfileController extends Controller
         }
         $allActivity = $allActivity->sortByDesc('date');
 
-        return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'allActivity', 'profitLossData'));
+        return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData'));
     }
 
     function settings()

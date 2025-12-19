@@ -7,107 +7,109 @@
     <main>
         <div class="container mt-5">
             <div class="row d-flex justify-content-between m-auto">
-                <!-- Left Column - User Profile -->
+                <!-- Left Column - Portfolio -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profile-card"
-                        style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
-                        <div class="profile-header"
-                            style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; position: relative;">
-                            <div class="profile-avatar-wrapper" style="flex-shrink: 0;">
-                                <div class="profile-avatar-gradient"
-                                    style="width: 64px; height: 64px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border);">
-                                    <img src="{{ $profileImage }}" alt="{{ $user->name }}" loading="lazy"
-                                        style="width: 100%; height: 100%; object-fit: cover;"
-                                        onerror="this.src='{{ asset('frontend/assets/images/default-avatar.png') }}'">
-                                </div>
+                    <div class="portfolio-panel"
+                        style="background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.25rem; position: relative;">
+                        <!-- Header -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-ban" style="color: #9ca3af; font-size: 0.875rem;"></i>
+                                <span
+                                    style="font-size: 0.875rem; font-weight: 500; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Portfolio</span>
                             </div>
-                            <div class="profile-info" style="flex: 1;">
-                                <div class="profile-id-wrapper"
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <span class="profile-id"
-                                        style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ $user->name }}</span>
-                                </div>
-                                <div class="profile-meta" style="color: var(--text-secondary); font-size: 0.875rem;">
-                                    <span>Member since {{ $user->created_at->format('M Y') }}</span>
-                                </div>
+                            <!-- Balance Badge -->
+                            <div
+                                style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+                                <i class="fas fa-stack" style="color: #10b981; font-size: 0.75rem;"></i>
+                                <span
+                                    style="font-size: 0.8rem; font-weight: 600; color: #ffffff;">${{ number_format($balance, 2) }}</span>
                             </div>
                         </div>
 
-                        <!-- Separator -->
-                        <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
+                        <!-- Current Value -->
+                        <div style="margin-bottom: 0.5rem;">
+                            <div style="font-size: 1.75rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                                ${{ number_format($stats['positions_value'], 2) }}
+                            </div>
+                        </div>
 
-                        <div class="profile-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                            <div class="stat-item">
-                                <div class="stat-label"
-                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Positions
-                                    Value</div>
-                                <div class="stat-value"
-                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
-                                    ${{ number_format($stats['positions_value'], 2) }}</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label"
-                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">Biggest
-                                    Win</div>
-                                <div class="stat-value"
-                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
-                                    {{ $stats['biggest_win'] > 0 ? '$' . number_format($stats['biggest_win'], 2) : '—' }}
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label"
-                                    style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 8px;">
-                                    Predictions</div>
-                                <div class="stat-value"
-                                    style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
-                                    {{ $stats['predictions'] }}</div>
-                            </div>
+                        <!-- Timeframe -->
+                        <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 1.5rem;">Today</div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button
+                                onclick="if(typeof openDepositModal === 'function') { openDepositModal(); } else if(typeof window.openDepositModal === 'function') { window.openDepositModal(); }"
+                                style="flex: 1; background: #3b82f6; color: #ffffff; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                                onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                                <i class="fas fa-arrow-down"></i>
+                                <span>Deposit</span>
+                            </button>
+                            <button onclick="openWithdrawalModal()"
+                                style="flex: 1; background: rgba(255, 255, 255, 0.05); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'"
+                                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>Withdraw</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Right Column - Profit/Loss  -->
                 <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profit-loss-card"
-                        style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 24px; height: 100%;">
-                        <div class="profit-loss-header"
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <div class="profit-loss-title" style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-arrow-up profit-icon" style="color: #00c853; font-size: 1.125rem;"></i>
+                    <div class="profit-loss-panel"
+                        style="background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.25rem; position: relative;">
+                        <!-- Header -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-arrow-up" style="color: #10b981; font-size: 0.875rem;"></i>
                                 <span
-                                    style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary);">Profit/Loss</span>
+                                    style="font-size: 0.875rem; font-weight: 500; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Profit/Loss</span>
                             </div>
-                            <div class="time-filters" style="display: flex; gap: 0.5rem;">
-                                <button type="button" class="time-filter-btn active" data-time="1D"
-                                    style="padding: 0.5rem 1rem; background: #ffb11a; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;">1D</button>
-                                <button type="button" class="time-filter-btn" data-time="1W"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
-                                    onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">1W</button>
-                                <button type="button" class="time-filter-btn" data-time="1M"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
-                                    onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">1M</button>
-                                <button type="button" class="time-filter-btn" data-time="ALL"
-                                    style="padding: 0.5rem 1rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem;"
-                                    onmouseover="this.style.background='rgba(255, 177, 26, 0.1)'; this.style.borderColor='#ffb11a'; this.style.color='var(--text-primary)'"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-secondary)'">ALL</button>
+                            <!-- Time Filters -->
+                            <div style="display: flex; gap: 0.4rem;">
+                                <button type="button" class="pl-time-filter" data-pl-period="1D"
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1D</button>
+                                <button type="button" class="pl-time-filter" data-pl-period="1W"
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1W</button>
+                                <button type="button" class="pl-time-filter active" data-pl-period="1M"
+                                    style="padding: 0.35rem 0.6rem; background: rgba(59, 130, 246, 0.2); color: #ffffff; border: none; border-radius: 4px; font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1M</button>
+                                <button type="button" class="pl-time-filter" data-pl-period="ALL"
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">ALL</button>
                             </div>
                         </div>
-                        <div class="profit-loss-content">
-                            <div class="profit-loss-value"
-                                style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span class="pl-amount" id="profitLossAmount"
-                                    style="font-size: 1.75rem; font-weight: 600; color: var(--text-primary);">$0.00</span>
-                                <i class="fas fa-info-circle pl-info-icon" title="Total profit/loss"
-                                    style="color: var(--info); font-size: 1rem; cursor: help;"></i>
+
+                        <!-- Current Value -->
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <div style="font-size: 1.75rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                                <span id="profitLossAmount">${{ number_format($stats['total_profit_loss'] ?? 0, 2) }}</span>
                             </div>
-                            <div class="profit-loss-timeframe" id="profitLossTimeframe"
-                                style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">Past Day
-                            </div>
-                            <div class="profit-loss-chart"
-                                style="height: 200px; position: relative; background: transparent; border-radius: 12px;">
-                                <canvas id="profitLossChart"></canvas>
+                            <i class="fas fa-info-circle" style="color: #9ca3af; font-size: 0.875rem; cursor: pointer;"
+                                title="Profit/Loss for the selected time period"></i>
+                        </div>
+
+                        <!-- Timeframe -->
+                        <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem;" id="profitLossTimeframe">Past
+                            Month</div>
+
+                        <!-- Polymarket Logo -->
+                        <div
+                            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div
+                                style="width: 24px; height: 24px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; color: #ffffff;">
+                                PM</div>
+                            <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 500;">Polymarket</span>
+                        </div>
+
+                        <!-- Chart Placeholder -->
+                        <div
+                            style="height: 60px; background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: 6px; position: relative; overflow: hidden;">
+                            <div
+                                style="position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.5) 50%, transparent 100%);">
                             </div>
                         </div>
                     </div>
@@ -121,6 +123,7 @@
                         <div class="content-tabs">
                             <button type="button" class="content-tab active" data-tab="positions">Positions</button>
                             <button type="button" class="content-tab" data-tab="activity">Activity</button>
+                            <button type="button" class="content-tab" data-tab="deposits">Deposits</button>
                             <button type="button" class="content-tab" data-tab="withdrawals">Withdrawal</button>
                             <button type="button" class="content-tab" data-tab="settings">Settings</button>
                         </div>
@@ -166,7 +169,8 @@
                             </div>
 
                             @if ($trades->count() > 0)
-                                <div class="positions-table-container" style="padding: 0;">
+                                <!-- Desktop Table View -->
+                                <div class="positions-table-container desktop-view" style="padding: 0;">
                                     <table class="positions-table" style="width: 100%; border-collapse: collapse;">
                                         <thead>
                                             <tr
@@ -401,6 +405,186 @@
                                         </tbody>
                                     </table>
                                 </div>
+
+                                <!-- Mobile Card View -->
+                                <div class="positions-cards-container mobile-view" style="display: none;">
+                                    @foreach ($trades as $trade)
+                                        @php
+                                            $position = $activePositions->firstWhere('trade.id', $trade->id);
+                                            $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+                                            $isTradeClosed = $tradeStatus === 'CLOSED';
+                                            $isTradeSettled = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']);
+                                            $isActive =
+                                                $position &&
+                                                $position['is_open'] &&
+                                                !$isTradeClosed &&
+                                                !$isTradeSettled;
+                                            $isClosed =
+                                                $position &&
+                                                ($position['is_closed'] || $isTradeClosed) &&
+                                                !$position['has_result'];
+                                            $hasResult = $position && $position['has_result'];
+
+                                            // Calculate current value and P/L
+                                            $avgPrice = $trade->price ?? 0.0001;
+
+                                            if ($position && $position['market']) {
+                                                $outcomePrices = json_decode($position['market']->outcome_prices, true);
+                                                if (is_array($outcomePrices)) {
+                                                    if ($trade->option === 'yes') {
+                                                        $currentPrice = $outcomePrices[0] ?? $avgPrice;
+                                                    } else {
+                                                        $currentPrice = $outcomePrices[1] ?? $avgPrice;
+                                                    }
+                                                } else {
+                                                    $currentPrice = $avgPrice;
+                                                }
+                                            } else {
+                                                $currentPrice = $avgPrice;
+                                            }
+
+                                            $shares = $avgPrice > 0 ? $trade->amount / $avgPrice : $trade->amount;
+                                            $currentValue = $shares * $currentPrice;
+
+                                            $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
+                                            if (
+                                                ($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') &&
+                                                ($trade->payout_amount || $trade->payout)
+                                            ) {
+                                                $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
+                                                $profitLoss = $payout - $trade->amount;
+                                                $profitLossPct =
+                                                    $avgPrice > 0 ? (($currentPrice - $avgPrice) / $avgPrice) * 100 : 0;
+                                            } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
+                                                $profitLoss = -$trade->amount;
+                                                $profitLossPct = -100;
+                                            } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
+                                                $profitLoss = $trade->payout - $trade->amount;
+                                                $profitLossPct =
+                                                    $trade->amount > 0 ? ($profitLoss / $trade->amount) * 100 : 0;
+                                            } else {
+                                                $profitLoss = $currentValue - $trade->amount;
+                                                $profitLossPct =
+                                                    $avgPrice > 0 ? (($currentPrice - $avgPrice) / $avgPrice) * 100 : 0;
+                                            }
+                                        @endphp
+                                        <div class="position-card position-row"
+                                            data-subtab="{{ strtoupper($trade->status ?? '') === 'PENDING' && $isActive ? 'active' : 'closed' }}"
+                                            data-market="{{ strtolower($position['market']->question ?? '') }}"
+                                            data-value="{{ $currentValue }}" data-profit="{{ $profitLoss }}"
+                                            data-profit-pct="{{ $profitLossPct }}" data-bet="{{ $trade->amount }}"
+                                            data-avg-price="{{ $avgPrice }}"
+                                            data-current-price="{{ $currentPrice }}"
+                                            style="background: var(--card-bg); border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem; margin-bottom: 0; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;">
+                                            <!-- Left Icon -->
+                                            <div style="flex-shrink: 0;">
+                                                <div
+                                                    style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-chart-line"
+                                                        style="color: #ffffff; font-size: 20px;"></i>
+                                                </div>
+                                            </div>
+
+                                            <!-- Middle Content -->
+                                            <div style="flex: 1; min-width: 0;">
+                                                @php
+                                                    $marketQuestion = $position['market']->question ?? 'N/A';
+                                                    $words = explode(' ', $marketQuestion);
+                                                    $firstPart = '';
+                                                    $secondPart = '';
+
+                                                    // Try to split into two parts if long
+                                                    if (count($words) > 3) {
+                                                        $midPoint = ceil(count($words) / 2);
+                                                        $firstPart = implode(' ', array_slice($words, 0, $midPoint));
+                                                        $secondPart = implode(' ', array_slice($words, $midPoint));
+                                                    } else {
+                                                        $firstPart = $marketQuestion;
+                                                    }
+
+                                                    $tradeNumber = $loop->iteration;
+                                                    $tradeDate = $trade->created_at ?? now();
+                                                @endphp
+
+                                                <!-- Trade # and First Line -->
+                                                <div
+                                                    style="font-weight: 700; font-size: 0.95rem; color: #ffffff; margin-bottom: 0.25rem; line-height: 1.3;">
+                                                    Trade #{{ $tradeNumber }} - {{ $firstPart }}
+                                                </div>
+
+                                                @if ($secondPart)
+                                                    <!-- Second Line -->
+                                                    <div
+                                                        style="font-weight: 700; font-size: 0.95rem; color: #ffffff; margin-bottom: 0.25rem; line-height: 1.3;">
+                                                        {{ $secondPart }}
+                                                    </div>
+                                                @endif
+
+                                                <!-- Date, Time and Option -->
+                                                <div
+                                                    style="font-size: 0.8rem; color: #9ca3af; margin-top: 0.25rem; line-height: 1.4;">
+                                                    {{ $tradeDate->format('M d, Y h:i A') }} •
+                                                    {{ strtoupper($trade->option) }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Right Side - P/L Info -->
+                                            <div style="flex-shrink: 0; text-align: right;">
+                                                <!-- Profit/Loss Badge -->
+                                                <div style="margin-bottom: 0.5rem;">
+                                                    <span
+                                                        style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem; 
+                                                        background: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }};
+                                                        color: #ffffff;
+                                                    ">
+                                                        {{ $profitLoss >= 0 ? 'Profit' : 'Loss' }}
+                                                    </span>
+                                                </div>
+
+                                                <!-- P/L Amount -->
+                                                <div
+                                                    style="font-weight: 700; font-size: 1rem; color: {{ $profitLoss >= 0 ? '#10b981' : '#ef4444' }}; margin-bottom: 0.25rem; line-height: 1.2;">
+                                                    {{ $profitLoss >= 0 ? '+' : '' }}${{ number_format($profitLoss, 2) }}
+                                                </div>
+
+                                                <!-- Status -->
+                                                <div style="margin-top: 0.25rem;">
+                                                    @if ($isActive && strtoupper($trade->status) === 'PENDING')
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #f59e0b;">
+                                                            Pending
+                                                        </span>
+                                                    @elseif(strtoupper($trade->status ?? '') === 'CLOSED')
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #f59e0b;">
+                                                            Closed
+                                                        </span>
+                                                    @elseif($isClosed)
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #f59e0b;">
+                                                            Closed
+                                                        </span>
+                                                    @elseif(strtoupper($trade->status ?? '') === 'WON' || strtoupper($trade->status ?? '') === 'WIN')
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #10b981;">
+                                                            Won
+                                                        </span>
+                                                    @elseif(strtoupper($trade->status ?? '') === 'LOST' || strtoupper($trade->status ?? '') === 'LOSS')
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #ef4444;">
+                                                            Lost
+                                                        </span>
+                                                    @else
+                                                        <span
+                                                            style="font-weight: 500; font-size: 0.85rem; color: #f59e0b;">
+                                                            Pending
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
                             @else
                                 <div class="no-positions-message" style="padding: 3rem; text-align: center;">
                                     <p style="color: var(--text-secondary); font-size: 1rem;">No positions found</p>
@@ -601,6 +785,263 @@
                             @endif
                         </div>
 
+                        <!-- Deposits History Tab -->
+                        <div class="tab-content-wrapper d-none" id="deposits-tab">
+                            <div class="positions-controls">
+                                <div class="search-wrapper" style="flex: 1; max-width: 500px;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="search-input" id="depositSearchInput"
+                                        placeholder="Search deposits...">
+                                </div>
+                            </div>
+
+                            <div class="deposits-table-container" style="margin-top: 1.5rem;">
+                                @if ($deposits->count() > 0)
+                                    <!-- Desktop Table View -->
+                                    <div class="deposits-table-wrapper desktop-view">
+                                        <div class="table-responsive">
+                                            <table class="table deposits-table"
+                                                style="width: 100%; border-collapse: collapse;">
+                                                <thead>
+                                                    <tr
+                                                        style="border-bottom: 1px solid var(--border); background: var(--bg-secondary);">
+                                                        <th
+                                                            style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                            Date</th>
+                                                        <th
+                                                            style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                            Amount</th>
+                                                        <th
+                                                            style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                            Payment Method</th>
+                                                        <th
+                                                            style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                            Transaction ID</th>
+                                                        <th
+                                                            style="padding: 1rem; text-align: center; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                            Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($deposits as $deposit)
+                                                        <tr class="deposit-row"
+                                                            style="border-bottom: 1px solid var(--border); transition: background 0.2s;"
+                                                            data-amount="{{ $deposit->amount }}"
+                                                            data-method="{{ strtolower($deposit->payment_method ?? '') }}"
+                                                            data-status="{{ strtolower($deposit->status ?? '') }}"
+                                                            data-transaction="{{ strtolower($deposit->transaction_id ?? ($deposit->merchant_trade_no ?? '')) }}">
+                                                            <td style="padding: 1rem; color: var(--text-primary);">
+                                                                <div style="font-weight: 500; font-size: 0.95rem;">
+                                                                    {{ $deposit->created_at->format('M d, Y') }}
+                                                                </div>
+                                                                <div
+                                                                    style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                                                    {{ $deposit->created_at->format('h:i A') }}
+                                                                </div>
+                                                            </td>
+                                                            <td
+                                                                style="padding: 1rem; color: var(--text-primary); font-weight: 600; font-size: 0.95rem;">
+                                                                ${{ number_format($deposit->amount, 2) }}
+                                                            </td>
+                                                            <td style="padding: 1rem; color: var(--text-primary);">
+                                                                <span
+                                                                    style="text-transform: capitalize; font-size: 0.9rem;">
+                                                                    @if ($deposit->payment_method === 'binancepay')
+                                                                        <i class="fas fa-coins"
+                                                                            style="margin-right: 0.5rem; color: #f0b90b;"></i>Binance
+                                                                        Pay
+                                                                    @elseif($deposit->payment_method === 'metamask')
+                                                                        <i class="fas fa-mask"
+                                                                            style="margin-right: 0.5rem; color: #f6851b;"></i>MetaMask
+                                                                    @elseif($deposit->payment_method === 'manual')
+                                                                        <i class="fas fa-keyboard"
+                                                                            style="margin-right: 0.5rem; color: var(--text-secondary);"></i>Manual
+                                                                        Payment
+                                                                    @else
+                                                                        {{ $deposit->payment_method ?? 'N/A' }}
+                                                                    @endif
+                                                                </span>
+                                                            </td>
+                                                            <td style="padding: 1rem; color: var(--text-primary);">
+                                                                <div
+                                                                    style="font-size: 0.85rem; font-family: monospace; word-break: break-all; max-width: 200px;">
+                                                                    {{ $deposit->transaction_id ?? ($deposit->merchant_trade_no ?? 'N/A') }}
+                                                                </div>
+                                                            </td>
+                                                            <td style="padding: 1rem; text-align: center;">
+                                                                @if ($deposit->status === 'completed')
+                                                                    <span
+                                                                        style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.85rem; color: #10b981;">
+                                                                        <span
+                                                                            style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                        Completed
+                                                                    </span>
+                                                                @elseif($deposit->status === 'pending')
+                                                                    <span
+                                                                        style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.85rem; color: #f59e0b;">
+                                                                        <span
+                                                                            style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                        Pending
+                                                                    </span>
+                                                                @elseif($deposit->status === 'failed')
+                                                                    <span
+                                                                        style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.85rem; color: #ef4444;">
+                                                                        <span
+                                                                            style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                        Failed
+                                                                    </span>
+                                                                @elseif($deposit->status === 'expired')
+                                                                    <span
+                                                                        style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.85rem; color: #6b7280;">
+                                                                        <span
+                                                                            style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                        Expired
+                                                                    </span>
+                                                                @else
+                                                                    <span
+                                                                        style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                                                                        <span
+                                                                            style="margin-right: 0.4rem; font-size: 1rem; line-height: 1;">•</span>
+                                                                        {{ ucfirst($deposit->status ?? 'N/A') }}
+                                                                    </span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mobile Card View -->
+                                    <div class="deposits-cards-container mobile-view" style="display: none;">
+                                        @foreach ($deposits as $deposit)
+                                            <div class="deposit-card deposit-row" data-amount="{{ $deposit->amount }}"
+                                                data-method="{{ strtolower($deposit->payment_method ?? '') }}"
+                                                data-status="{{ strtolower($deposit->status ?? '') }}"
+                                                data-transaction="{{ strtolower($deposit->transaction_id ?? ($deposit->merchant_trade_no ?? '')) }}"
+                                                style="background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                                                <!-- Header: Date and Status -->
+                                                <div
+                                                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                                                    <div>
+                                                        <div
+                                                            style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                                                            {{ $deposit->created_at->format('M d, Y') }}
+                                                        </div>
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                                            {{ $deposit->created_at->format('h:i A') }}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        @if ($deposit->status === 'completed')
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.8rem; color: #10b981;">
+                                                                <span
+                                                                    style="margin-right: 0.3rem; font-size: 0.9rem; line-height: 1;">•</span>
+                                                                Completed
+                                                            </span>
+                                                        @elseif($deposit->status === 'pending')
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.8rem; color: #f59e0b;">
+                                                                <span
+                                                                    style="margin-right: 0.3rem; font-size: 0.9rem; line-height: 1;">•</span>
+                                                                Pending
+                                                            </span>
+                                                        @elseif($deposit->status === 'failed')
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.8rem; color: #ef4444;">
+                                                                <span
+                                                                    style="margin-right: 0.3rem; font-size: 0.9rem; line-height: 1;">•</span>
+                                                                Failed
+                                                            </span>
+                                                        @elseif($deposit->status === 'expired')
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.8rem; color: #6b7280;">
+                                                                <span
+                                                                    style="margin-right: 0.3rem; font-size: 0.9rem; line-height: 1;">•</span>
+                                                                Expired
+                                                            </span>
+                                                        @else
+                                                            <span
+                                                                style="display: inline-flex; align-items: center; font-weight: 500; font-size: 0.8rem; color: var(--text-secondary);">
+                                                                <span
+                                                                    style="margin-right: 0.3rem; font-size: 0.9rem; line-height: 1;">•</span>
+                                                                {{ ucfirst($deposit->status ?? 'N/A') }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Amount -->
+                                                <div style="margin-bottom: 1rem;">
+                                                    <div
+                                                        style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        Amount
+                                                    </div>
+                                                    <div
+                                                        style="font-weight: 700; font-size: 1.25rem; color: var(--text-primary);">
+                                                        ${{ number_format($deposit->amount, 2) }}
+                                                    </div>
+                                                </div>
+
+                                                <!-- Payment Method -->
+                                                <div style="margin-bottom: 1rem;">
+                                                    <div
+                                                        style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        Payment Method
+                                                    </div>
+                                                    <div style="font-size: 0.9rem; color: var(--text-primary);">
+                                                        @if ($deposit->payment_method === 'binancepay')
+                                                            <i class="fas fa-coins"
+                                                                style="margin-right: 0.5rem; color: #f0b90b;"></i>Binance
+                                                            Pay
+                                                        @elseif($deposit->payment_method === 'metamask')
+                                                            <i class="fas fa-mask"
+                                                                style="margin-right: 0.5rem; color: #f6851b;"></i>MetaMask
+                                                        @elseif($deposit->payment_method === 'manual')
+                                                            <i class="fas fa-keyboard"
+                                                                style="margin-right: 0.5rem; color: var(--text-secondary);"></i>Manual
+                                                            Payment
+                                                        @else
+                                                            {{ $deposit->payment_method ?? 'N/A' }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Transaction ID -->
+                                                <div style="padding-top: 1rem; border-top: 1px solid var(--border);">
+                                                    <div
+                                                        style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        Transaction ID
+                                                    </div>
+                                                    <div
+                                                        style="font-size: 0.8rem; font-family: monospace; word-break: break-all; color: var(--text-primary);">
+                                                        {{ $deposit->transaction_id ?? ($deposit->merchant_trade_no ?? 'N/A') }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="no-deposits-message" style="padding: 3rem; text-align: center;">
+                                        <i class="fas fa-arrow-down"
+                                            style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem; opacity: 0.5;"></i>
+                                        <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Deposits Yet</h4>
+                                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">You haven't made
+                                            any deposits yet.</p>
+                                        <button
+                                            onclick="if(typeof openDepositModal === 'function') { openDepositModal(); } else if(typeof window.openDepositModal === 'function') { window.openDepositModal(); }"
+                                            style="background: #3b82f6; color: #ffffff; border: none; border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#2563eb'"
+                                            onmouseout="this.style.background='#3b82f6'">
+                                            <i class="fas fa-arrow-down"></i> Make Your First Deposit
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
                         <!-- Withdrawal Requests Tab -->
                         <div class="tab-content-wrapper d-none" id="withdrawals-tab">
                             <div class="positions-controls">
@@ -626,12 +1067,6 @@
                                             data-status="rejected">Rejected</a>
                                     </div>
                                 </div>
-                                <button type="button" onclick="openWithdrawalModal()" class="btn btn-primary"
-                                    style="margin-left: 1rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(255, 177, 26, 0.3);"
-                                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 177, 26, 0.4)'; this.style.background='linear-gradient(135deg, #ff9500 0%, #ffb11a 100%)'"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 177, 26, 0.3)'; this.style.background='linear-gradient(135deg, #ffb11a 0%, #ff9500 100%)'">
-                                    <i class="fas fa-plus"></i> New Withdrawal
-                                </button>
                             </div>
 
                             @if (isset($withdrawals) && $withdrawals->count() > 0)
@@ -703,12 +1138,7 @@
                                         style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
                                     <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 1rem;">No
                                         withdrawal requests yet</p>
-                                    <button type="button" onclick="openWithdrawalModal()" class="btn btn-primary"
-                                        style="padding: 0.875rem 1.75rem; background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(255, 177, 26, 0.3);"
-                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 177, 26, 0.4)'; this.style.background='linear-gradient(135deg, #ff9500 0%, #ffb11a 100%)'"
-                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 177, 26, 0.3)'; this.style.background='linear-gradient(135deg, #ffb11a 0%, #ff9500 100%)'">
-                                        <i class="fas fa-plus"></i> Create Withdrawal Request
-                                    </button>
+
                                 </div>
                             @endif
                         </div>
@@ -818,6 +1248,82 @@
     </div>
 
     <style>
+        /* MARKET Table Responsive Styles */
+        .positions-table-container.desktop-view {
+            display: block;
+        }
+
+        .positions-cards-container.mobile-view {
+            display: none;
+        }
+
+        /* Mobile Responsive - Show Cards, Hide Table */
+        @media (max-width: 768px) {
+            .positions-table-container.desktop-view {
+                display: none !important;
+            }
+
+            .positions-cards-container.mobile-view {
+                display: block !important;
+            }
+
+            .position-card {
+                border-left: none !important;
+                border-right: none !important;
+            }
+
+            .position-card:hover {
+                background: rgba(255, 255, 255, 0.03) !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .positions-table-container.desktop-view {
+                display: block !important;
+            }
+
+            .positions-cards-container.mobile-view {
+                display: none !important;
+            }
+        }
+
+        /* Deposits Table Responsive Styles */
+        .deposits-table-wrapper.desktop-view {
+            display: block;
+        }
+
+        .deposits-cards-container.mobile-view {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .deposits-table-wrapper.desktop-view {
+                display: none !important;
+            }
+
+            .deposits-cards-container.mobile-view {
+                display: block !important;
+            }
+
+            .deposit-card {
+                transition: all 0.2s;
+            }
+
+            .deposit-card:hover {
+                background: rgba(255, 255, 255, 0.03) !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .deposits-table-wrapper.desktop-view {
+                display: block !important;
+            }
+
+            .deposits-cards-container.mobile-view {
+                display: none !important;
+            }
+        }
+
         /* Withdrawal Modal Overlay - Matching Deposit Design */
         .withdrawal-modal-overlay {
             position: fixed;
@@ -839,7 +1345,7 @@
             opacity: 1;
         }
 
-        /* Withdrawal Modal Popup */
+        /* Withdrawal Modal Popup - Matching Withdrawal Request Design */
         .withdrawal-modal-popup {
             position: fixed;
             top: 50%;
@@ -857,6 +1363,12 @@
             opacity: 0;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
+        }
+
+        /* Ensure Livewire component styles are applied */
+        .withdrawal-modal-popup .withdrawal-modal-header,
+        .withdrawal-modal-popup .withdrawal-modal-content {
+            background: transparent;
         }
 
         .withdrawal-modal-popup.active {
@@ -1029,10 +1541,20 @@
                             }
                         });
 
-                        // Re-append sorted rows
+                        // Re-append sorted rows (both table and cards)
                         const $tbody = $('.positions-table tbody');
-                        $tbody.empty();
-                        $allRows.forEach(row => $tbody.append(row));
+                        if ($tbody.length) {
+                            $tbody.empty();
+                            $allRows.filter(row => $(row).closest('.positions-table-container').length).forEach(
+                                row => $tbody.append(row));
+                        }
+
+                        const $cardsContainer = $('.positions-cards-container');
+                        if ($cardsContainer.length) {
+                            $cardsContainer.empty();
+                            $allRows.filter(row => $(row).hasClass('position-card')).forEach(row =>
+                                $cardsContainer.append(row));
+                        }
                     } else {
                         // Sort only visible rows
                         $visibleRows.sort(function(a, b) {
@@ -1074,12 +1596,26 @@
                             }
                         });
 
-                        // Re-append sorted visible rows, then append hidden rows
-                        const $tbody = $('.positions-table tbody');
+                        // Re-append sorted visible rows, then append hidden rows (both table and cards)
                         const $hiddenRows = $('.position-row:hidden').toArray();
-                        $tbody.empty();
-                        $visibleRows.forEach(row => $tbody.append(row));
-                        $hiddenRows.forEach(row => $tbody.append(row));
+
+                        const $tbody = $('.positions-table tbody');
+                        if ($tbody.length) {
+                            $tbody.empty();
+                            $visibleRows.filter(row => $(row).closest('.positions-table-container').length)
+                                .forEach(row => $tbody.append(row));
+                            $hiddenRows.filter(row => $(row).closest('.positions-table-container').length)
+                                .forEach(row => $tbody.append(row));
+                        }
+
+                        const $cardsContainer = $('.positions-cards-container');
+                        if ($cardsContainer.length) {
+                            $cardsContainer.empty();
+                            $visibleRows.filter(row => $(row).hasClass('position-card')).forEach(row =>
+                                $cardsContainer.append(row));
+                            $hiddenRows.filter(row => $(row).hasClass('position-card')).forEach(row =>
+                                $cardsContainer.append(row));
+                        }
                     }
                 });
 
@@ -1138,6 +1674,27 @@
                             rowSubtab === 'closed';
 
                         $row.toggle(matchesSearch && matchesSubtab);
+                    });
+                });
+
+                // Deposit search (works with both table rows and cards)
+                $('#depositSearchInput').on('input', function() {
+                    const searchTerm = $(this).val().toLowerCase();
+
+                    $('.deposit-row').each(function() {
+                        const $row = $(this);
+                        const amount = $row.data('amount') || '';
+                        const method = $row.data('method') || '';
+                        const status = $row.data('status') || '';
+                        const transaction = $row.data('transaction') || '';
+
+                        const matchesSearch = !searchTerm ||
+                            amount.toString().includes(searchTerm) ||
+                            method.includes(searchTerm) ||
+                            status.includes(searchTerm) ||
+                            transaction.includes(searchTerm);
+
+                        $row.toggle(matchesSearch);
                     });
                 });
 
@@ -1569,6 +2126,52 @@
                 checkChartJS();
 
             });
+        </script>
+
+        <script>
+            // Profit/Loss Time Filter Handler
+            (function() {
+                const plFilters = document.querySelectorAll('.pl-time-filter');
+                plFilters.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        plFilters.forEach(b => b.classList.remove('active'));
+                        // Add active class to clicked button
+                        this.classList.add('active');
+
+                        // Update button styles
+                        plFilters.forEach(b => {
+                            b.style.background = 'transparent';
+                            b.style.color = '#9ca3af';
+                            b.style.fontWeight = '500';
+                        });
+                        this.style.background = 'rgba(59, 130, 246, 0.2)';
+                        this.style.color = '#ffffff';
+                        this.style.fontWeight = '600';
+
+                        const period = this.getAttribute('data-pl-period');
+                        console.log('Profit/Loss filter changed to:', period);
+
+                        // Update timeframe text
+                        const timeframeMap = {
+                            '1D': 'Today',
+                            '1W': 'Past Week',
+                            '1M': 'Past Month',
+                            'ALL': 'All Time'
+                        };
+
+                        const timeframeEl = document.getElementById('profitLossTimeframe');
+                        if (timeframeEl) {
+                            timeframeEl.textContent = timeframeMap[period] || 'Past Month';
+                        }
+
+                        // Update profit/loss calculation if function exists
+                        if (typeof initProfitLossChart === 'function') {
+                            initProfitLossChart(period);
+                        }
+                    });
+                });
+            })();
         </script>
     @endpush
 @endsection

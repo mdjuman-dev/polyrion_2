@@ -35,7 +35,10 @@ new class extends Component {
     public function mount()
     {
         $user = Auth::user();
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']);
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
+        );
         $this->wallet_balance = $wallet->balance;
         $this->currency = $wallet->currency;
     }
@@ -52,19 +55,16 @@ new class extends Component {
         $user = Auth::user();
         $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
 
-        // Check balance
         if ($wallet->balance < $this->amount) {
             $this->addError('amount', 'Insufficient balance. Your current balance is ' . number_format($wallet->balance, 2) . ' ' . $this->currency);
             return;
         }
 
-        // Check minimum withdrawal
         if ($this->amount < $this->min_withdrawal) {
             $this->addError('amount', 'Minimum withdrawal amount is ' . $this->min_withdrawal . ' ' . $this->currency);
             return;
         }
 
-        // Collect payment details
         $payment_details = [];
         if ($this->payment_method === 'bank') {
             $payment_details = [
@@ -88,12 +88,10 @@ new class extends Component {
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            // Lock amount from wallet
             $balanceBefore = (float) $wallet->balance;
             $wallet->balance -= $this->amount;
             $wallet->save();
 
-            // Create withdrawal request
             $withdrawal = Withdrawal::create([
                 'user_id' => $user->id,
                 'amount' => $this->amount,
@@ -103,7 +101,6 @@ new class extends Component {
                 'payment_details' => $payment_details,
             ]);
 
-            // Create wallet transaction
             \App\Models\WalletTransaction::create([
                 'user_id' => $user->id,
                 'wallet_id' => $wallet->id,
@@ -127,7 +124,6 @@ new class extends Component {
                 'balance' => number_format($wallet->balance, 2),
             ]);
 
-            // Reset form
             $this->reset(['amount', 'payment_method', 'bank_name', 'account_number', 'account_holder', 'swift_code', 'crypto_type', 'wallet_address', 'network', 'paypal_email', 'confirm_submit']);
             $this->wallet_balance = $wallet->balance;
         } catch (\Exception $e) {
@@ -143,83 +139,105 @@ new class extends Component {
     }
 }; ?>
 
-<div>
-    <div class="withdrawal-modal-header">
-        <div class="withdrawal-header-left">
-            <h3>Request Withdrawal</h3>
-            <button type="button" class="withdrawal-modal-close" onclick="closeWithdrawalModal()" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+<div class="withdrawal-modal-wrapper">
+    <!-- Header -->
+    <div class="withdrawal-header">
+        <h3 class="withdrawal-title">Request Withdrawal</h3>
+        <button type="button" class="withdrawal-close-btn" onclick="closeWithdrawalModal()">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
-    <div class="withdrawal-modal-content">
-        <form wire:submit="submit" class="withdrawal-form-container">
-            <!-- Balance Info -->
-            <div class="withdrawal-balance-info">
-                <div class="balance-item">
+
+    <!-- Content -->
+    <div class="withdrawal-content">
+        <form wire:submit="submit" class="withdrawal-form">
+            <!-- Balance Section -->
+            <div class="balance-section">
+                <div class="balance-row">
                     <span class="balance-label">Available Balance</span>
-                    <span class="balance-value">${{ number_format($wallet_balance, 2) }} {{ $currency }}</span>
+                    <span class="balance-amount">${{ number_format($wallet_balance, 2) }} {{ $currency }}</span>
                 </div>
-                <div class="balance-item balance-item-min">
+                <div class="balance-row">
                     <span class="balance-label">Minimum Withdrawal</span>
-                    <span class="balance-min-value">{{ $min_withdrawal }} {{ $currency }}</span>
+                    <span class="balance-min">{{ $min_withdrawal }} {{ $currency }}</span>
                 </div>
             </div>
 
             <!-- Amount Input -->
-            <div class="withdrawal-input-group">
-                <label class="withdrawal-input-label">Amount <span style="color: #ef4444;">*</span></label>
-                <div class="withdrawal-input-wrapper">
-                    <span class="withdrawal-currency">$</span>
+            <div class="form-group">
+                <label class="form-label">
+                    $ Amount <span class="required">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-prefix">$</span>
                     <input type="number" wire:model="amount" step="0.01" min="{{ $min_withdrawal }}"
-                        max="{{ $wallet_balance }}" placeholder="0.00" class="withdrawal-input"
-                        style="font-size: 16px;">
+                        max="{{ $wallet_balance }}" placeholder="0.00" class="form-input">
                 </div>
                 @error('amount')
-                    <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
+                    <span class="error-text">{{ $message }}</span>
                 @enderror
             </div>
 
             <!-- Payment Method -->
-            <div class="withdrawal-input-group">
-                <label class="withdrawal-input-label">Payment Method <span style="color: #ef4444;">*</span></label>
-                <select wire:model.live="payment_method" class="withdrawal-select">
-                    <option value="">Select Payment Method</option>
-                    <option value="bank">🏦 Bank Transfer</option>
-                    <option value="crypto">₿ Cryptocurrency</option>
-                    <option value="paypal">💳 PayPal</option>
-                </select>
+            <div class="form-group">
+                <label class="form-label">
+                    Payment Method <span class="required">*</span>
+                </label>
+                <div class="payment-options">
+                    <label class="payment-option {{ $payment_method === 'bank' ? 'active' : '' }}"
+                        wire:click="$set('payment_method', 'bank')">
+                        <input type="radio" wire:model="payment_method" value="bank" style="display: none;">
+                        <i class="fas fa-university"></i>
+                        <span>Bank Transfer</span>
+                    </label>
+                    <label class="payment-option {{ $payment_method === 'crypto' ? 'active' : '' }}"
+                        wire:click="$set('payment_method', 'crypto')">
+                        <input type="radio" wire:model="payment_method" value="crypto" style="display: none;">
+                        <i class="fab fa-bitcoin"></i>
+                        <span>Cryptocurrency</span>
+                    </label>
+                    <label class="payment-option {{ $payment_method === 'paypal' ? 'active' : '' }}"
+                        wire:click="$set('payment_method', 'paypal')">
+                        <input type="radio" wire:model="payment_method" value="paypal" style="display: none;">
+                        <i class="fab fa-paypal"></i>
+                        <span>PayPal</span>
+                    </label>
+                </div>
                 @error('payment_method')
-                    <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
+                    <span class="error-text">{{ $message }}</span>
                 @enderror
             </div>
 
             <!-- Bank Details -->
             @if ($payment_method === 'bank')
-                <div class="withdrawal-payment-details">
-                    <h4 class="withdrawal-details-title">
+                <div class="payment-details">
+                    <h4 class="details-title">
                         <i class="fas fa-university"></i> Bank Account Details
                     </h4>
-                    <div class="withdrawal-details-fields">
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Bank Name</label>
-                            <input type="text" wire:model="bank_name" placeholder="Enter bank name"
-                                class="withdrawal-input">
+                    <div class="details-fields">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-university"></i> Bank Name
+                            </label>
+                            <input type="text" wire:model="bank_name" placeholder="Enter bank name" class="form-input">
                         </div>
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Account Number</label>
-                            <input type="text" wire:model="account_number" placeholder="Enter account number"
-                                class="withdrawal-input">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-hashtag"></i> Account Number
+                            </label>
+                            <input type="text" wire:model="account_number" placeholder="Enter account number" class="form-input">
                         </div>
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Account Holder Name</label>
-                            <input type="text" wire:model="account_holder" placeholder="Enter account holder name"
-                                class="withdrawal-input">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> Account Holder Name
+                            </label>
+                            <input type="text" wire:model="account_holder" placeholder="Enter account holder name" class="form-input">
                         </div>
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">SWIFT/IBAN Code</label>
-                            <input type="text" wire:model="swift_code" placeholder="Enter SWIFT or IBAN code"
-                                class="withdrawal-input">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-code"></i> SWIFT/IBAN Code
+                            </label>
+                            <input type="text" wire:model="swift_code" placeholder="Enter SWIFT or IBAN code" class="form-input">
                         </div>
                     </div>
                 </div>
@@ -227,28 +245,33 @@ new class extends Component {
 
             <!-- Crypto Details -->
             @if ($payment_method === 'crypto')
-                <div class="withdrawal-payment-details">
-                    <h4 class="withdrawal-details-title">
+                <div class="payment-details">
+                    <h4 class="details-title">
                         <i class="fab fa-bitcoin"></i> Cryptocurrency Details
                     </h4>
-                    <div class="withdrawal-details-fields">
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Cryptocurrency Type</label>
-                            <select wire:model="crypto_type" class="withdrawal-select">
+                    <div class="details-fields">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fab fa-bitcoin"></i> Cryptocurrency Type
+                            </label>
+                            <select wire:model="crypto_type" class="form-input form-select">
                                 <option value="USDT">USDT</option>
                                 <option value="BTC">Bitcoin (BTC)</option>
                                 <option value="ETH">Ethereum (ETH)</option>
                                 <option value="BNB">Binance Coin (BNB)</option>
                             </select>
                         </div>
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Wallet Address</label>
-                            <input type="text" wire:model="wallet_address" placeholder="Enter wallet address"
-                                class="withdrawal-input">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-wallet"></i> Wallet Address
+                            </label>
+                            <input type="text" wire:model="wallet_address" placeholder="Enter wallet address" class="form-input">
                         </div>
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">Network</label>
-                            <select wire:model="network" class="withdrawal-select">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-network-wired"></i> Network
+                            </label>
+                            <select wire:model="network" class="form-input form-select">
                                 <option value="">Select Network</option>
                                 <option value="TRC20">TRC20</option>
                                 <option value="ERC20">ERC20</option>
@@ -261,28 +284,29 @@ new class extends Component {
 
             <!-- PayPal Details -->
             @if ($payment_method === 'paypal')
-                <div class="withdrawal-payment-details">
-                    <h4 class="withdrawal-details-title">
+                <div class="payment-details">
+                    <h4 class="details-title">
                         <i class="fab fa-paypal"></i> PayPal Details
                     </h4>
-                    <div class="withdrawal-details-fields">
-                        <div class="withdrawal-input-group">
-                            <label class="withdrawal-input-label">PayPal Email</label>
-                            <input type="email" wire:model="paypal_email" placeholder="Enter PayPal email"
-                                class="withdrawal-input">
+                    <div class="details-fields">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fab fa-paypal"></i> PayPal Email
+                            </label>
+                            <input type="email" wire:model="paypal_email" placeholder="Enter PayPal email" class="form-input">
                         </div>
                     </div>
                 </div>
             @endif
 
-            <!-- Submit Confirmation -->
-            <div class="withdrawal-submit-section">
-                <div class="withdrawal-submit-row">
-                    <label class="withdrawal-checkbox-label">
-                        <input type="checkbox" wire:model="confirm_submit" class="withdrawal-checkbox">
-                        <span class="withdrawal-checkbox-text">Submit Withdrawal Request</span>
+            <!-- Submit Section -->
+            <div class="submit-section">
+                <div class="submit-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" wire:model="confirm_submit" class="checkbox-input">
+                        <span class="checkbox-text">Submit Withdrawal Request</span>
                     </label>
-                    <button type="submit" wire:loading.attr="disabled" class="withdrawal-submit-btn"
+                    <button type="submit" wire:loading.attr="disabled" class="submit-btn"
                         @if (!$confirm_submit) disabled @endif>
                         <span wire:loading.remove>
                             Submit Withdrawal Request
@@ -293,16 +317,14 @@ new class extends Component {
                     </button>
                 </div>
                 @error('confirm_submit')
-                    <p style="color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem;">{{ $message }}</p>
+                    <span class="error-text">{{ $message }}</span>
                 @enderror
             </div>
 
             <!-- Footer Note -->
-            <div class="withdrawal-footer">
-                <p class="withdrawal-note">
-                    <span class="withdrawal-note-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
+            <div class="footer-note">
+                <p class="note-text">
+                    <span class="note-icon">i</span>
                     Your withdrawal request will be reviewed by admin and processed within 24-48 hours.
                 </p>
             </div>
@@ -311,530 +333,442 @@ new class extends Component {
 </div>
 
 @push('styles')
-    <style>
-        /* Withdrawal Modal Styles - Matching Image Design */
-        .withdrawal-modal-header {
-            padding: 0;
-            border-bottom: none;
-            background: transparent;
-        }
+<style>
+    /* ============================================
+       WITHDRAWAL MODAL - COMPLETE REDESIGN
+       ============================================ */
 
-        .withdrawal-header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 24px 24px 20px 24px;
-        }
+    .withdrawal-modal-wrapper {
+        width: 100%;
+        height: 100%;
+    }
 
-        .withdrawal-modal-header h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
+    /* Header */
+    .withdrawal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 24px 20px 24px;
+        border-bottom: none;
+    }
 
-        .withdrawal-modal-close {
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            border: none;
-            background: #000000;
-            color: #ffffff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
+    .withdrawal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
 
-        .withdrawal-modal-close:hover {
-            background: #1a1a1a;
-            color: #ffffff;
-        }
+    .withdrawal-close-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        border: none;
+        background: #000000;
+        color: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
 
-        .withdrawal-modal-content {
-            padding: 0 24px 24px 24px;
-            overflow-y: auto;
-            max-height: calc(90vh - 100px);
-        }
+    .withdrawal-close-btn:hover {
+        background: #1a1a1a;
+    }
 
-        .withdrawal-form-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    /* Content */
+    .withdrawal-content {
+        padding: 0 24px 24px 24px;
+        overflow-y: auto;
+        max-height: calc(90vh - 100px);
+    }
 
-        .withdrawal-balance-info {
-            padding: 0;
-            background: transparent;
-            border-radius: 0;
-            border: none;
-            backdrop-filter: none;
-        }
+    .withdrawal-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
 
-        .balance-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
+    /* Balance Section */
+    .balance-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
 
-        .balance-item-min {
-            margin-top: 0;
-            padding-top: 0;
-            border-top: none;
-        }
+    .balance-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-        .balance-label {
-            font-size: 14px;
-            color: #ffffff;
-            font-weight: 500;
-        }
+    .balance-label {
+        font-size: 14px;
+        color: #ffffff;
+        font-weight: 500;
+    }
 
-        .balance-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffb11a;
-            letter-spacing: -0.3px;
-        }
+    .balance-amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffb11a;
+        letter-spacing: -0.3px;
+    }
 
-        .balance-min-value {
-            font-size: 14px;
-            color: #ffffff;
-            font-weight: 500;
-        }
+    .balance-min {
+        font-size: 14px;
+        color: #ffffff;
+        font-weight: 500;
+    }
 
-        .withdrawal-input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+    /* Form Groups */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
 
-        .withdrawal-input-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 2px;
-        }
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
 
-        .withdrawal-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
+    .form-label i {
+        font-size: 13px;
+        color: #ffb11a;
+    }
 
-        .withdrawal-currency {
-            position: absolute;
-            left: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-            z-index: 1;
-        }
+    .required {
+        color: #ef4444;
+    }
 
-        .withdrawal-input,
-        .withdrawal-select {
-            width: 100%;
-            padding: 14px 16px 14px 40px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
+    .input-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
 
-        .withdrawal-input {
-            padding-left: 36px;
-        }
+    .input-prefix {
+        position: absolute;
+        left: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #ffffff;
+        z-index: 1;
+    }
 
-        .withdrawal-select {
-            padding: 14px 40px 14px 16px;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 16px center;
-            background-color: rgba(255, 255, 255, 0.05);
-        }
+    .form-input {
+        width: 100%;
+        padding: 14px 16px 14px 36px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
 
-        .withdrawal-select option {
-            color: #ffffff;
-            background: #2a2a2a;
-        }
+    .form-input:focus {
+        outline: none;
+        border-color: #ffb11a;
+        box-shadow: 0 0 0 3px rgba(255, 177, 26, 0.1);
+        background: rgba(255, 255, 255, 0.08);
+    }
 
-        .withdrawal-select option[value=""] {
-            color: rgba(255, 255, 255, 0.5);
-        }
+    .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
 
-        .withdrawal-select:invalid {
-            color: rgba(255, 255, 255, 0.5);
-        }
+    .form-select {
+        padding: 14px 40px 14px 16px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        cursor: pointer;
+    }
 
-        .withdrawal-select:valid {
-            color: #ffffff;
-        }
+    .form-select option {
+        background: #2a2a2a;
+        color: #ffffff;
+    }
 
-        .withdrawal-input:focus,
-        .withdrawal-select:focus {
-            outline: none;
-            border-color: #ffb11a;
-            box-shadow: 0 0 0 3px rgba(255, 177, 26, 0.1);
-            background: rgba(255, 255, 255, 0.08);
-        }
+    .error-text {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
 
-        .withdrawal-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+    /* Payment Options */
+    .payment-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .payment-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        min-height: 100px;
+    }
+
+    .payment-option:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 177, 26, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .payment-option.active {
+        background: rgba(255, 177, 26, 0.15);
+        border-color: #ffb11a;
+        box-shadow: 0 0 0 2px rgba(255, 177, 26, 0.2);
+    }
+
+    .payment-option i {
+        font-size: 28px;
+        color: #ffb11a;
+    }
+
+    .payment-option span {
+        font-size: 13px;
+        font-weight: 500;
+        color: #ffffff;
+    }
+
+    /* Payment Details */
+    .payment-details {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
             opacity: 1;
-        }
-
-        .withdrawal-payment-details {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .withdrawal-details-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .withdrawal-details-fields {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .withdrawal-details-fields .withdrawal-input-group {
-            gap: 8px;
-        }
-
-        .withdrawal-details-fields .withdrawal-input-label {
-            font-size: 13px;
-        }
-
-        .withdrawal-details-fields .withdrawal-input,
-        .withdrawal-details-fields .withdrawal-select {
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .withdrawal-details-fields .withdrawal-input-wrapper .withdrawal-input {
-            padding-left: 16px;
-        }
-
-        .withdrawal-submit-section {
-            margin-top: 4px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .withdrawal-submit-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .withdrawal-checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            user-select: none;
-            flex: 1;
-        }
-
-        .withdrawal-checkbox {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #ffb11a;
-            flex-shrink: 0;
-        }
-
-        .withdrawal-checkbox-text {
-            font-size: 14px;
-            font-weight: 500;
-            color: #ffffff;
-        }
-
-        .withdrawal-submit-btn {
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: not-allowed;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            letter-spacing: 0.3px;
-            white-space: nowrap;
-        }
-
-        .withdrawal-submit-btn:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
-            color: #ffffff;
-            border-color: #ffb11a;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 177, 26, 0.4);
-        }
-
-        .withdrawal-submit-btn:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(255, 177, 26, 0.3);
+        }
+    }
+
+    .details-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .details-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .details-fields .form-input {
+        padding-left: 16px;
+    }
+
+    /* Submit Section */
+    .submit-section {
+        margin-top: 4px;
+    }
+
+    .submit-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        user-select: none;
+        flex: 1;
+    }
+
+    .checkbox-input {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #ffb11a;
+    }
+
+    .checkbox-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: #ffffff;
+    }
+
+    .submit-btn {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: not-allowed;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .submit-btn:not(:disabled) {
+        background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
+        color: #ffffff;
+        border-color: #ffb11a;
+        cursor: pointer;
+        opacity: 1;
+    }
+
+    .submit-btn:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 177, 26, 0.4);
+    }
+
+    /* Footer Note */
+    .footer-note {
+        margin-top: 20px;
+        padding-top: 16px;
+    }
+
+    .note-text {
+        font-size: 13px;
+        color: #ffffff;
+        margin: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .note-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #000000;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .withdrawal-header {
+            padding: 16px 20px;
         }
 
-        .withdrawal-submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .withdrawal-content {
+            padding: 20px;
         }
 
-        .withdrawal-submit-btn:not(:disabled) {
-            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
-            color: #ffffff;
-            border-color: #ffb11a;
-            cursor: pointer;
-            opacity: 1;
+        .payment-options {
+            grid-template-columns: 1fr;
         }
+    }
 
-        .withdrawal-footer {
-            text-align: left;
-            margin-top: 16px;
+    @media (max-width: 480px) {
+        .withdrawal-title {
+            font-size: 1.1rem;
         }
-
-        .withdrawal-note {
-            font-size: 13px;
-            color: #ffffff;
-            margin: 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 0;
-            background: transparent;
-            border: none;
-        }
-
-        .withdrawal-note-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #000000;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        .withdrawal-note-icon i {
-            color: #ffffff;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .withdrawal-modal-popup {
-                width: 95%;
-                max-width: none;
-                border-radius: 20px 20px 0 0;
-                top: auto;
-                bottom: 0;
-                transform: translate(-50%, 100%);
-                max-height: 85vh;
-            }
-
-            .withdrawal-modal-popup.active {
-                transform: translate(-50%, 0);
-            }
-
-            .withdrawal-modal-header {
-                padding: 16px 20px;
-            }
-
-            .withdrawal-modal-content {
-                padding: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .withdrawal-modal-popup {
-                width: 100%;
-                border-radius: 20px 20px 0 0;
-            }
-
-            .withdrawal-modal-header h3 {
-                font-size: 1.1rem;
-            }
-
-            .withdrawal-input {
-                font-size: 16px;
-            }
-        }
-    </style>
+    }
+</style>
 @endpush
 
 @push('scripts')
-    <script>
-        // Update select styling when value changes
-        function updateSelectStyle() {
-            const select = document.querySelector('.withdrawal-select');
-            if (select) {
-                if (select.value) {
-                    select.style.color = 'var(--text-primary)';
-                } else {
-                    select.style.color = 'var(--text-secondary)';
-                }
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('withdrawal-submitted', (data) => {
+            if (typeof closeWithdrawalModal === 'function') {
+                closeWithdrawalModal();
             }
-        }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const select = document.querySelector('.withdrawal-select');
-            if (select) {
-                select.addEventListener('change', updateSelectStyle);
-                updateSelectStyle(); // Check initial value
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    html: `<div style="text-align: left;">
+                        <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
+                        ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
+                    </div>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ffb11a',
+                    background: '#2a2a2a',
+                    color: '#ffffff'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(data.message || 'Withdrawal request submitted successfully.');
+                setTimeout(() => window.location.reload(), 500);
             }
         });
+    });
 
-        document.addEventListener('livewire:init', () => {
-            // Update select style after Livewire updates
-            Livewire.hook('morph.updated', () => {
-                setTimeout(updateSelectStyle, 50);
-            });
-            Livewire.on('withdrawal-submitted', (data) => {
-                // Close modal first
-                if (typeof closeWithdrawalModal === 'function') {
-                    closeWithdrawalModal();
-                }
+    document.addEventListener('livewire:initialized', () => {
+        Livewire.on('withdrawal-submitted', (data) => {
+            if (typeof closeWithdrawalModal === 'function') {
+                closeWithdrawalModal();
+            }
 
-                // Show success message
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        html: `<div style="text-align: left;">
-                            <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
-                            ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
-                        </div>`,
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ffb11a',
-                        background: 'var(--card-bg)',
-                        color: 'var(--text-primary)',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false
-                    }).then(() => {
-                        // Reload page to show updated withdrawal list
-                        window.location.reload();
-                    });
-                } else if (typeof toastr !== 'undefined') {
-                    toastr.success(data.message || 'Withdrawal request submitted successfully.');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Withdrawal Request Submitted',
-                        text: data.message || 'Withdrawal request submitted successfully.',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ffb11a'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    alert(data.message || 'Withdrawal request submitted successfully.');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                }
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    html: `<div style="text-align: left;">
+                        <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
+                        ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
+                    </div>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ffb11a',
+                    background: '#2a2a2a',
+                    color: '#ffffff'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(data.message || 'Withdrawal request submitted successfully.');
+                setTimeout(() => window.location.reload(), 500);
+            }
         });
-
-        // Also listen for Livewire 3 events
-        document.addEventListener('livewire:initialized', () => {
-            // Update select style after Livewire updates
-            Livewire.hook('morph.updated', () => {
-                setTimeout(updateSelectStyle, 50);
-            });
-
-            Livewire.on('withdrawal-submitted', (data) => {
-                // Close modal first
-                if (typeof closeWithdrawalModal === 'function') {
-                    closeWithdrawalModal();
-                }
-
-                // Show success message
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        html: `<div style="text-align: left;">
-                            <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
-                            ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
-                        </div>`,
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ffb11a',
-                        background: 'var(--card-bg)',
-                        color: 'var(--text-primary)',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false
-                    }).then(() => {
-                        // Reload page to show updated withdrawal list
-                        window.location.reload();
-                    });
-                } else if (typeof toastr !== 'undefined') {
-                    toastr.success(data.message || 'Withdrawal request submitted successfully.');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Withdrawal Request Submitted',
-                        text: data.message || 'Withdrawal request submitted successfully.',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ffb11a'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    alert(data.message || 'Withdrawal request submitted successfully.');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                }
-            });
-        });
-    </script>
+    });
+</script>
 @endpush
+
