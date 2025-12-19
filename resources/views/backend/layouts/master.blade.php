@@ -12,7 +12,8 @@
         $siteFavicon = \App\Models\GlobalSetting::getValue('favicon');
         $siteLogo = \App\Models\GlobalSetting::getValue('logo');
     @endphp
-    <link rel="icon" href="{{ $siteFavicon ? asset('storage/' . $siteFavicon) : asset('backend/assets/images/favicon.ico') }}">
+    <link rel="icon"
+        href="{{ $siteFavicon ? asset('storage/' . $siteFavicon) : asset('backend/assets/images/favicon.ico') }}">
 
     <title>@yield('title') | Polymarkets</title>
 
@@ -205,15 +206,19 @@
                 <a href="{{ route('admin.backend.dashboard') }}" class="logo">
                     <!-- logo-->
                     <div class="logo-mini w-30">
-                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                        <span class="light-logo"><img
+                                src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
                                 alt="logo" style="max-height: 30px;"></span>
-                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                        <span class="dark-logo"><img
+                                src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
                                 alt="logo" style="max-height: 30px;"></span>
                     </div>
                     <div class="logo-lg">
-                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-dark-text.png') }}"
+                        <span class="light-logo"><img
+                                src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-dark-text.png') }}"
                                 alt="logo" style="max-height: 40px;"></span>
-                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-light-text.png') }}"
+                        <span class="dark-logo"><img
+                                src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-light-text.png') }}"
                                 alt="logo" style="max-height: 40px;"></span>
                     </div>
                 </a>
@@ -259,6 +264,14 @@
                                 <i data-feather="maximize"></i>
                             </a>
                         </li>
+                        <!-- Cache Clear Button -->
+                        <li class="btn-group nav-item">
+                            <a href="javascript:void(0)" class="waves-effect waves-light nav-link btn-primary-light"
+                                title="Clear Cache" id="clear-cache-btn">
+                                <i data-feather="refresh-cw"></i>
+                            </a>
+                        </li>
+
                         <!-- Notifications -->
                         <li class="dropdown notifications-menu">
                             <a href="index.html#" class="waves-effect waves-light dropdown-toggle btn-primary-light"
@@ -340,15 +353,24 @@
                             </a>
                             <ul class="dropdown-menu animated flipInX">
                                 <li class="user-body">
-                                    <a class="dropdown-item" href="index.html#"><i
+                                    <div class="p-20 text-center">
+                                        <div class="user-img">
+                                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                                                style="width: 80px; height: 80px; font-size: 32px; font-weight: bold;">
+                                                {{ strtoupper(substr(auth()->guard('admin')->user()->name, 0, 1)) }}
+                                            </div>
+                                        </div>
+                                        <h5 class="mb-0 mt-2">{{ auth()->guard('admin')->user()->name }}</h5>
+                                        <p class="text-muted mb-0">{{ auth()->guard('admin')->user()->email }}</p>
+                                    </div>
+                                </li>
+                                <li class="user-body">
+                                    <a class="dropdown-item" href="{{ route('admin.profile.show') }}"><i
                                             class="ti-user text-muted me-2"></i>
-                                        Profile</a>
-                                    <a class="dropdown-item" href="index.html#"><i
-                                            class="ti-wallet text-muted me-2"></i> My
-                                        Wallet</a>
-                                    <a class="dropdown-item" href="index.html#"><i
+                                        My Profile</a>
+                                    <a class="dropdown-item" href="{{ route('admin.profile.edit') }}"><i
                                             class="ti-settings text-muted me-2"></i>
-                                        Settings</a>
+                                        Edit Profile</a>
                                     <div class="dropdown-divider"></div>
                                     <form method="POST" action="{{ route('admin.logout') }}">
                                         @csrf
@@ -1094,6 +1116,87 @@
             window.addEventListener('resize', function() {
                 document.body.classList.remove('sidebar-collapse');
             });
+
+            // Cache Clear Button with SweetAlert2 Confirmation
+            const clearCacheBtn = document.getElementById('clear-cache-btn');
+            const clearCacheUrl = '{{ route('admin.clear-cache') }}';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            if (clearCacheBtn) {
+                clearCacheBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Clear All Caches?',
+                            text: 'This will clear application cache, config cache, route cache, view cache, and permission cache. Are you sure?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, Clear Cache',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            showLoaderOnConfirm: true,
+                            preConfirm: () => {
+                                return fetch(clearCacheUrl, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': csrfToken,
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            return response.json().then(data => {
+                                                throw new Error(data.message ||
+                                                    'Failed to clear cache');
+                                            });
+                                        }
+                                        return response.json();
+                                    })
+                                    .catch(error => {
+                                        Swal.showValidationMessage(error.message ||
+                                            'Request failed');
+                                    });
+                            },
+                            allowOutsideClick: () => !Swal.isLoading()
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Show success toastr notification
+                                toastr.success('All caches cleared successfully!',
+                                    'Cache Cleared', {
+                                        timeOut: 3000,
+                                        progressBar: true
+                                    });
+
+                                // Optionally reload the page after a short delay
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        });
+                    } else {
+                        // Fallback to default confirm if SweetAlert is not available
+                        if (confirm('Are you sure you want to clear all caches?')) {
+                            // Create a form and submit
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = clearCacheUrl;
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = '_token';
+                            csrfInput.value = csrfToken;
+                            form.appendChild(csrfInput);
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    }
+                });
+            }
         });
     </script>
 </body>

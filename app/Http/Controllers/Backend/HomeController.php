@@ -130,4 +130,54 @@ class HomeController extends Controller
         return redirect()->back()
             ->with('error', 'No user or event found with that search term.');
     }
+
+    /**
+     * Clear all caches
+     */
+    public function clearCache(Request $request)
+    {
+        try {
+            // Clear application cache
+            \Artisan::call('cache:clear');
+            
+            // Clear config cache
+            \Artisan::call('config:clear');
+            
+            // Clear route cache
+            \Artisan::call('route:clear');
+            
+            // Clear view cache
+            \Artisan::call('view:clear');
+            
+            // Clear permission cache
+            if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
+                \Artisan::call('permission:cache-reset');
+            }
+            
+            // Clear compiled files
+            \Artisan::call('clear-compiled');
+            
+            // If AJAX request, return JSON response
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'All caches cleared successfully!'
+                ]);
+            }
+            
+            return redirect()->back()
+                ->with('success', 'All caches cleared successfully!');
+        } catch (\Exception $e) {
+            // If AJAX request, return JSON response
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to clear cache: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()
+                ->with('error', 'Failed to clear cache: ' . $e->getMessage());
+        }
+    }
 }
