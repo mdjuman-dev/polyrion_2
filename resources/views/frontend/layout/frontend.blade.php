@@ -1917,6 +1917,8 @@
 
                 // Handle Binance Pay
                 if (method === 'binancepay') {
+                    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Creating payment...');
+                    
                     $.ajax({
                         url: '{{ route('binance.create') }}',
                         method: 'POST',
@@ -1930,12 +1932,20 @@
                                 // Close modal first
                                 closeDepositModal();
 
-                                // Redirect to Binance Pay checkout
-                                window.location.href = response.checkoutUrl;
+                                // Small delay to ensure modal closes
+                                setTimeout(function() {
+                                    // Redirect to Binance Pay checkout
+                                    window.location.href = response.checkoutUrl;
+                                }, 100);
                             } else {
-                                showError(response.message ||
-                                    "Failed to create payment. Please try again.",
-                                    'Payment Error');
+                                let errorMsg = response.message || "Failed to create payment. Please try again.";
+                                
+                                // Show helpful message for IP whitelist errors
+                                if (errorMsg.includes('IP') || errorMsg.includes('whitelist')) {
+                                    errorMsg += '\n\nPlease contact support to whitelist the server IP address.';
+                                }
+                                
+                                showError(errorMsg, 'Payment Error');
                                 $btn.prop("disabled", false).html(originalText);
                             }
                         },
@@ -1944,9 +1954,22 @@
 
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
+                                
+                                // Add helpful tips for common errors
+                                if (errorMessage.includes('IP') || errorMessage.includes('whitelist')) {
+                                    errorMessage += '\n\n💡 Tip: Server IP needs to be whitelisted in Binance Pay dashboard.';
+                                } else if (errorMessage.includes('authentication') || errorMessage.includes('API')) {
+                                    errorMessage += '\n\n💡 Tip: Please check API credentials in admin settings.';
+                                } else if (errorMessage.includes('signature')) {
+                                    errorMessage += '\n\n💡 Tip: Please verify API secret key is correct.';
+                                }
                             } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                                 const errors = Object.values(xhr.responseJSON.errors).flat();
                                 errorMessage = errors.join('\n');
+                            } else if (xhr.status === 0) {
+                                errorMessage = "Network error. Please check your internet connection and try again.";
+                            } else if (xhr.status === 500) {
+                                errorMessage = "Server error. Please try again later or contact support.";
                             }
 
                             showError(errorMessage, 'Payment Error');
@@ -2028,6 +2051,7 @@
 
                 // Handle MetaMask
                 if (method === 'metamask') {
+                    // Call immediately from user click event to ensure popup works
                     handleMetaMaskDeposit(amount, currency, $btn, originalText);
                     return;
                 }
@@ -2046,8 +2070,10 @@
 
             // MetaMask Deposit Handler
             function handleMetaMaskDeposit(amount, currency, $btn, originalText) {
-                // Check if MetaMask is installed
-                if (typeof window.ethereum === 'undefined') {
+                // Check if MetaMask is installed - check multiple ways
+                const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
+                
+                if (!ethereum) {
                     showError(
                         'MetaMask is not installed. Please install MetaMask extension to continue.',
                         'MetaMask Required'
@@ -2056,105 +2082,205 @@
                     return;
                 }
 
-                // Get network selection (default to Ethereum)
-                const network = 'ethereum'; // You can add a network selector in the UI
-                const tokenAddress =
-                    null; // null for native token (ETH/BNB/MATIC), or token contract address for ERC20
+                console.log('MetaMask detected, starting deposit process...');
 
-                // Step 1: Create deposit record
-                $.ajax({
-                    url: '{{ route('metamask.deposit.create') }}',
-                    method: 'POST',
-                    data: {
-                        amount: amount,
-                        currency: currency || 'USDT',
-                        network: network,
-                        token_address: tokenAddress,
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Close deposit modal first before showing SweetAlert
+                // Get network selection (default to Ethereum)
+                const network = 'ethereum';
+                const tokenAddress = null; // null for native token (ETH/BNB/MATIC)
+
+                // Use the ethereum provider
+                const provider = ethereum;
+
+                // Helper function to get user address
+                function getUserAddress() {
+                    return new Promise(function(resolve, reject) {
+                        // First try to get accounts without requesting (if already connected)
+                        provider.request({ 
+                            method: 'eth_accounts' 
+                        }).then(function(accounts) {
+                            if (accounts && accounts.length > 0) {
+                                console.log('MetaMask already connected:', accounts[0]);
+                                resolve(accounts[0]);
+                            } else {
+                                // No accounts, request access - this will trigger MetaMask popup
+                                console.log('Requesting MetaMask accounts...');
+                                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
+                                
+                                provider.request({ 
+                                    method: 'eth_requestAccounts' 
+                                }).then(function(requestedAccounts) {
+                                    if (!requestedAccounts || requestedAccounts.length === 0) {
+                                        reject(new Error('No accounts found. Please unlock MetaMask.'));
+                                    } else {
+                                        console.log('MetaMask connected:', requestedAccounts[0]);
+                                        resolve(requestedAccounts[0]);
+                                    }
+                                }).catch(reject);
+                            }
+                        }).catch(reject);
+                    });
+                }
+
+                // Step 1: Get user address (will trigger popup if not connected)
+                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Connecting...');
+                
+                getUserAddress()
+                    .then(function(userAddress) {
+                        console.log('Got user address, creating deposit record...');
+
+                        // Step 2: Create deposit record
+                        $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Creating deposit...');
+                        
+                        return $.ajax({
+                            url: '{{ route('metamask.deposit.create') }}',
+                            method: 'POST',
+                            data: {
+                                amount: amount,
+                                currency: currency || 'USDT',
+                                network: network,
+                                token_address: tokenAddress,
+                                _token: $('meta[name="csrf-token"]').attr('content')
+                            }
+                        }).then(function(createDepositResponse) {
+                            if (!createDepositResponse.success) {
+                                throw new Error(createDepositResponse.message || "Failed to create deposit");
+                            }
+                            console.log('Deposit record created:', createDepositResponse);
+                            return { response: createDepositResponse, userAddress: userAddress };
+                        });
+                    })
+                    .then(function(data) {
+                        console.log('Preparing to send transaction...');
+                        const response = data.response;
+                        const userAddress = data.userAddress;
+                        const merchantAddress = response.merchant_address;
+
+                        // Convert amount to wei (for native tokens) - assuming 18 decimals
+                        const decimals = response.token_decimals || 18;
+                        const amountFloat = parseFloat(amount);
+                        const multiplier = Math.pow(10, decimals);
+                        const amountInWei = Math.floor(amountFloat * multiplier);
+                        
+                        // Convert to hex (handle large numbers safely)
+                        let amountHex;
+                        try {
+                            if (typeof BigInt !== 'undefined') {
+                                amountHex = '0x' + BigInt(amountInWei).toString(16);
+                            } else {
+                                // Fallback: use a library-free conversion
+                                amountHex = '0x' + amountInWei.toString(16);
+                            }
+                        } catch (e) {
+                            // If BigInt fails, use string conversion
+                            amountHex = '0x' + amountInWei.toString(16);
+                        }
+
+                        // Step 3: Send transaction - THIS WILL OPEN METAMASK POPUP
+                        // IMPORTANT: Don't close modal yet - keep it open so popup isn't blocked
+                        $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
+                        
+                        console.log('Preparing transaction...');
+                        console.log('Merchant Address:', merchantAddress);
+                        console.log('Amount (hex):', amountHex);
+                        console.log('User Address:', userAddress);
+                        
+                        // Get gas price and send transaction
+                        return provider.request({
+                            method: 'eth_gasPrice'
+                        }).then(function(gasPrice) {
+                            console.log('Gas price:', gasPrice);
+                            
+                            // Prepare transaction parameters
+                            const transactionParameters = {
+                                from: userAddress,
+                                to: merchantAddress,
+                                value: amountHex, // Amount in wei (hex)
+                                gas: '0x5208', // 21000 gas limit for simple transfer
+                                gasPrice: gasPrice
+                            };
+
+                            console.log('Transaction parameters:', transactionParameters);
+                            console.log('Calling eth_sendTransaction - MetaMask popup should open now...');
+                            console.log('Provider:', provider);
+                            console.log('Provider.isMetaMask:', provider.isMetaMask);
+                            console.log('Provider type:', typeof provider);
+                            console.log('Provider.request type:', typeof provider.request);
+
+                            // Validate transaction parameters
+                            if (!merchantAddress || !amountHex || !userAddress) {
+                                throw new Error('Invalid transaction parameters');
+                            }
+
+                            // Send transaction - THIS WILL OPEN METAMASK POPUP
+                            // This must be called directly to trigger the popup
+                            if (!provider || typeof provider.request !== 'function') {
+                                throw new Error('MetaMask provider is not available or request method is missing');
+                            }
+
+                            console.log('Making eth_sendTransaction request...');
+                            return provider.request({
+                                method: 'eth_sendTransaction',
+                                params: [transactionParameters]
+                            });
+                        }).then(function(txHash) {
+                            if (!txHash) {
+                                throw new Error('Transaction failed. No transaction hash returned.');
+                            }
+
+                            console.log('Transaction hash:', txHash);
+
+                            // Close deposit modal AFTER transaction is sent
                             closeDepositModal();
 
-                            // Small delay to ensure modal closes before SweetAlert opens
-                            setTimeout(function() {
-                                // Show payment instructions
-                                Swal.fire({
-                                    title: 'MetaMask Payment',
-                                    html: `
+                            // Show success message and verify transaction
+                            Swal.fire({
+                                title: 'Transaction Sent!',
+                                html: `
                                     <div style="text-align: left; color: var(--text-primary, #333);">
-                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Amount:</strong> ${amount} ${response.currency}</p>
-                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;"><strong>Network:</strong> ${response.network}</p>
-                                        <p style="color: var(--text-primary, #333); margin-bottom: 8px;"><strong>Send to:</strong></p>
-                                        <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444); box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                                            <span id="merchantAddressText" style="flex: 1; word-break: break-all;">${response.merchant_address}</span>
-                                            <button id="copyAddressBtn" onclick="copyToClipboard('${response.merchant_address}', 'copyAddressBtn')" style="background: var(--accent, #ffb11a); color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s ease; white-space: nowrap; flex-shrink: 0;" title="Copy address">
-                                                <i class="fas fa-copy" style="margin-right: 5px;"></i> Copy
-                                            </button>
+                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;">
+                                            <strong>Transaction Hash:</strong>
+                                        </p>
+                                        <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444);">
+                                            ${txHash}
                                         </div>
-                                        <p style="margin-top: 15px; color: var(--text-primary, #333);"><strong>Steps:</strong></p>
-                                        <ol style="text-align: left; padding-left: 20px; font-size: 13px; color: var(--text-secondary, #666); line-height: 1.8;">
-                                            <li>Open MetaMask wallet</li>
-                                            <li>Switch to <strong>${response.network}</strong> network</li>
-                                            <li>Send <strong>${amount} ${response.currency}</strong> to the address above</li>
-                                            <li>After sending, copy the <strong>Transaction Hash</strong> from MetaMask</li>
-                                            <li>Paste the transaction hash below (starts with 0x, 66 characters long)</li>
-                                        </ol>
-                                        <div style="background: var(--accent, #ffb11a); color: #000; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 12px; border: 1px solid rgba(255,177,26,0.3);">
-                                            <strong>⚠️ Important:</strong> Enter the <strong>Transaction Hash</strong> (tx hash), NOT the wallet address. 
-                                            Transaction hash is 66 characters long and starts with 0x. 
-                                            You can find it in MetaMask under "Activity" → Click on your transaction → Copy "Transaction hash".
-                                        </div>
+                                        <p style="margin-top: 15px; color: var(--text-primary, #333);">
+                                            Your transaction has been sent. Please wait for confirmation...
+                                        </p>
                                     </div>
                                 `,
-                                    icon: 'info',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'I\'ve Sent Payment',
-                                    cancelButtonText: 'Cancel',
-                                    confirmButtonColor: '#3085d6',
-                                    cancelButtonColor: '#d33',
-                                    input: 'text',
-                                    inputPlaceholder: 'Enter Transaction Hash (0x...)',
-                                    inputValidator: (value) => {
-                                        if (!value) {
-                                            return 'Please enter transaction hash';
-                                        }
-                                        // Transaction hash should be 0x followed by 64 hex characters (66 total)
-                                        const txHashPattern = /^0x[a-fA-F0-9]{64}$/;
-                                        if (!txHashPattern.test(value.trim())) {
-                                            return 'Invalid transaction hash format. Must be 66 characters (0x + 64 hex characters). Example: 0x1234...abcd';
-                                        }
-                                        // Check if user entered merchant address instead
-                                        if (value.trim().toLowerCase() === response
-                                            .merchant_address.toLowerCase()) {
-                                            return 'You entered the merchant address. Please enter the transaction hash (tx hash) from MetaMask, not the wallet address.';
-                                        }
-                                    }
-                                }).then((result) => {
-                                    if (result.isConfirmed && result.value) {
-                                        verifyMetaMaskTransaction(result.value, response
-                                            .deposit_id, network, $btn, originalText
-                                        );
-                                    } else {
-                                        // User cancelled - reset button
-                                        $btn.prop("disabled", false).html(originalText);
-                                    }
-                                });
-                            }, 100); // Small delay to ensure modal closes before SweetAlert opens
-                        } else {
-                            showError(response.message || "Failed to create deposit", 'Error');
-                            $btn.prop("disabled", false).html(originalText);
-                        }
-                    },
-                    error: function(xhr) {
-                        let errorMessage = "Failed to create deposit. Please try again.";
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        showError(errorMessage, 'Error');
-                        $btn.prop("disabled", false).html(originalText);
+                                icon: 'success',
+                                showConfirmButton: true,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#3085d6',
+                                allowOutsideClick: false
+                            });
+
+                            // Automatically verify transaction
+                            verifyMetaMaskTransaction(txHash, response.deposit_id, network, $btn, originalText);
+                        });
+                    })
+                .catch(function(error) {
+                    console.error('MetaMask Error:', error);
+                    console.error('Error details:', JSON.stringify(error, null, 2));
+                    
+                    let errorMessage = 'Failed to process payment. Please try again.';
+                    
+                    if (error.code === 4001) {
+                        errorMessage = 'Transaction was rejected by user. Please try again.';
+                    } else if (error.code === -32002) {
+                        errorMessage = 'MetaMask request is pending. Please check your MetaMask extension and approve the request.';
+                    } else if (error.code === -32603) {
+                        errorMessage = 'Internal MetaMask error. Please try again or check your MetaMask extension.';
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    } else if (error.responseJSON && error.responseJSON.message) {
+                        errorMessage = error.responseJSON.message;
                     }
+                    
+                    // Show detailed error for debugging
+                    console.log('Showing error to user:', errorMessage);
+                    showError(errorMessage, 'Payment Error');
+                    $btn.prop("disabled", false).html(originalText);
                 });
             }
 

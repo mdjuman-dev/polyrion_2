@@ -457,7 +457,14 @@ class MarketController extends Controller
                             }
                         }
 
-                        Market::updateOrCreate(
+                        // Determine if market should be closed
+                        $isClosed = $mk['closed'] ?? false;
+                        if ($outcomeResult) {
+                            // If we have a result, market should be closed
+                            $isClosed = true;
+                        }
+
+                        $market = Market::updateOrCreate(
                             ['slug' => $mk['slug']],
                             [
                                 'event_id' => $event->id,
@@ -496,7 +503,7 @@ class MarketController extends Controller
                                 'competitive' => isset($mk['competitive']) ? floatval($mk['competitive']) : null,
 
                                 'active' => $mk['active'] ?? null,
-                                'closed' => $mk['closed'] ?? null,
+                                'closed' => $isClosed ?? ($mk['closed'] ?? null),
                                 'archived' => $mk['archived'] ?? null,
                                 'featured' => $mk['featured'] ?? null,
                                 'new' => $mk['new'] ?? null,
@@ -508,13 +515,33 @@ class MarketController extends Controller
                                 'final_outcome' => $finalOutcome,
                                 'final_result' => $finalResult,
                                 'result_set_at' => ($outcomeResult && !isset($mk['result_set_at'])) ? now() : ($mk['result_set_at'] ?? null),
-                                'is_closed' => $mk['closed'] ?? false,
-                                'settled' => ($outcomeResult && $mk['closed'] ?? false) ? false : null, // Will be set to true after settlement
+                                'is_closed' => $isClosed ?? ($mk['closed'] ?? false),
+                                'settled' => ($outcomeResult && $isClosed) ? false : null, // Will be set to true after settlement
 
                                 'start_date' => toMysqlDate($mk['startDate'] ?? null),
                                 'end_date' => toMysqlDate($mk['endDate'] ?? null),
                             ]
                         );
+
+                        // If market has result and is closed but not settled, trigger settlement
+                        // (Scheduled task will also handle this, but this ensures immediate settlement)
+                        if ($outcomeResult && $isClosed && !$market->settled) {
+                            try {
+                                $settlementService = app(\App\Services\SettlementService::class);
+                                $settlementService->settleMarket($market->id);
+                                Log::info('Market auto-settled after result update from API', [
+                                    'market_id' => $market->id,
+                                    'slug' => $market->slug,
+                                    'outcome_result' => $outcomeResult,
+                                ]);
+                            } catch (\Exception $e) {
+                                // Log error but don't fail the entire process
+                                Log::error('Failed to auto-settle market after API update', [
+                                    'market_id' => $market->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
                     }
 
                     // Save Tags
