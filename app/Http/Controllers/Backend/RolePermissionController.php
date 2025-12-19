@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\DB;
 
 class RolePermissionController extends Controller
 {
+    public function __construct()
+    {
+        // Permission checks are handled in routes
+    }
+
     /**
      * Display a listing of roles.
      */

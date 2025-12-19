@@ -35,10 +35,7 @@ new class extends Component {
     public function mount()
     {
         $user = Auth::user();
-        $wallet = Wallet::firstOrCreate(
-            ['user_id' => $user->id],
-            ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
-        );
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']);
         $this->wallet_balance = $wallet->balance;
         $this->currency = $wallet->currency;
     }
@@ -219,25 +216,29 @@ new class extends Component {
                             <label class="form-label">
                                 <i class="fas fa-university"></i> Bank Name
                             </label>
-                            <input type="text" wire:model="bank_name" placeholder="Enter bank name" class="form-input">
+                            <input type="text" wire:model="bank_name" placeholder="Enter bank name"
+                                class="form-input">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-hashtag"></i> Account Number
                             </label>
-                            <input type="text" wire:model="account_number" placeholder="Enter account number" class="form-input">
+                            <input type="text" wire:model="account_number" placeholder="Enter account number"
+                                class="form-input">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-user"></i> Account Holder Name
                             </label>
-                            <input type="text" wire:model="account_holder" placeholder="Enter account holder name" class="form-input">
+                            <input type="text" wire:model="account_holder" placeholder="Enter account holder name"
+                                class="form-input">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-code"></i> SWIFT/IBAN Code
                             </label>
-                            <input type="text" wire:model="swift_code" placeholder="Enter SWIFT or IBAN code" class="form-input">
+                            <input type="text" wire:model="swift_code" placeholder="Enter SWIFT or IBAN code"
+                                class="form-input">
                         </div>
                     </div>
                 </div>
@@ -265,7 +266,8 @@ new class extends Component {
                             <label class="form-label">
                                 <i class="fas fa-wallet"></i> Wallet Address
                             </label>
-                            <input type="text" wire:model="wallet_address" placeholder="Enter wallet address" class="form-input">
+                            <input type="text" wire:model="wallet_address" placeholder="Enter wallet address"
+                                class="form-input">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
@@ -293,7 +295,8 @@ new class extends Component {
                             <label class="form-label">
                                 <i class="fab fa-paypal"></i> PayPal Email
                             </label>
-                            <input type="email" wire:model="paypal_email" placeholder="Enter PayPal email" class="form-input">
+                            <input type="email" wire:model="paypal_email" placeholder="Enter PayPal email"
+                                class="form-input">
                         </div>
                     </div>
                 </div>
@@ -333,442 +336,515 @@ new class extends Component {
 </div>
 
 @push('styles')
-<style>
-    /* ============================================
-       WITHDRAWAL MODAL - COMPLETE REDESIGN
-       ============================================ */
+    <style>
+        /* ============================================
+               WITHDRAWAL MODAL - COMPLETE REDESIGN
+               ============================================ */
 
-    .withdrawal-modal-wrapper {
-        width: 100%;
-        height: 100%;
-    }
-
-    /* Header */
-    .withdrawal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 24px 24px 20px 24px;
-        border-bottom: none;
-    }
-
-    .withdrawal-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #ffffff;
-        margin: 0;
-        letter-spacing: -0.5px;
-    }
-
-    .withdrawal-close-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 4px;
-        border: none;
-        background: #000000;
-        color: #ffffff;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        font-size: 14px;
-    }
-
-    .withdrawal-close-btn:hover {
-        background: #1a1a1a;
-    }
-
-    /* Content */
-    .withdrawal-content {
-        padding: 0 24px 24px 24px;
-        overflow-y: auto;
-        max-height: calc(90vh - 100px);
-    }
-
-    .withdrawal-form {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    /* Balance Section */
-    .balance-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .balance-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .balance-label {
-        font-size: 14px;
-        color: #ffffff;
-        font-weight: 500;
-    }
-
-    .balance-amount {
-        font-size: 24px;
-        font-weight: 700;
-        color: #ffb11a;
-        letter-spacing: -0.3px;
-    }
-
-    .balance-min {
-        font-size: 14px;
-        color: #ffffff;
-        font-weight: 500;
-    }
-
-    /* Form Groups */
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .form-label i {
-        font-size: 13px;
-        color: #ffb11a;
-    }
-
-    .required {
-        color: #ef4444;
-    }
-
-    .input-group {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .input-prefix {
-        position: absolute;
-        left: 14px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #ffffff;
-        z-index: 1;
-    }
-
-    .form-input {
-        width: 100%;
-        padding: 14px 16px 14px 36px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: #ffffff;
-        font-size: 16px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .form-input:focus {
-        outline: none;
-        border-color: #ffb11a;
-        box-shadow: 0 0 0 3px rgba(255, 177, 26, 0.1);
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    .form-input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
-    }
-
-    .form-select {
-        padding: 14px 40px 14px 16px;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 16px center;
-        cursor: pointer;
-    }
-
-    .form-select option {
-        background: #2a2a2a;
-        color: #ffffff;
-    }
-
-    .error-text {
-        color: #ef4444;
-        font-size: 0.85rem;
-        margin-top: 4px;
-    }
-
-    /* Payment Options */
-    .payment-options {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-top: 8px;
-    }
-
-    .payment-option {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 16px 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-        min-height: 100px;
-    }
-
-    .payment-option:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 177, 26, 0.3);
-        transform: translateY(-2px);
-    }
-
-    .payment-option.active {
-        background: rgba(255, 177, 26, 0.15);
-        border-color: #ffb11a;
-        box-shadow: 0 0 0 2px rgba(255, 177, 26, 0.2);
-    }
-
-    .payment-option i {
-        font-size: 28px;
-        color: #ffb11a;
-    }
-
-    .payment-option span {
-        font-size: 13px;
-        font-weight: 500;
-        color: #ffffff;
-    }
-
-    /* Payment Details */
-    .payment-details {
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
+        .withdrawal-modal-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
 
-    .details-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .details-fields {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .details-fields .form-input {
-        padding-left: 16px;
-    }
-
-    /* Submit Section */
-    .submit-section {
-        margin-top: 4px;
-    }
-
-    .submit-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-        user-select: none;
-        flex: 1;
-    }
-
-    .checkbox-input {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-        accent-color: #ffb11a;
-    }
-
-    .checkbox-text {
-        font-size: 14px;
-        font-weight: 500;
-        color: #ffffff;
-    }
-
-    .submit-btn {
-        padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: not-allowed;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-    }
-
-    .submit-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .submit-btn:not(:disabled) {
-        background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
-        color: #ffffff;
-        border-color: #ffb11a;
-        cursor: pointer;
-        opacity: 1;
-    }
-
-    .submit-btn:not(:disabled):hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(255, 177, 26, 0.4);
-    }
-
-    /* Footer Note */
-    .footer-note {
-        margin-top: 20px;
-        padding-top: 16px;
-    }
-
-    .note-text {
-        font-size: 13px;
-        color: #ffffff;
-        margin: 0;
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .note-icon {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: #000000;
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 700;
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
+        /* Header */
         .withdrawal-header {
-            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 177, 26, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
         }
 
-        .withdrawal-content {
-            padding: 20px;
-        }
-
-        .payment-options {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 480px) {
         .withdrawal-title {
-            font-size: 1.1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+            letter-spacing: -0.5px;
         }
-    }
-</style>
+
+        .withdrawal-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: none;
+            background: #000000;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .withdrawal-close-btn:hover {
+            background: #1a1a1a;
+            transform: scale(1.05);
+        }
+
+        /* Content */
+        .withdrawal-content {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .withdrawal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Balance Section */
+        .balance-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .balance-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .balance-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffb11a;
+            letter-spacing: -0.3px;
+        }
+
+        .balance-min {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        /* Form Groups */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .form-label i {
+            font-size: 13px;
+            color: #ffb11a;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            z-index: 1;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px 12px 36px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ffb11a;
+            box-shadow: 0 0 0 2px rgba(255, 177, 26, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-input:hover:not(:focus) {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .form-select {
+            padding: 12px 40px 12px 16px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffb11a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            cursor: pointer;
+            padding-left: 16px;
+        }
+
+        .form-select option {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+
+        .error-text {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        /* Payment Options */
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .payment-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 100px;
+            position: relative;
+        }
+
+        .payment-option:hover {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 177, 26, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .payment-option.active {
+            background: rgba(255, 177, 26, 0.12);
+            border-color: #ffb11a;
+            box-shadow: 0 0 0 1px rgba(255, 177, 26, 0.3);
+        }
+
+        .payment-option i {
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .payment-option.active i {
+            color: #ffb11a;
+        }
+
+        .payment-option span {
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        /* Payment Details */
+        .payment-details {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideDown 0.3s ease;
+            margin-top: 12px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .details-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .details-title i {
+            color: #ffb11a;
+            font-size: 18px;
+        }
+
+        .details-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .details-fields .form-input {
+            padding-left: 16px;
+        }
+
+        /* Submit Section */
+        .submit-section {
+            margin-top: 4px;
+        }
+
+        .submit-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+        }
+
+        .checkbox-input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ffb11a;
+        }
+
+        .checkbox-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .submit-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .submit-btn:not(:disabled) {
+            background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%);
+            color: #000000;
+            border-color: #ffb11a;
+            cursor: pointer;
+            opacity: 1;
+            font-weight: 700;
+        }
+
+        .submit-btn:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 177, 26, 0.4);
+            background: linear-gradient(135deg, #ff9500 0%, #ffb11a 100%);
+        }
+
+        /* Footer Note */
+        .footer-note {
+            margin-top: 20px;
+            padding-top: 16px;
+        }
+
+        .note-text {
+            font-size: 13px;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .note-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .withdrawal-header {
+                padding: 16px 20px;
+            }
+
+            .withdrawal-title {
+                font-size: 1.3rem;
+            }
+
+            .withdrawal-content {
+                padding: 20px;
+            }
+
+            .payment-options {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .payment-option {
+                min-height: 90px;
+                padding: 14px 10px;
+            }
+
+            .balance-amount {
+                font-size: 24px;
+            }
+
+            .submit-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .submit-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .withdrawal-title {
+                font-size: 1.1rem;
+            }
+
+            .withdrawal-header {
+                padding: 14px 16px;
+            }
+
+            .withdrawal-content {
+                padding: 16px;
+            }
+
+            .balance-section {
+                padding: 12px;
+            }
+
+            .balance-amount {
+                font-size: 22px;
+            }
+        }
+    </style>
 @endpush
 
 @push('scripts')
-<script>
-    document.addEventListener('livewire:init', () => {
-        Livewire.on('withdrawal-submitted', (data) => {
-            if (typeof closeWithdrawalModal === 'function') {
-                closeWithdrawalModal();
-            }
+    <script>
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('withdrawal-submitted', (data) => {
+                if (typeof closeWithdrawalModal === 'function') {
+                    closeWithdrawalModal();
+                }
 
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    html: `<div style="text-align: left;">
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        html: `<div style="text-align: left;">
                         <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
                         ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
                     </div>`,
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#ffb11a',
-                    background: '#2a2a2a',
-                    color: '#ffffff'
-                }).then(() => {
-                    window.location.reload();
-                });
-            } else {
-                alert(data.message || 'Withdrawal request submitted successfully.');
-                setTimeout(() => window.location.reload(), 500);
-            }
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#ffb11a',
+                        background: '#2a2a2a',
+                        color: '#ffffff'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || 'Withdrawal request submitted successfully.');
+                    setTimeout(() => window.location.reload(), 500);
+                }
+            });
         });
-    });
 
-    document.addEventListener('livewire:initialized', () => {
-        Livewire.on('withdrawal-submitted', (data) => {
-            if (typeof closeWithdrawalModal === 'function') {
-                closeWithdrawalModal();
-            }
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('withdrawal-submitted', (data) => {
+                if (typeof closeWithdrawalModal === 'function') {
+                    closeWithdrawalModal();
+                }
 
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    html: `<div style="text-align: left;">
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        html: `<div style="text-align: left;">
                         <p style="margin-bottom: 10px;">${data.message || 'Withdrawal request submitted successfully.'}</p>
                         ${data.balance ? `<p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"><strong>New Balance:</strong> $${data.balance}</p>` : ''}
                     </div>`,
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#ffb11a',
-                    background: '#2a2a2a',
-                    color: '#ffffff'
-                }).then(() => {
-                    window.location.reload();
-                });
-            } else {
-                alert(data.message || 'Withdrawal request submitted successfully.');
-                setTimeout(() => window.location.reload(), 500);
-            }
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#ffb11a',
+                        background: '#2a2a2a',
+                        color: '#ffffff'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || 'Withdrawal request submitted successfully.');
+                    setTimeout(() => window.location.reload(), 500);
+                }
+            });
         });
-    });
-</script>
+    </script>
 @endpush
-

@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Log;
 
 class DepositController extends Controller
 {
+    public function __construct()
+    {
+        // Permission checks are handled in routes
+    }
+
     /**
      * Display all deposits
      */

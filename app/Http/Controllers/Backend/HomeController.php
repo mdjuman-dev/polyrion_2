@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view dashboard,admin');
+    }
+
     function dashboard()
     {
         // Total Statistics

@@ -27,20 +27,59 @@ class RolePermissionSeeder extends Seeder
             }
 
             $permissions = [
+                // Dashboard
                 'view dashboard',
+                
+                // Events
                 'manage events',
                 'create events',
                 'edit events',
                 'delete events',
+                'view events',
+                
+                // Markets
+                'manage markets',
+                'create markets',
+                'edit markets',
+                'delete markets',
+                'view markets',
+                'settle markets',
+                
+                // Users
                 'manage users',
                 'view users',
                 'edit users',
                 'delete users',
+                
+                // Deposits
+                'manage deposits',
+                'view deposits',
+                'approve deposits',
+                'reject deposits',
+                
+                // Withdrawals
                 'manage withdrawals',
+                'view withdrawals',
                 'approve withdrawals',
                 'reject withdrawals',
+                'process withdrawals',
+                
+                // Settings
                 'manage settings',
                 'manage global settings',
+                'manage payment settings',
+                
+                // Roles & Permissions
+                'manage roles',
+                'view roles',
+                'create roles',
+                'edit roles',
+                'delete roles',
+                'manage permissions',
+                'view permissions',
+                'create permissions',
+                'edit permissions',
+                'delete permissions',
             ];
 
             foreach ($permissions as $permission) {
