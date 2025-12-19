@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -13,40 +11,58 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Create permissions
-        $permissions = [
-            'view dashboard',
-            'manage events',
-            'create events',
-            'edit events',
-            'delete events',
-            'manage users',
-            'view users',
-            'edit users',
-            'delete users',
-            'manage withdrawals',
-            'approve withdrawals',
-            'reject withdrawals',
-            'manage settings',
-            'manage global settings',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate([
-                'name' => $permission,
-                'guard_name' => 'admin'
-            ]);
+        // Check if Spatie Permission package is installed
+        if (!class_exists(\Spatie\Permission\Models\Role::class) || 
+            !class_exists(\Spatie\Permission\Models\Permission::class)) {
+            // Package not installed, skip seeding
+            $this->command->warn('Spatie Permission package not installed. Skipping role/permission seeding.');
+            $this->command->info('To install: composer require spatie/laravel-permission');
+            return;
         }
 
-        // Create admin role and assign all permissions
-        $adminRole = Role::firstOrCreate([
-            'name' => 'admin',
-            'guard_name' => 'admin'
-        ]);
+        try {
+            // Reset cached roles and permissions
+            if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+            }
 
-        $adminRole->givePermissionTo(Permission::where('guard_name', 'admin')->get());
+            $permissions = [
+                'view dashboard',
+                'manage events',
+                'create events',
+                'edit events',
+                'delete events',
+                'manage users',
+                'view users',
+                'edit users',
+                'delete users',
+                'manage withdrawals',
+                'approve withdrawals',
+                'reject withdrawals',
+                'manage settings',
+                'manage global settings',
+            ];
+
+            foreach ($permissions as $permission) {
+                \Spatie\Permission\Models\Permission::firstOrCreate([
+                    'name' => $permission,
+                    'guard_name' => 'admin'
+                ]);
+            }
+
+            // Create admin role and assign all permissions
+            $adminRole = \Spatie\Permission\Models\Role::firstOrCreate([
+                'name' => 'admin',
+                'guard_name' => 'admin'
+            ]);
+
+            $adminRole->givePermissionTo(\Spatie\Permission\Models\Permission::where('guard_name', 'admin')->get());
+            
+            $this->command->info('Roles and permissions seeded successfully.');
+        } catch (\Exception $e) {
+            // If tables don't exist yet, that's okay - migrations will create them
+            $this->command->warn('Could not seed roles/permissions: ' . $e->getMessage());
+            $this->command->info('Make sure to run migrations first: php artisan migrate');
+        }
     }
 }

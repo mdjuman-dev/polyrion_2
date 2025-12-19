@@ -6,6 +6,7 @@ use App\Models\Market;
 use App\Models\Trade;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -32,12 +33,30 @@ class SettlementService
                 return false;
             }
 
-            // Get outcome result (normalize to lowercase)
-            $outcomeResult = strtolower($market->outcome_result);
+            // Get outcome result - check multiple fields and normalize
+            $outcomeResult = null;
+            if ($market->outcome_result) {
+                $outcomeResult = strtolower($market->outcome_result);
+            } elseif ($market->final_outcome) {
+                $outcomeResult = strtolower($market->final_outcome);
+            } elseif ($market->final_result) {
+                $outcomeResult = strtolower($market->final_result);
+            }
 
-            // Fetch all pending trades for this market
+            if (!$outcomeResult || !in_array($outcomeResult, ['yes', 'no'])) {
+                Log::warning("Market settlement skipped: No valid outcome result", [
+                    'market_id' => $marketId,
+                    'outcome_result' => $market->outcome_result,
+                    'final_outcome' => $market->final_outcome,
+                    'final_result' => $market->final_result,
+                ]);
+                DB::rollBack();
+                return false;
+            }
+
+            // Fetch all pending trades for this market (handle both PENDING and pending)
             $trades = Trade::where('market_id', $marketId)
-                ->where('status', 'pending')
+                ->whereIn('status', ['PENDING', 'pending'])
                 ->get();
 
             if ($trades->isEmpty()) {
@@ -53,49 +72,101 @@ class SettlementService
             $lossCount = 0;
 
             foreach ($trades as $trade) {
-                // Get trade side (normalize to lowercase)
-                // Support both 'side' and 'option' fields for backward compatibility
-                $tradeSide = strtolower($trade->side ?? $trade->option ?? '');
+                // Get trade outcome (normalize to lowercase)
+                // Support both 'outcome' (YES/NO) and legacy 'side'/'option' fields
+                $tradeOutcome = null;
+                if ($trade->outcome) {
+                    $tradeOutcome = strtolower($trade->outcome);
+                } elseif ($trade->side) {
+                    $tradeOutcome = strtolower($trade->side);
+                } elseif ($trade->option) {
+                    $tradeOutcome = strtolower($trade->option);
+                }
 
-                if (empty($tradeSide)) {
-                    Log::warning("Trade has no side/option, skipping", [
+                if (empty($tradeOutcome) || !in_array($tradeOutcome, ['yes', 'no'])) {
+                    Log::warning("Trade has invalid outcome, skipping", [
                         'trade_id' => $trade->id,
-                        'market_id' => $marketId
+                        'market_id' => $marketId,
+                        'outcome' => $trade->outcome,
+                        'side' => $trade->side,
+                        'option' => $trade->option,
                     ]);
                     continue;
                 }
 
-                // Calculate shares if not set (amount / price)
-                if (!$trade->shares && $trade->price && $trade->price > 0) {
-                    $trade->shares = $trade->amount / $trade->price;
-                } elseif (!$trade->shares && $trade->token_amount) {
-                    // Fallback to token_amount if shares not set
-                    $trade->shares = $trade->token_amount;
+                // Calculate shares/token_amount if not set
+                $shares = $trade->shares ?? $trade->token_amount ?? 0;
+                if (!$shares || $shares <= 0) {
+                    // Calculate from amount and price
+                    if ($trade->price && $trade->price > 0 && $trade->amount) {
+                        $shares = $trade->amount / $trade->price;
+                    } elseif ($trade->price_at_buy && $trade->price_at_buy > 0 && $trade->amount_invested) {
+                        $shares = $trade->amount_invested / $trade->price_at_buy;
+                    } else {
+                        Log::warning("Trade has no shares/token_amount and cannot calculate, skipping", [
+                            'trade_id' => $trade->id,
+                        ]);
+                        continue;
+                    }
                 }
 
-                if ($tradeSide === $outcomeResult) {
-                    // Trade won - calculate payout
-                    $payout = $trade->shares * 1;
-                    $trade->status = 'win';
+                if ($tradeOutcome === $outcomeResult) {
+                    // Trade WON - calculate payout
+                    $payout = $shares * 1.00; // Full payout at $1.00 per share/token
+                    
+                    // Update trade status (support both formats)
+                    $trade->status = 'WON'; // Use uppercase for consistency
                     $trade->payout = $payout;
+                    $trade->payout_amount = $payout; // Legacy field
                     $trade->settled_at = now();
+                    $trade->save();
 
                     // Update user's balance
                     $user = User::find($trade->user_id);
                     if ($user) {
                         $wallet = Wallet::firstOrCreate(
                             ['user_id' => $user->id],
-                            ['balance' => 0, 'currency' => 'USD', 'status' => 'active']
+                            ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
                         );
 
                         $balanceBefore = $wallet->balance;
                         $wallet->balance += $payout;
                         $wallet->save();
 
-                        Log::info("Trade settled as WIN - balance updated", [
+                        // Create wallet transaction for payout
+                        try {
+                            WalletTransaction::create([
+                                'user_id' => $user->id,
+                                'wallet_id' => $wallet->id,
+                                'type' => 'trade_payout',
+                                'amount' => $payout,
+                                'balance_before' => $balanceBefore,
+                                'balance_after' => $wallet->balance,
+                                'reference_type' => \App\Models\Trade::class,
+                                'reference_id' => $trade->id,
+                                'description' => "Trade payout: {$trade->outcome} on market: {$market->question}",
+                                'metadata' => [
+                                    'trade_id' => $trade->id,
+                                    'market_id' => $market->id,
+                                    'outcome' => $trade->outcome,
+                                    'payout' => $payout,
+                                    'shares' => $shares,
+                                    'profit' => $payout - ($trade->amount_invested ?? $trade->amount ?? 0),
+                                ]
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to create wallet transaction for trade payout', [
+                                'trade_id' => $trade->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                            // Don't fail settlement if transaction creation fails
+                        }
+
+                        Log::info("Trade settled as WON - balance updated", [
                             'trade_id' => $trade->id,
                             'user_id' => $user->id,
                             'payout' => $payout,
+                            'shares' => $shares,
                             'balance_before' => $balanceBefore,
                             'balance_after' => $wallet->balance
                         ]);
@@ -103,22 +174,23 @@ class SettlementService
                         $winCount++;
                     }
                 } else {
-                    // Trade lost
-                    $trade->status = 'loss';
+                    // Trade LOST
+                    $trade->status = 'LOST'; // Use uppercase for consistency
                     $trade->payout = 0;
+                    $trade->payout_amount = 0; // Legacy field
                     $trade->settled_at = now();
+                    $trade->save();
 
-                    Log::info("Trade settled as LOSS", [
+                    Log::info("Trade settled as LOST", [
                         'trade_id' => $trade->id,
                         'user_id' => $trade->user_id,
-                        'trade_side' => $tradeSide,
+                        'trade_outcome' => $tradeOutcome,
                         'market_result' => $outcomeResult
                     ]);
 
                     $lossCount++;
                 }
 
-                $trade->save();
                 $settledCount++;
             }
 
@@ -155,9 +227,17 @@ class SettlementService
      */
     public function settleClosedMarkets(): array
     {
-        $markets = Market::where('is_closed', true)
+        // Find markets that are closed, not settled, and have a result
+        $markets = Market::where(function($query) {
+                $query->where('is_closed', true)
+                      ->orWhere('closed', true);
+            })
             ->where('settled', false)
-            ->whereNotNull('outcome_result')
+            ->where(function($query) {
+                $query->whereNotNull('outcome_result')
+                      ->orWhereNotNull('final_outcome')
+                      ->orWhereNotNull('final_result');
+            })
             ->get();
 
         $results = [

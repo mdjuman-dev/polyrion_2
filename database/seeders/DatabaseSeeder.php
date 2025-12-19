@@ -21,8 +21,18 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
+        // Only seed roles/permissions if Spatie Permission is installed
+        if (class_exists(\Spatie\Permission\Models\Role::class)) {
+            $this->call([
+                RolePermissionSeeder::class,
+            ]);
+        } else {
+            $this->command->warn('Spatie Permission package not installed. Skipping role/permission seeding.');
+            $this->command->info('To enable roles/permissions, run: composer require spatie/laravel-permission');
+        }
+        
+        // Always seed admin user
         $this->call([
-            RolePermissionSeeder::class,
             AdminSeeder::class,
         ]);
     }
