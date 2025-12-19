@@ -169,6 +169,80 @@
                 padding: 0 0.75rem;
             }
         }
+
+        /* Countdown Timer Styles - Matching Image Design */
+        .countdown-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0;
+            background: transparent;
+            border: none;
+            margin: 0;
+        }
+
+        .countdown-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .countdown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .countdown-number {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            min-width: auto;
+            text-align: center;
+            border: none;
+            line-height: 1.2;
+        }
+
+        .countdown-label {
+            font-size: 9px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        @media (max-width: 768px) {
+            .countdown-wrapper {
+                gap: 10px;
+            }
+
+            .countdown-number {
+                font-size: 16px;
+            }
+
+            .countdown-label {
+                font-size: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .countdown-wrapper {
+                gap: 8px;
+            }
+
+            .countdown-number {
+                font-size: 14px;
+            }
+
+            .countdown-label {
+                font-size: 7px;
+            }
+        }
     </style>
     <main>
         <div class="main-layout">
@@ -176,17 +250,37 @@
                 <div class="market-detail-header">
                     <div class="market-header-top">
                         <div class="market-header-left">
-                            <div class="market-profile-img">
+                            <div class="market-profile-img" style="width: 65px; height: 65px; border-radius: 10%;">
                                 <img src="{{ $event->image }}" alt="Profile">
                             </div>
                             <div class="market-header-info">
                                 <h1 class="market-title">{{ $event->title }}</h1>
                                 <div class="market-header-meta">
                                     <span class="market-volume">${{ number_format($event->volume) }} Vol.</span>
-                                    <span class="market-date">{{ format_date($event->start_date) }}</span>
+                                    <span class="market-date">{{ format_date($event->end_date) }}</span>
                                 </div>
                             </div>
                         </div>
+                        @if ($event->end_date && \Carbon\Carbon::parse($event->end_date)->diffInDays(now()) < 30)
+                            <div class="countdown-container"
+                                data-end-date="{{ \Carbon\Carbon::parse($event->end_date)->toIso8601String() }}">
+                                <div class="countdown-wrapper">
+                                    <div class="countdown-item">
+                                        <span class="countdown-number" id="countdown-days">00</span>
+                                        <span class="countdown-label">DAYS</span>
+                                    </div>
+                                    <div class="countdown-item">
+                                        <span class="countdown-number" id="countdown-hours">00</span>
+                                        <span class="countdown-label">HRS</span>
+                                    </div>
+                                    <div class="countdown-item">
+                                        <span class="countdown-number" id="countdown-minutes">00</span>
+                                        <span class="countdown-label">MINS</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="market-header-actions">
                             <livewire:save-event :event="$event" />
                         </div>
@@ -194,7 +288,7 @@
                 </div>
 
 
-                <div class="chart-container">
+                <div class="chart-container" style="display: inline-block;">
                     <!-- Chart (Polymarket style) -->
                     <div id="polyChart" class="poly-chart-wrapper">
                     </div>
@@ -238,6 +332,63 @@
             const seriesData = @json($seriesData ?? []);
             const labels = @json($labels ?? []);
             console.log(seriesData);
+
+            // Default color palette if color is missing
+            const defaultColors = [
+                '#ff7b2c', // Orange
+                '#4c8df5', // Blue
+                '#9cdbff', // Light Blue
+                '#ffe04d', // Yellow
+                '#ff6b9d', // Pink
+                '#4ecdc4', // Teal
+                '#a8e6cf', // Green
+                '#ff8b94', // Coral
+            ];
+
+            // Helper function to ensure valid color
+            function ensureValidColor(color, index) {
+                if (!color || color.trim() === '' || !color.match(/^#?[0-9A-Fa-f]{6}$/)) {
+                    // Use default color based on index
+                    return defaultColors[index % defaultColors.length];
+                }
+                // Ensure # prefix
+                return color.startsWith('#') ? color : '#' + color;
+            }
+
+            // Helper function to add opacity to hex color
+            function addOpacityToHex(hexColor, opacity) {
+                // Ensure valid color first
+                if (!hexColor || hexColor.trim() === '') {
+                    hexColor = defaultColors[0]; // Fallback to first default color
+                }
+
+                // Remove # if present
+                hexColor = hexColor.replace('#', '');
+
+                // Validate hex color format
+                if (!hexColor.match(/^[0-9A-Fa-f]{6}$/)) {
+                    console.warn('Invalid hex color format:', hexColor, 'using fallback');
+                    hexColor = 'ff7b2c'; // Default orange
+                }
+
+                // Convert hex to RGB
+                const r = parseInt(hexColor.substring(0, 2), 16);
+                const g = parseInt(hexColor.substring(2, 4), 16);
+                const b = parseInt(hexColor.substring(4, 6), 16);
+
+                // Validate RGB values
+                if (isNaN(r) || isNaN(g) || isNaN(b)) {
+                    console.warn('Invalid RGB values, using fallback');
+                    return `rgba(255, 123, 44, ${opacity / 255})`; // Default orange
+                }
+
+                // Convert opacity from 0-255 to 0-1
+                const opacityDecimal = opacity / 255;
+
+                // Return rgba format
+                return `rgba(${r}, ${g}, ${b}, ${opacityDecimal})`;
+            }
+
             // Wait for ECharts to load and DOM to be ready
             function initPolyChart() {
                 if (typeof echarts === 'undefined') {
@@ -261,7 +412,7 @@
 
                 let chart = echarts.init(chartElement);
 
-                // Polymarket always uses 0-100% scale
+                // Use 0-100% scale like in image
                 const yAxisMax = 100;
 
                 // Detect mobile device
@@ -306,10 +457,10 @@
                     },
 
                     grid: {
-                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
-                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
-                        bottom: isMobile ? "12%" : "8%",
-                        top: isMobile ? "10%" : "15%",
+                        left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
+                        right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
+                        bottom: isMobile ? "15%" : "12%",
+                        top: isMobile ? "12%" : "10%",
                         containLabel: false
                     },
 
@@ -335,7 +486,7 @@
                     yAxis: {
                         type: 'value',
                         min: 0,
-                        max: yAxisMax,
+                        max: 100, // 0-100% scale like in image
                         axisLine: {
                             show: false
                         },
@@ -345,54 +496,63 @@
                         axisLabel: {
                             color: "#9ab1c6",
                             fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                            formatter: '{value}%'
+                            formatter: '{value}%',
+                            margin: 10 // Add padding for Y-axis labels
                         },
                         splitLine: {
                             show: true,
                             lineStyle: {
-                                color: "#1f2f44",
+                                color: "rgba(154, 177, 198, 0.15)", // Faint grid lines like in image
                                 type: 'solid',
                                 width: 1
                             }
-                        }
+                        },
+                        splitNumber: 5 // Show 5 major grid lines (0, 20, 40, 60, 80, 100)
                     },
 
-                    series: seriesData.map((item) => ({
-                        name: item.name,
-                        type: 'line',
-                        smooth: true,
-                        showSymbol: false,
-                        data: item.data,
-                        lineStyle: {
-                            width: 2,
-                            color: item.color
-                        },
-                        areaStyle: {
-                            show: true, // Show area for all markets (like image)
-                            color: {
-                                type: 'linear',
-                                x: 0,
-                                y: 0,
-                                x2: 0,
-                                y2: 1,
-                                colorStops: [{
-                                        offset: 0,
-                                        color: item.color + '40' // More transparent for all lines
-                                    },
-                                    {
-                                        offset: 1,
-                                        color: item.color + '05' // Very transparent at top
-                                    }
-                                ]
-                            }
-                        },
-                        emphasis: {
-                            focus: 'series',
+                    series: seriesData.map((item, index) => {
+                        // Ensure valid color
+                        const validColor = ensureValidColor(item.color, index);
+
+                        return {
+                            name: item.name,
+                            type: 'line',
+                            smooth: true,
+                            showSymbol: false,
+                            data: item.data,
                             lineStyle: {
-                                width: 3
+                                width: 2,
+                                color: validColor
+                            },
+                            areaStyle: {
+                                show: true, // Show area for all markets (like image)
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                            offset: 0,
+                                            color: addOpacityToHex(validColor,
+                                                64) // 40 in hex = 64 in decimal, ~25% opacity
+                                        },
+                                        {
+                                            offset: 1,
+                                            color: addOpacityToHex(validColor,
+                                                5) // 05 in hex = 5 in decimal, ~2% opacity
+                                        }
+                                    ]
+                                }
+                            },
+                            emphasis: {
+                                focus: 'series',
+                                lineStyle: {
+                                    width: 3
+                                }
                             }
-                        }
-                    }))
+                        };
+                    })
                 };
 
                 chart.setOption(option);
@@ -487,21 +647,38 @@
                 // Handle chart period button clicks
                 const chartButtons = document.querySelectorAll('.chart-btn');
                 chartButtons.forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
                         // Remove active class from all buttons
                         chartButtons.forEach(b => b.classList.remove('active'));
                         // Add active class to clicked button
                         this.classList.add('active');
 
                         const period = this.getAttribute('data-period');
-                        filterChartByPeriod(period);
+                        console.log('Chart filter button clicked:', period);
+
+                        if (period) {
+                            filterChartByPeriod(period);
+                        } else {
+                            console.warn('No period attribute found on button');
+                        }
                     });
                 });
             }
 
             // Filter chart data by period
             function filterChartByPeriod(period) {
-                if (!window.polyChart || !window.originalSeriesData || !window.originalLabels) {
+                console.log('filterChartByPeriod called with period:', period);
+
+                if (!window.polyChart) {
+                    console.error('Chart instance not found');
+                    return;
+                }
+
+                if (!window.originalSeriesData || !window.originalLabels) {
+                    console.error('Original chart data not found');
                     return;
                 }
 
@@ -514,28 +691,40 @@
                 const isSmallMobile = window.innerWidth <= 480;
 
                 // Calculate how many data points to show based on period
+                // Since labels are date-based (typically 2 days apart), adjust accordingly
                 let dataPointsToShow = originalLabels.length;
 
                 switch (period) {
                     case '1h':
-                        dataPointsToShow = Math.min(60, originalLabels.length); // Last 60 points (1 hour)
+                        // For 1 hour, show last 3-4 points (since labels are typically 2 days apart)
+                        // This will show approximately last 6-8 days of data
+                        dataPointsToShow = Math.min(4, originalLabels.length);
                         break;
                     case '6h':
-                        dataPointsToShow = Math.min(360, originalLabels.length); // Last 360 points (6 hours)
+                        // For 6 hours, show last 5-6 points
+                        dataPointsToShow = Math.min(6, originalLabels.length);
                         break;
                     case '1d':
-                        dataPointsToShow = Math.min(1440, originalLabels.length); // Last 1440 points (1 day)
+                        // For 1 day, show last 7-8 points
+                        dataPointsToShow = Math.min(8, originalLabels.length);
                         break;
                     case '1w':
-                        dataPointsToShow = Math.min(10080, originalLabels.length); // Last 10080 points (1 week)
+                        // For 1 week, show last 10-12 points
+                        dataPointsToShow = Math.min(12, originalLabels.length);
                         break;
                     case '1m':
-                        dataPointsToShow = Math.min(43200, originalLabels.length); // Last 43200 points (1 month)
+                        // For 1 month, show last 15-20 points
+                        dataPointsToShow = Math.min(20, originalLabels.length);
                         break;
                     case 'all':
                     default:
                         dataPointsToShow = originalLabels.length; // Show all
                         break;
+                }
+
+                // Ensure minimum 2 points are shown for any filter
+                if (dataPointsToShow < 2 && originalLabels.length >= 2) {
+                    dataPointsToShow = 2;
                 }
 
                 // Get the last N data points
@@ -548,6 +737,16 @@
                     data: item.data ? item.data.slice(startIndex) : []
                 }));
 
+                // Debug log
+                console.log('Filter applied:', {
+                    period: period,
+                    totalPoints: originalLabels.length,
+                    showingPoints: dataPointsToShow,
+                    startIndex: startIndex,
+                    filteredLabels: filteredLabels,
+                    filteredDataLength: filteredSeriesData[0]?.data?.length || 0
+                });
+
                 // Recalculate y-axis max
                 let maxValue = 0;
                 filteredSeriesData.forEach(item => {
@@ -558,16 +757,16 @@
                         }
                     }
                 });
-                // Always use 0-100% scale like Polymarket
+                // Always use 0-100% scale like in image
                 const yAxisMax = 100;
 
                 // Update chart with Polymarket style
                 chart.setOption({
                     grid: {
-                        left: isMobile ? (isSmallMobile ? "8%" : "6%") : "3%",
-                        right: isMobile ? (isSmallMobile ? "6%" : "5%") : "4%",
-                        bottom: isMobile ? "15%" : "12%", // More space for rotated labels
-                        top: isMobile ? "10%" : "15%",
+                        left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
+                        right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
+                        bottom: isMobile ? "15%" : "12%",
+                        top: isMobile ? "12%" : "10%",
                         containLabel: false
                     },
                     xAxis: {
@@ -579,47 +778,64 @@
                         }
                     },
                     yAxis: {
-                        max: yAxisMax,
+                        max: 100, // 0-100% scale like in image
                         axisLabel: {
-                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11
-                        }
-                    },
-                    series: filteredSeriesData.map((item) => ({
-                        name: item.name,
-                        type: 'line',
-                        smooth: true,
-                        showSymbol: false,
-                        data: item.data,
-                        lineStyle: {
-                            width: 2,
-                            color: item.color
+                            fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
+                            margin: 10 // Add padding for Y-axis labels
                         },
-                        areaStyle: {
+                        splitLine: {
                             show: true,
-                            color: {
-                                type: 'linear',
-                                x: 0,
-                                y: 0,
-                                x2: 0,
-                                y2: 1,
-                                colorStops: [{
-                                        offset: 0,
-                                        color: item.color + '40'
-                                    },
-                                    {
-                                        offset: 1,
-                                        color: item.color + '05'
-                                    }
-                                ]
+                            lineStyle: {
+                                color: "rgba(154, 177, 198, 0.15)", // Faint grid lines like in image
+                                type: 'solid',
+                                width: 1
                             }
                         },
-                        emphasis: {
-                            focus: 'series',
+                        splitNumber: 5 // Show 5 major grid lines (0, 20, 40, 60, 80, 100)
+                    },
+                    series: filteredSeriesData.map((item, index) => {
+                        // Ensure valid color
+                        const validColor = ensureValidColor(item.color, index);
+
+                        return {
+                            name: item.name,
+                            type: 'line',
+                            smooth: true,
+                            showSymbol: false,
+                            data: item.data,
                             lineStyle: {
-                                width: 3
+                                width: 2,
+                                color: validColor
+                            },
+                            areaStyle: {
+                                show: true,
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                            offset: 0,
+                                            color: addOpacityToHex(validColor,
+                                                64) // 40 in hex = 64 in decimal, ~25% opacity
+                                        },
+                                        {
+                                            offset: 1,
+                                            color: addOpacityToHex(validColor,
+                                                5) // 05 in hex = 5 in decimal, ~2% opacity
+                                        }
+                                    ]
+                                }
+                            },
+                            emphasis: {
+                                focus: 'series',
+                                lineStyle: {
+                                    width: 3
+                                }
                             }
-                        }
-                    }))
+                        };
+                    })
                 }, true);
             }
 
@@ -851,6 +1067,117 @@
                 document.addEventListener('livewire:load', initTradingCalculation);
                 document.addEventListener('livewire:update', function() {
                     setTimeout(initTradingCalculation, 100);
+                });
+            })();
+
+            // Countdown Timer - Event End Date পর্যন্ত remaining time দেখাবে
+            (function() {
+                'use strict';
+
+                let countdownInterval = null;
+
+                function initCountdown() {
+                    // Clear existing interval if any
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
+
+                    const countdownContainer = document.querySelector('.countdown-container');
+                    if (!countdownContainer) {
+                        console.warn('Countdown: Container not found');
+                        return;
+                    }
+
+                    const endDateStr = countdownContainer.getAttribute('data-end-date');
+                    if (!endDateStr) {
+                        console.warn('Countdown: Event end date not found');
+                        return;
+                    }
+
+                    // Parse event end date
+                    const endDate = new Date(endDateStr);
+                    if (isNaN(endDate.getTime())) {
+                        console.error('Countdown: Invalid end date format', endDateStr);
+                        return;
+                    }
+
+                    // Get countdown elements
+                    const daysEl = document.getElementById('countdown-days');
+                    const hoursEl = document.getElementById('countdown-hours');
+                    const minutesEl = document.getElementById('countdown-minutes');
+
+                    if (!daysEl || !hoursEl || !minutesEl) {
+                        console.warn('Countdown: Elements not found', {
+                            daysEl,
+                            hoursEl,
+                            minutesEl
+                        });
+                        return;
+                    }
+
+                    console.log('Countdown initialized for event end:', {
+                        endDate: endDate.toISOString(),
+                        endDateLocal: endDate.toLocaleString(),
+                        now: new Date().toLocaleString(),
+                        timeRemaining: Math.floor((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 *
+                            24)) + ' days'
+                    });
+
+                    function updateCountdown() {
+                        const now = new Date().getTime();
+                        const endTime = endDate.getTime();
+                        const distance = endTime - now; // Event end পর্যন্ত remaining time
+
+                        // Event শেষ হয়ে গেছে
+                        if (distance < 0) {
+                            daysEl.textContent = '00';
+                            hoursEl.textContent = '00';
+                            minutesEl.textContent = '00';
+                            if (countdownInterval) {
+                                clearInterval(countdownInterval);
+                                countdownInterval = null;
+                            }
+                            return;
+                        }
+
+                        // Calculate remaining time until event end
+                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+                        // Update display
+                        daysEl.textContent = String(days).padStart(2, '0');
+                        hoursEl.textContent = String(hours).padStart(2, '0');
+                        minutesEl.textContent = String(minutes).padStart(2, '0');
+                    }
+
+                    // Immediately update
+                    updateCountdown();
+
+                    // Update every minute
+                    countdownInterval = setInterval(updateCountdown, 60000);
+                }
+
+                // Initialize countdown when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initCountdown);
+                } else {
+                    // Try immediately, but also try after a short delay to ensure DOM is ready
+                    setTimeout(initCountdown, 100);
+                }
+
+                // Reinitialize after Livewire updates
+                document.addEventListener('livewire:load', function() {
+                    setTimeout(initCountdown, 200);
+                });
+                document.addEventListener('livewire:update', function() {
+                    setTimeout(initCountdown, 200);
+                });
+
+                // Also try on window load as fallback
+                window.addEventListener('load', function() {
+                    setTimeout(initCountdown, 100);
                 });
             })();
         </script>

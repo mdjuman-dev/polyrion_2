@@ -444,14 +444,16 @@
                         alt="{{ auth()->user()->username }}">
                 </div>
                 <div class="header-user-info">
-                    <div class="header-user-name">
-                        {{ auth()->user()->username }}
-                    </div>
-                    @if (auth()->user()->email)
-                        <div class="header-user-sub">
-                            {{ auth()->user()->email }}
+                    <a href="{{ route('profile.index') }}">
+                        <div class="header-user-name">
+                            {{ auth()->user()->username }}
                         </div>
-                    @endif
+                        @if (auth()->user()->email)
+                            <div class="header-user-sub">
+                                {{ auth()->user()->email }}
+                            </div>
+                        @endif
+                    </a>
                 </div>
             </div>
             <div class="more-menu-divider"></div>
@@ -460,19 +462,12 @@
         <div class="more-menu-links">
             <a href="#"><i class="fas fa-trophy" style="color: #ffb11a;"></i> Leaderboard</a>
             <a href="#"><i class="fas fa-dollar-sign" style="color: #00c853;"></i> Rewards</a>
-            <a href="#"><i class="fas fa-code" style="color: #ff4757;"></i> APIs</a>
         </div>
         <div class="more-menu-divider"></div>
         <div class="more-menu-links">
-            <a href="#">Accuracy</a>
-            <a href="#">Documentation</a>
             <a href="#">Terms of Use</a>
         </div>
-        <div class="more-menu-social">
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-discord"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-            <a href="#"><i class="fab fa-tiktok"></i></a>
+        <div class="more-menu-social" style="justify-content: start;">
             <button class="theme-toggle-mobile" id="themeToggleMobile" aria-label="Toggle theme">
                 <span class="header-menu-switch header-menu-switch--on">
                     <span class="header-menu-switch-knob"></span>
