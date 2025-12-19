@@ -166,7 +166,7 @@ class GlobalSettingsController extends Controller
             'commission_percentage' => 'nullable|numeric|min:0|max:100',
             'contact_email' => 'nullable|email|max:255',
             'logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
-            'favicon' => 'nullable|image|mimes:ico,png,jpg,jpeg|max:1024',
+            'favicon' => 'nullable|file|mimes:ico,png,jpg,jpeg,gif|max:1024',
             'site_logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
             'binance_api_key' => 'nullable|string',
             'binance_secret_key' => 'nullable|string',
@@ -457,8 +457,13 @@ class GlobalSettingsController extends Controller
         ];
 
         foreach ($settingsToUpdate as $key) {
-            if ($request->has($key) && $request->input($key) !== null) {
-                GlobalSetting::setValue($key, $request->input($key));
+            if ($request->has($key)) {
+                $value = $request->input($key);
+                // Convert empty strings, null, or whitespace-only strings to null
+                if ($value === null || (is_string($value) && trim($value) === '') || $value === '') {
+                    $value = null;
+                }
+                GlobalSetting::setValue($key, $value);
             }
         }
 

@@ -12,10 +12,28 @@ class HeaderSearch extends Component
     public $selectedFilter = null;
 
     protected $listeners = ['closeSearch' => 'closeSuggestions'];
+    
+    public function performSearch()
+    {
+        if (!empty($this->query)) {
+            // If on home page, dispatch search to MarketsGrid
+            if (request()->routeIs('home')) {
+                $this->dispatch('search-query-updated', query: $this->query);
+            } else {
+                // If not on home page, redirect to home with search query
+                return redirect()->route('home', ['search' => $this->query]);
+            }
+        }
+    }
 
     public function updatedQuery()
     {
         $this->showSuggestions = true;
+        
+        // Dispatch search query to MarketsGrid if on home page
+        if (request()->routeIs('home') && !empty($this->query)) {
+            $this->dispatch('search-query-updated', query: $this->query);
+        }
     }
 
     public function mount()
@@ -90,14 +108,35 @@ class HeaderSearch extends Component
         $suggestions = collect([]);
 
         if (!empty($this->query)) {
-            // Get search suggestions
-            $suggestions = Event::with('markets')
+            // Get search suggestions - only active, non-closed events with active markets
+            $suggestions = Event::with(['markets' => function ($q) {
+                $q->where('closed', false)
+                  ->where(function ($query) {
+                      $query->whereNull('close_time')
+                            ->orWhere('close_time', '>', now());
+                  });
+            }])
                 ->where('active', true)
                 ->where('closed', false)
+                ->whereHas('markets', function ($q) {
+                    $q->where('closed', false)
+                      ->where(function ($query) {
+                          $query->whereNull('close_time')
+                                ->orWhere('close_time', '>', now());
+                      });
+                })
                 ->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->query . '%')
                         ->orWhereHas('markets', function ($marketQuery) {
-                            $marketQuery->where('groupItem_title', 'like', '%' . $this->query . '%');
+                            $marketQuery->where('closed', false)
+                              ->where(function ($query) {
+                                  $query->whereNull('close_time')
+                                        ->orWhere('close_time', '>', now());
+                              })
+                              ->where(function ($mq) {
+                                  $mq->where('groupItem_title', 'like', '%' . $this->query . '%')
+                                    ->orWhere('question', 'like', '%' . $this->query . '%');
+                              });
                         });
                 })
                 ->orderBy('volume_24hr', 'desc')

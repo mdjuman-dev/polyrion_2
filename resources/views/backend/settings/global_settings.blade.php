@@ -200,107 +200,34 @@
                                                         <!-- Site Logo -->
                                                         <div class="col-md-6">
                                                             <div class="form-group mb-4">
-                                                                <label class="form-label mb-3">
+                                                                <label class="form-label mb-3" for="site_logo">
                                                                     <i class="fa fa-image me-2"></i> Site Logo
                                                                 </label>
 
-
-
-                                                                <!-- Modern Image Uploader -->
-                                                                <div class="modern-image-uploader" id="logo_uploader">
-                                                                    <input type="file" name="site_logo" id="site_logo"
-                                                                        class="file-input-hidden" accept="image/*"
-                                                                        onchange="handleLogoUpload(this)">
-                                                                    <div class="uploader-container"
-                                                                        id="logo_upload_container">
-                                                                        <div class="uploader-dropzone" id="logo_dropzone">
-                                                                            <div class="uploader-icon-wrapper">
-                                                                                <i
-                                                                                    class="fa fa-cloud-upload-alt uploader-icon"></i>
-                                                                            </div>
-                                                                            <div class="uploader-text-content">
-                                                                                <p class="uploader-main-text">
-                                                                                    <span class="uploader-click-text">Click
-                                                                                        to upload</span>
-                                                                                    <span class="uploader-or-text">or drag
-                                                                                        and drop</span>
-                                                                                </p>
-                                                                                <p class="uploader-hint-text">PNG, JPG,
-                                                                                    GIF, SVG (Max 2MB)</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="uploader-preview"
-                                                                            id="logo_preview_container"
-                                                                            style="display: none;">
-                                                                            <div class="preview-image-wrapper">
-                                                                                <img id="logo_preview_img" src=""
-                                                                                    alt="Preview" class="preview-image">
-                                                                                <div class="preview-overlay">
-                                                                                    <button type="button"
-                                                                                        class="preview-remove-btn"
-                                                                                        onclick="removeLogoPreview()">
-                                                                                        <i class="fa fa-times"></i>
-                                                                                    </button>
-                                                                                    <button type="button"
-                                                                                        class="preview-change-btn"
-                                                                                        onclick="document.getElementById('site_logo').click()">
-                                                                                        <i class="fa fa-edit"></i> Change
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="preview-info">
-                                                                                <span class="preview-filename"
-                                                                                    id="logo_filename"></span>
-                                                                                <span class="preview-filesize"
-                                                                                    id="logo_filesize"></span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="uploader-progress" id="logo_progress"
-                                                                            style="display: none;">
-                                                                            <div class="progress-bar-wrapper">
-                                                                                <div class="progress-bar"
-                                                                                    id="logo_progress_bar"></div>
-                                                                            </div>
-                                                                            <span class="progress-text"
-                                                                                id="logo_progress_text">0%</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
                                                                 <!-- Current Logo Display -->
                                                                 @if (isset($generalSettings['logo']) && $generalSettings['logo'])
                                                                     <div class="current-image-container mb-3">
-                                                                        <label
-                                                                            class="text-muted small mb-2 d-block">Current
-                                                                            Logo:</label>
+                                                                        <label class="text-muted small mb-2 d-block">Current Logo:</label>
                                                                         <div class="image-preview-wrapper">
                                                                             <img src="{{ str_starts_with($generalSettings['logo'], 'http') ? $generalSettings['logo'] : asset('storage/' . $generalSettings['logo']) }}"
                                                                                 alt="Current Logo" id="current_logo_img"
                                                                                 class="current-image"
+                                                                                style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;"
                                                                                 onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'; this.onerror=null;">
-                                                                            <div class="image-overlay">
-                                                                                <span class="image-label">Current
-                                                                                    Logo</span>
-                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 @endif
 
+                                                                <!-- Simple File Input for Logo -->
+                                                                <input type="file" name="site_logo" id="site_logo"
+                                                                    class="form-control" accept="image/*">
+                                                                <small class="text-muted mt-2 d-block">PNG, JPG, GIF, SVG (Max 2MB)</small>
+
                                                                 <!-- New Logo Preview -->
-                                                                <div id="site_logo_preview" class="new-image-preview"
-                                                                    style="display: none;">
-                                                                    <label class="text-muted small mb-2 d-block">New Logo
-                                                                        Preview:</label>
-                                                                    <div class="image-preview-wrapper">
-                                                                        <img id="site_logo_preview_img" src=""
-                                                                            alt="Logo Preview" class="preview-image">
-                                                                        <div class="image-overlay">
-                                                                            <button type="button"
-                                                                                class="btn btn-sm btn-danger"
-                                                                                onclick="removeLogoPreview()">
-                                                                                <i class="fa fa-times"></i> Remove
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
+                                                                <div id="site_logo_preview" class="mt-3" style="display: none;">
+                                                                    <label class="text-muted small mb-2 d-block">New Logo Preview:</label>
+                                                                    <img id="site_logo_preview_img" src="" alt="Logo Preview" 
+                                                                        style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -308,112 +235,33 @@
                                                         <!-- Favicon -->
                                                         <div class="col-md-6">
                                                             <div class="form-group mb-4">
-                                                                <label class="form-label mb-3">
+                                                                <label class="form-label mb-3" for="favicon">
                                                                     <i class="fa fa-star me-2"></i> Favicon
                                                                 </label>
 
                                                                 <!-- Current Favicon Display -->
                                                                 @if (isset($generalSettings['favicon']) && $generalSettings['favicon'])
                                                                     <div class="current-image-container mb-3">
-                                                                        <label
-                                                                            class="text-muted small mb-2 d-block">Current
-                                                                            Favicon:</label>
+                                                                        <label class="text-muted small mb-2 d-block">Current Favicon:</label>
                                                                         <div class="favicon-preview-wrapper">
                                                                             <img src="{{ str_starts_with($generalSettings['favicon'], 'http') ? $generalSettings['favicon'] : asset('storage/' . $generalSettings['favicon']) }}"
-                                                                                alt="Current Favicon"
-                                                                                id="current_favicon_img"
-                                                                                class="current-favicon"
+                                                                                alt="Current Favicon" id="current_favicon_img"
+                                                                                style="max-width: 64px; max-height: 64px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;"
                                                                                 onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'; this.onerror=null;">
-                                                                            <div class="image-overlay">
-                                                                                <span class="image-label">Current
-                                                                                    Favicon</span>
-                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 @endif
 
-                                                                <!-- Modern Image Uploader -->
-                                                                <div class="modern-image-uploader favicon-uploader"
-                                                                    id="favicon_uploader">
-                                                                    <input type="file" name="favicon" id="favicon"
-                                                                        class="file-input-hidden" accept="image/*"
-                                                                        onchange="handleFaviconUpload(this)">
-                                                                    <div class="uploader-container"
-                                                                        id="favicon_upload_container">
-                                                                        <div class="uploader-dropzone"
-                                                                            id="favicon_dropzone">
-                                                                            <div class="uploader-icon-wrapper">
-                                                                                <i
-                                                                                    class="fa fa-cloud-upload-alt uploader-icon"></i>
-                                                                            </div>
-                                                                            <div class="uploader-text-content">
-                                                                                <p class="uploader-main-text">
-                                                                                    <span class="uploader-click-text">Click
-                                                                                        to upload</span>
-                                                                                    <span class="uploader-or-text">or drag
-                                                                                        and drop</span>
-                                                                                </p>
-                                                                                <p class="uploader-hint-text">ICO, PNG, JPG
-                                                                                    (Max 1MB, Recommended: 32x32 or 64x64)
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="uploader-preview"
-                                                                            id="favicon_preview_container"
-                                                                            style="display: none;">
-                                                                            <div
-                                                                                class="preview-image-wrapper favicon-preview-wrapper">
-                                                                                <img id="favicon_preview_img"
-                                                                                    src="" alt="Preview"
-                                                                                    class="preview-image">
-                                                                                <div class="preview-overlay">
-                                                                                    <button type="button"
-                                                                                        class="preview-remove-btn"
-                                                                                        onclick="removeFaviconPreview()">
-                                                                                        <i class="fa fa-times"></i>
-                                                                                    </button>
-                                                                                    <button type="button"
-                                                                                        class="preview-change-btn"
-                                                                                        onclick="document.getElementById('favicon').click()">
-                                                                                        <i class="fa fa-edit"></i> Change
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="preview-info">
-                                                                                <span class="preview-filename"
-                                                                                    id="favicon_filename"></span>
-                                                                                <span class="preview-filesize"
-                                                                                    id="favicon_filesize"></span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="uploader-progress"
-                                                                            id="favicon_progress" style="display: none;">
-                                                                            <div class="progress-bar-wrapper">
-                                                                                <div class="progress-bar"
-                                                                                    id="favicon_progress_bar"></div>
-                                                                            </div>
-                                                                            <span class="progress-text"
-                                                                                id="favicon_progress_text">0%</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                                <!-- Simple File Input for Favicon -->
+                                                                <input type="file" name="favicon" id="favicon"
+                                                                    class="form-control" accept="image/*,.ico">
+                                                                <small class="text-muted mt-2 d-block">ICO, PNG, JPG (Max 1MB, Recommended: 32x32 or 64x64)</small>
 
                                                                 <!-- New Favicon Preview -->
-                                                                <div id="favicon_preview" class="new-image-preview"
-                                                                    style="display: none;">
-                                                                    <label class="text-muted small mb-2 d-block">New
-                                                                        Favicon Preview:</label>
-                                                                    <div class="favicon-preview-wrapper">
-                                                                        <img id="favicon_preview_img" src=""
-                                                                            alt="Favicon Preview" class="preview-favicon">
-                                                                        <div class="image-overlay">
-                                                                            <button type="button"
-                                                                                class="btn btn-sm btn-danger"
-                                                                                onclick="removeFaviconPreview()">
-                                                                                <i class="fa fa-times"></i> Remove
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
+                                                                <div id="favicon_preview" class="mt-3" style="display: none;">
+                                                                    <label class="text-muted small mb-2 d-block">New Favicon Preview:</label>
+                                                                    <img id="favicon_preview_img" src="" alt="Favicon Preview"
+                                                                        style="max-width: 64px; max-height: 64px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -423,8 +271,7 @@
                                                         <strong><i class="fa fa-info-circle"></i> Tips:</strong>
                                                         <ul class="mb-0 mt-2">
                                                             <li>Logo: Recommended size 200x60px or similar aspect ratio</li>
-                                                            <li>Favicon: Recommended size 32x32px or 64x64px (square format)
-                                                            </li>
+                                                            <li>Favicon: Recommended size 32x32px or 64x64px (square format)</li>
                                                             <li>Supported formats: PNG, JPG, GIF, ICO</li>
                                                             <li>Maximum file size: 2MB for logo, 1MB for favicon</li>
                                                         </ul>
@@ -902,10 +749,38 @@
 
                                                     <div class="row">
                                                         <div class="col-md-12">
-                                                            <button type="button" class="btn btn-danger"
-                                                                onclick="confirm('Are you sure you want to clear the database?') && this.form.submit()">
+                                                            <button type="button" class="btn btn-danger" id="clearDatabaseBtn">
                                                                 <i data-feather="trash-2"></i> Clear Database
                                                             </button>
+                                                            <script>
+                                                                document.addEventListener('DOMContentLoaded', function() {
+                                                                    const clearBtn = document.getElementById('clearDatabaseBtn');
+                                                                    if (clearBtn) {
+                                                                        clearBtn.addEventListener('click', function(e) {
+                                                                            e.preventDefault();
+                                                                            const form = this.closest('form');
+                                                                            if (typeof Swal !== 'undefined') {
+                                                                                Swal.fire({
+                                                                                    title: 'Are you sure?',
+                                                                                    text: 'Are you sure you want to clear the database? This action cannot be undone!',
+                                                                                    icon: 'warning',
+                                                                                    showCancelButton: true,
+                                                                                    confirmButtonColor: '#d33',
+                                                                                    cancelButtonColor: '#6c757d',
+                                                                                    confirmButtonText: 'Yes, clear database',
+                                                                                    cancelButtonText: 'Cancel'
+                                                                                }).then((result) => {
+                                                                                    if (result.isConfirmed && form) {
+                                                                                        form.submit();
+                                                                                    }
+                                                                                });
+                                                                            } else if (confirm('Are you sure you want to clear the database?') && form) {
+                                                                                form.submit();
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                });
+                                                            </script>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1269,7 +1144,12 @@
         }
 
         .file-input-hidden {
-            display: none;
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
         }
 
         .uploader-container {
@@ -1774,237 +1654,60 @@
 
         });
 
-        // jQuery-based Modern Logo Upload Handler
-        function handleLogoUpload(input) {
-            if (!input || !input.files || !input.files[0]) return;
-
-            const file = input.files[0];
-            const $input = $(input);
-            const $dropzone = $('#logo_dropzone');
-            const $previewContainer = $('#logo_preview_container');
-            const $previewImg = $('#logo_preview_img');
-            const $filename = $('#logo_filename');
-            const $filesize = $('#logo_filesize');
-            const $progress = $('#logo_progress');
-            const $progressBar = $('#logo_progress_bar');
-            const $progressText = $('#logo_progress_text');
-
-            // Validate file size (2MB max)
-            if (file.size > 2 * 1024 * 1024) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'File Too Large',
-                    text: 'Logo file size must be less than 2MB',
-                    confirmButtonColor: '#667eea'
-                });
-                $input.val('');
-                return;
-            }
-
-            // Validate file type
-            if (!file.type.match('image.*')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid File Type',
-                    text: 'Please select a valid image file (PNG, JPG, GIF, SVG)',
-                    confirmButtonColor: '#667eea'
-                });
-                $input.val('');
-                return;
-            }
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $previewImg.attr('src', e.target.result);
-                $dropzone.hide();
-                $previewContainer.show();
-
-                $filename.text(file.name);
-                $filesize.text(formatFileSize(file.size));
-
-                // Hide current logo if exists
-                $('#current_logo_img').closest('.current-image-container').css('opacity', '0.5');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Format file size
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        // jQuery-based Modern Favicon Upload Handler
-        function handleFaviconUpload(input) {
-            if (!input || !input.files || !input.files[0]) return;
-
-            const file = input.files[0];
-            const $input = $(input);
-            const $dropzone = $('#favicon_dropzone');
-            const $previewContainer = $('#favicon_preview_container');
-            const $previewImg = $('#favicon_preview_img');
-            const $filename = $('#favicon_filename');
-            const $filesize = $('#favicon_filesize');
-            const $progress = $('#favicon_progress');
-            const $progressBar = $('#favicon_progress_bar');
-            const $progressText = $('#favicon_progress_text');
-
-            // Validate file size (1MB max)
-            if (file.size > 1 * 1024 * 1024) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'File Too Large',
-                    text: 'Favicon file size must be less than 1MB',
-                    confirmButtonColor: '#667eea'
-                });
-                $input.val('');
-                return;
-            }
-
-            // Validate file type
-            if (!file.type.match('image.*')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid File Type',
-                    text: 'Please select a valid image file (ICO, PNG, JPG)',
-                    confirmButtonColor: '#667eea'
-                });
-                $input.val('');
-                return;
-            }
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $previewImg.attr('src', e.target.result);
-                $dropzone.hide();
-                $previewContainer.show();
-
-                $filename.text(file.name);
-                $filesize.text(formatFileSize(file.size));
-
-                // Hide current favicon if exists
-                $('#current_favicon_img').closest('.current-image-container').css('opacity', '0.5');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // jQuery-based Remove Logo Preview
-        function removeLogoPreview() {
-            const $dropzone = $('#logo_dropzone');
-            const $previewContainer = $('#logo_preview_container');
-            const $input = $('#site_logo');
-
-            $previewContainer.hide();
-            $dropzone.show();
-            $input.val('');
-
-            // Show current logo again
-            $('#current_logo_img').closest('.current-image-container').css('opacity', '1');
-        }
-
-        // jQuery-based Remove Favicon Preview
-        function removeFaviconPreview() {
-            const $dropzone = $('#favicon_dropzone');
-            const $previewContainer = $('#favicon_preview_container');
-            const $input = $('#favicon');
-
-            $previewContainer.hide();
-            $dropzone.show();
-            $input.val('');
-
-            // Show current favicon again
-            $('#current_favicon_img').closest('.current-image-container').css('opacity', '1');
-        }
-
-        // jQuery-based Drag and Drop for Logo
+        // Simple Logo Preview Handler
         $(document).ready(function() {
-            const $logoDropzone = $('#logo_dropzone');
-            const $logoInput = $('#site_logo');
-
-            if ($logoDropzone.length && $logoInput.length) {
-                // Click to upload
-                $logoDropzone.on('click', function() {
-                    $logoInput.click();
-                });
-
-                // Prevent default drag behaviors
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+            $('#site_logo').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#site_logo_preview_img').attr('src', e.target.result);
+                        $('#site_logo_preview').show();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    $('#site_logo_preview').hide();
                 }
+            });
 
-                // Drag and drop handlers
-                $logoDropzone.on('dragenter dragover', function(e) {
-                    preventDefaults(e);
-                    $(this).addClass('drag-over');
-                });
-
-                $logoDropzone.on('dragleave drop', function(e) {
-                    preventDefaults(e);
-                    $(this).removeClass('drag-over');
-                });
-
-                $logoDropzone.on('drop', function(e) {
-                    preventDefaults(e);
-                    const files = e.originalEvent.dataTransfer.files;
-                    if (files.length > 0) {
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(files[0]);
-                        $logoInput[0].files = dataTransfer.files;
-                        handleLogoUpload($logoInput[0]);
-                    }
-                });
-            }
+            // Simple Favicon Preview Handler
+            $('#favicon').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#favicon_preview_img').attr('src', e.target.result);
+                        $('#favicon_preview').show();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    $('#favicon_preview').hide();
+                }
+            });
         });
 
-        // jQuery-based Drag and Drop for Favicon
-        $(document).ready(function() {
-            const $faviconDropzone = $('#favicon_dropzone');
-            const $faviconInput = $('#favicon');
-
-            if ($faviconDropzone.length && $faviconInput.length) {
-                // Click to upload
-                $faviconDropzone.on('click', function() {
-                    $faviconInput.click();
-                });
-
-                // Prevent default drag behaviors
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                // Drag and drop handlers
-                $faviconDropzone.on('dragenter dragover', function(e) {
-                    preventDefaults(e);
-                    $(this).addClass('drag-over');
-                });
-
-                $faviconDropzone.on('dragleave drop', function(e) {
-                    preventDefaults(e);
-                    $(this).removeClass('drag-over');
-                });
-
-                $faviconDropzone.on('drop', function(e) {
-                    preventDefaults(e);
-                    const files = e.originalEvent.dataTransfer.files;
-                    if (files.length > 0) {
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(files[0]);
-                        $faviconInput[0].files = dataTransfer.files;
-                        handleFaviconUpload($faviconInput[0]);
-                    }
-                });
-            }
-        });
         // Reset form function (preserve file inputs)
         function resetForm() {
-            if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to reset all form fields? This will clear any unsaved changes.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, reset',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performReset();
+                    }
+                });
+            } else if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+                performReset();
+            }
+            
+            function performReset() {
                 const form = document.getElementById('settingsForm');
                 const logoInput = document.getElementById('site_logo');
                 const faviconInput = document.getElementById('favicon');
@@ -2033,48 +1736,61 @@
                 removeLogoPreview();
                 removeFaviconPreview();
             }
-        }
-
-        // Email Template Switching
-        function showTemplate(templateName, buttonElement) {
-            // Hide all templates
-            document.querySelectorAll('.template-section').forEach(section => {
-                section.style.display = 'none';
-            });
-
-            // Show selected template
-            const selectedTemplate = document.getElementById(templateName + '-template');
-            if (selectedTemplate) {
-                selectedTemplate.style.display = 'block';
-            }
-
-            // Update button states
-            document.querySelectorAll('.template-selector .template-btn').forEach(btn => {
-                btn.classList.remove('active', 'btn-primary');
-                btn.classList.add('btn-outline-primary');
-            });
-
-            // Activate clicked button
-            if (buttonElement) {
-                buttonElement.classList.add('active', 'btn-primary');
-                buttonElement.classList.remove('btn-outline-primary');
-            }
-        }
-
-        // Initialize template selector buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add event listeners to template buttons
-            document.querySelectorAll('.template-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const templateName = this.getAttribute('data-template');
-                    if (templateName) {
-                        showTemplate(templateName, this);
+            
+            // Call confirmation first
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to reset all form fields? This will clear any unsaved changes.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, reset',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performReset();
                     }
                 });
-            });
+            } else if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
+                performReset();
+            }
+        }
 
-            // Show reset-password template by default
-            showTemplate('reset-password', document.querySelector('.template-btn[data-template="reset-password"]'));
+        // Email Template Switching - jQuery version
+        $(document).ready(function() {
+            // Template button click handler using direct selector
+            $('body').on('click', 'button.template-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                var templateName = $(this).attr('data-template');
+                console.log('Template clicked:', templateName);
+                
+                // Hide all templates
+                $('#reset-password-template').hide();
+                $('#welcome-template').hide();
+                $('#verification-template').hide();
+                
+                // Show selected template
+                var targetTemplate = '#' + templateName + '-template';
+                console.log('Showing template:', targetTemplate);
+                $(targetTemplate).show();
+                
+                // Update button states - remove all active states first
+                $('button.template-btn').removeClass('active btn-primary').addClass('btn-outline-primary');
+                
+                // Add active state to clicked button
+                $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
+                
+                return false;
+            });
+            
+            // Show reset-password template by default on page load
+            $('#welcome-template').hide();
+            $('#verification-template').hide();
+            $('#reset-password-template').show();
         });
     </script>
 @endpush

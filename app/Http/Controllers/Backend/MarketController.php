@@ -15,6 +15,43 @@ use Illuminate\Validation\Rule;
 
 class MarketController extends Controller
 {
+    /**
+     * Display a listing of markets
+     */
+    public function index(Request $request)
+    {
+        $query = Market::with('event');
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('slug', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Filter by active status if provided
+        // IMPORTANT: Filter is applied BEFORE pagination to filter all data
+        if ($request->has('status') && !empty($request->status)) {
+            if ($request->status === 'active') {
+                // Active: active=true AND closed=false
+                $query->where('active', true)->where('closed', false);
+            } elseif ($request->status === 'closed') {
+                // Closed: closed=true
+                $query->where('closed', true);
+            } elseif ($request->status === 'inactive') {
+                // Inactive: active=false AND closed=false (not closed but not active)
+                $query->where('active', false)->where('closed', false);
+            }
+        }
+
+        // Apply pagination AFTER filtering - this ensures filter works on all data
+        $markets = $query->orderBy('volume', 'desc')->paginate(20)->withQueryString();
+
+        return view('backend.market.index', compact('markets'));
+    }
 
     /**
      * Display the specified market
@@ -28,6 +65,219 @@ class MarketController extends Controller
         $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
 
         return view('backend.market.show', compact('market', 'outcomePrices', 'outcomes'));
+    }
+
+    /**
+     * Show the form for editing the specified market
+     */
+    public function edit($id)
+    {
+        $market = Market::with('event')->findOrFail($id);
+        
+        // Decode JSON fields
+        $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [0.5, 0.5];
+        $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
+        
+        $events = Event::orderBy('title')->get();
+        
+        return view('backend.market.edit', compact('market', 'outcomePrices', 'outcomes', 'events'));
+    }
+
+    /**
+     * Update the specified market
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'event_id' => 'nullable|exists:events,id',
+            'active' => 'boolean',
+            'closed' => 'boolean',
+            'featured' => 'boolean',
+        ]);
+
+        try {
+            $market = Market::findOrFail($id);
+            
+            $market->question = $request->question;
+            $market->description = $request->description;
+            
+            if ($request->has('event_id')) {
+                $market->event_id = $request->event_id;
+            }
+            
+            if ($request->has('active')) {
+                $market->active = $request->active;
+            }
+            
+            if ($request->has('closed')) {
+                $market->closed = $request->closed;
+            }
+            
+            if ($request->has('featured')) {
+                $market->featured = $request->featured;
+            }
+            
+            $market->save();
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market updated successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to update market', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to update market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove the specified market
+     */
+    public function delete($id)
+    {
+        try {
+            $market = Market::findOrFail($id);
+            $market->delete();
+
+            return redirect()->route('admin.market.index')
+                ->with('success', 'Market deleted successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete market', [
+                'market_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to delete market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store a new market
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'event_id' => 'required|exists:events,id',
+            'slug' => 'nullable|string|unique:markets,slug',
+        ]);
+
+        try {
+            $market = Market::create([
+                'question' => $request->question,
+                'description' => $request->description,
+                'event_id' => $request->event_id,
+                'slug' => $request->slug ?? \Illuminate\Support\Str::slug($request->question),
+                'active' => $request->active ?? true,
+                'closed' => false,
+            ]);
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market created successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to create market', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to create market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Save market from Polymarket API
+     */
+    public function marketSave($slug)
+    {
+        try {
+            // Fetch market from Polymarket API
+            $response = Http::timeout(30)->get("https://gamma-api.polymarket.com/markets/{$slug}");
+            
+            if (!$response->successful()) {
+                return back()->with('error', 'Failed to fetch market from Polymarket API');
+            }
+
+            $marketData = $response->json();
+            
+            // Find or create event
+            $event = Event::where('slug', $marketData['event']['slug'])->first();
+            if (!$event) {
+                $event = Event::create([
+                    'slug' => $marketData['event']['slug'],
+                    'title' => $marketData['event']['title'],
+                    'description' => $marketData['event']['description'] ?? null,
+                ]);
+            }
+
+            // Create or update market
+            $market = Market::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'event_id' => $event->id,
+                    'question' => $marketData['question'] ?? null,
+                    'description' => $marketData['description'] ?? null,
+                    'outcome_prices' => json_encode($marketData['outcomePrices'] ?? []),
+                    'outcomes' => json_encode($marketData['outcomes'] ?? []),
+                    'active' => $marketData['active'] ?? true,
+                    'closed' => $marketData['closed'] ?? false,
+                ]
+            );
+
+            return redirect()->route('admin.market.show', $market->id)
+                ->with('success', 'Market saved successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to save market from API', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to save market: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get market list (for AJAX/API)
+     */
+    public function marketList(Request $request)
+    {
+        $query = Market::with('event');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        $markets = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return response()->json($markets);
+    }
+
+    /**
+     * Search markets
+     */
+    public function search(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string|min:1',
+        ]);
+
+        $searchTerm = $request->search;
+        $markets = Market::with('event')
+            ->where(function ($q) use ($searchTerm) {
+                $q->where('question', 'like', "%{$searchTerm}%")
+                    ->orWhere('description', 'like', "%{$searchTerm}%")
+                    ->orWhere('slug', 'like', "%{$searchTerm}%");
+            })
+            ->orderBy('volume', 'desc')
+            ->paginate(20);
+
+        return view('backend.market.index', compact('markets'));
     }
 
     function toMysqlDate(?string $date): ?string
@@ -46,14 +296,14 @@ class MarketController extends Controller
     function storeEvents()
     {
         $startTime = time();
-        $maxExecutionTime = 300; // Increased to 5 minutes
+        $maxExecutionTime = 300; 
         $limit = 100;
         $offset = 0;
-        $maxBatches = 100; // Increased from 10 to 100 (can fetch up to 10,000 events)
+        $maxBatches = 100;
         $batchCount = 0;
         $totalProcessed = 0;
         $consecutiveEmptyBatches = 0;
-        $maxConsecutiveEmpty = 3; // Stop after 3 consecutive empty batches
+        $maxConsecutiveEmpty = 3; 
 
         Log::info("=== Starting event fetch process at " . date('Y-m-d H:i:s') . " ===");
 
@@ -73,7 +323,6 @@ class MarketController extends Controller
                         return $exception instanceof \Illuminate\Http\Client\ConnectionException;
                     })
                     ->get('https://gamma-api.polymarket.com/events', [
-                        'closed' => false,
                         'limit' => $limit,
                         'offset' => $offset,
                         'ascending' => false,
@@ -174,6 +423,40 @@ class MarketController extends Controller
 
                     // Save markets
                     foreach ($ev['markets'] as $mk) {
+                        // Determine market resolution/outcome from Polymarket API
+                        // Polymarket API may provide: resolved, outcome, finalOutcome, or resolution fields
+                        $outcomeResult = null;
+                        $finalOutcome = null;
+                        $finalResult = null;
+                        
+                        // Check various possible fields from Polymarket API
+                        if (isset($mk['resolved']) && $mk['resolved'] === true) {
+                            // Market is resolved, check for outcome
+                            if (isset($mk['outcome'])) {
+                                $outcomeResult = strtolower($mk['outcome']); // 'yes' or 'no'
+                                $finalOutcome = strtoupper($mk['outcome']); // 'YES' or 'NO'
+                                $finalResult = $outcomeResult;
+                            } elseif (isset($mk['finalOutcome'])) {
+                                $outcomeResult = strtolower($mk['finalOutcome']);
+                                $finalOutcome = strtoupper($mk['finalOutcome']);
+                                $finalResult = $outcomeResult;
+                            } elseif (isset($mk['resolution'])) {
+                                $outcomeResult = strtolower($mk['resolution']);
+                                $finalOutcome = strtoupper($mk['resolution']);
+                                $finalResult = $outcomeResult;
+                            }
+                        }
+                        
+                        // Also check if market is closed and has resolution info
+                        if (($mk['closed'] ?? false) && !$outcomeResult) {
+                            // Try to infer from other fields
+                            if (isset($mk['winningOutcome'])) {
+                                $outcomeResult = strtolower($mk['winningOutcome']);
+                                $finalOutcome = strtoupper($mk['winningOutcome']);
+                                $finalResult = $outcomeResult;
+                            }
+                        }
+
                         Market::updateOrCreate(
                             ['slug' => $mk['slug']],
                             [
@@ -219,6 +502,14 @@ class MarketController extends Controller
                                 'new' => $mk['new'] ?? null,
                                 'restricted' => $mk['restricted'] ?? null,
                                 'approved' => $mk['approved'] ?? null,
+
+                                // Market resolution fields (if available from API)
+                                'outcome_result' => $outcomeResult,
+                                'final_outcome' => $finalOutcome,
+                                'final_result' => $finalResult,
+                                'result_set_at' => ($outcomeResult && !isset($mk['result_set_at'])) ? now() : ($mk['result_set_at'] ?? null),
+                                'is_closed' => $mk['closed'] ?? false,
+                                'settled' => ($outcomeResult && $mk['closed'] ?? false) ? false : null, // Will be set to true after settlement
 
                                 'start_date' => toMysqlDate($mk['startDate'] ?? null),
                                 'end_date' => toMysqlDate($mk['endDate'] ?? null),
@@ -289,15 +580,20 @@ class MarketController extends Controller
         try {
             $market = Market::findOrFail($id);
 
-            // Set final result
-            $market->final_result = $request->final_result;
+            // Set all result fields (for compatibility)
+            $result = strtolower($request->final_result);
+            $market->final_result = $result;
+            $market->outcome_result = $result; // Required for SettlementService
+            $market->final_outcome = strtoupper($request->final_result); // YES/NO format
             $market->result_set_at = now();
             $market->closed = true;
+            $market->is_closed = true;
+            $market->settled = false; // Will be set to true after settlement
             $market->save();
 
             // Settle all pending trades
             $settlementService = new SettlementService();
-            $settlementResult = $settlementService->settleMarket($market);
+            $settlementResult = $settlementService->settleMarket($market->id);
 
             return response()->json([
                 'success' => true,

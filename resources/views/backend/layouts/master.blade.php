@@ -7,7 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="icon" href="{{ asset('backend/assets/images/favicon.ico') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @php
+        $siteFavicon = \App\Models\GlobalSetting::getValue('favicon');
+        $siteLogo = \App\Models\GlobalSetting::getValue('logo');
+    @endphp
+    <link rel="icon" href="{{ $siteFavicon ? asset('storage/' . $siteFavicon) : asset('backend/assets/images/favicon.ico') }}">
 
     <title>@yield('title') | Polymarkets</title>
 
@@ -26,40 +31,168 @@
     <style>
         /* Fix Feather icon sizes globally */
         svg[data-feather] {
-            width: 18px !important;
-            height: 18px !important;
-            max-width: 18px !important;
-            max-height: 18px !important;
-        }
-
-        .sidebar-menu svg[data-feather],
-        .sidebar-menu i[data-feather] {
-            width: 18px !important;
-            height: 18px !important;
-            max-width: 18px !important;
-            max-height: 18px !important;
-        }
-
-        .treeview-menu svg[data-feather],
-        .treeview-menu i[data-feather] {
             width: 16px !important;
             height: 16px !important;
             max-width: 16px !important;
             max-height: 16px !important;
+            stroke-width: 2 !important;
+        }
+
+        /* Main sidebar menu icons */
+        .sidebar-menu svg[data-feather],
+        .sidebar-menu i[data-feather] {
+            width: 16px !important;
+            height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            min-width: 16px !important;
+            min-height: 16px !important;
+            stroke-width: 2 !important;
+        }
+
+        .sidebar-menu>li>a>svg[data-feather],
+        .sidebar-menu>li>a>i[data-feather] {
+            width: 16px !important;
+            height: 16px !important;
+            min-width: 16px !important;
+            min-height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            margin-right: 10px !important;
+            vertical-align: middle !important;
+            display: inline-block !important;
+            stroke-width: 2 !important;
+        }
+
+        /* Treeview submenu icons - slightly smaller */
+        .treeview-menu svg[data-feather],
+        .treeview-menu i[data-feather] {
+            width: 14px !important;
+            height: 14px !important;
+            max-width: 14px !important;
+            max-height: 14px !important;
+            min-width: 14px !important;
+            min-height: 14px !important;
+            stroke-width: 2 !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+
+        .treeview-menu>li>a>svg[data-feather],
+        .treeview-menu>li>a>i[data-feather] {
+            width: 14px !important;
+            height: 14px !important;
+            min-width: 14px !important;
+            min-height: 14px !important;
+            max-width: 14px !important;
+            max-height: 14px !important;
+            margin-right: 8px !important;
+            vertical-align: middle !important;
+            display: inline-block !important;
+            stroke-width: 2 !important;
+            float: none !important;
+            text-align: left !important;
+            line-height: normal !important;
+        }
+
+        /* Override any large icon styles in treeview */
+        .treeview-menu>li>a {
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+        }
+
+        .treeview-menu>li>a>svg[data-feather],
+        .treeview-menu>li>a>i[data-feather] {
+            flex-shrink: 0 !important;
+            margin-right: 8px !important;
+        }
+
+        .treeview-menu>li>a>span {
+            flex: 1 !important;
         }
 
         /* Prevent oversized icons */
         i[data-feather] {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
+            display: inline-block !important;
+            width: 16px !important;
+            height: 16px !important;
+        }
+
+        /* Force treeview menu icons to be small - override any conflicting styles */
+        .treeview-menu>li>a>svg[data-feather] {
+            width: 14px !important;
+            height: 14px !important;
+            max-width: 14px !important;
+            max-height: 14px !important;
+            min-width: 14px !important;
+            min-height: 14px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 8px !important;
+            float: none !important;
+            text-align: left !important;
+            line-height: normal !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Ensure treeview menu items display properly */
+        .treeview-menu>li>a {
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+            padding: 2px 5px 2px 25px !important;
+        }
+
+        .treeview-menu>li>a>span {
+            flex: 1 !important;
+            display: inline-block !important;
+        }
+
+        /* Ensure treeview menu items display properly */
+        .treeview-menu>li>a {
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+        }
+
+        /* Keep sidebar always open */
+        .sidebar {
+            position: relative !important;
+            display: block !important;
+        }
+
+        body.sidebar-collapse .sidebar {
+            display: block !important;
+        }
+
+        body.sidebar-mini:not(.sidebar-mini-expand-feature) .sidebar {
+            display: block !important;
+        }
+
+        /* Light skin menu open styles */
+        .light-skin .sidebar-menu>li.menu-open>a {
+            color: #172b4c !important;
+        }
+
+        .light-skin .sidebar-menu>li.menu-open>a svg {
+            color: #172b4c !important;
+        }
+
+        .light-skin .sidebar-menu>li.menu-open>a i[data-feather] {
+            color: #172b4c !important;
+        }
+
+        /* Light skin active menu item styles */
+        .light-skin .sidebar-menu>li.active>a {
+            padding: 10px !important;
         }
     </style>
     @stack('styles')
     @livewireStyles
 </head>
 
-<body class="light-skin sidebar-mini theme-primary fixed sidebar-collapse">
+<body class="light-skin sidebar-mini theme-primary fixed">
 
     <div class="wrapper">
         <div id="loader"
@@ -69,19 +202,19 @@
         <header class=" main-header">
             <div class="d-flex align-items-center logo-box justify-content-start">
                 <!-- Logo -->
-                <a href="index.html" class="logo">
+                <a href="{{ route('admin.backend.dashboard') }}" class="logo">
                     <!-- logo-->
                     <div class="logo-mini w-30">
-                        <span class="light-logo"><img src="{{ asset('backend/assets/images/logo-letter.png') }}"
-                                alt="logo"></span>
-                        <span class="dark-logo"><img src="{{ asset('backend/assets/images/logo-letter.png') }}"
-                                alt="logo"></span>
+                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                                alt="logo" style="max-height: 30px;"></span>
+                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-letter.png') }}"
+                                alt="logo" style="max-height: 30px;"></span>
                     </div>
                     <div class="logo-lg">
-                        <span class="light-logo"><img src="{{ asset('backend/assets/images/logo-dark-text.png') }}"
-                                alt="logo"></span>
-                        <span class="dark-logo"><img src="{{ asset('backend/assets/images/logo-light-text.png') }}"
-                                alt="logo"></span>
+                        <span class="light-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-dark-text.png') }}"
+                                alt="logo" style="max-height: 40px;"></span>
+                        <span class="dark-logo"><img src="{{ $siteLogo ? asset('storage/' . $siteLogo) : asset('backend/assets/images/logo-light-text.png') }}"
+                                alt="logo" style="max-height: 40px;"></span>
                     </div>
                 </a>
             </div>
@@ -614,6 +747,36 @@
             }
         }
 
+        // Handle delete confirmation for form submissions
+        function handleDeleteConfirm(event, message) {
+            event.preventDefault();
+            const form = event.target;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message || 'This action cannot be undone!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed && form) {
+                        form.submit();
+                    }
+                });
+                return false;
+            } else {
+                if (confirm(message || 'Are you sure?')) {
+                    form.submit();
+                    return true;
+                }
+                return false;
+            }
+        }
+
         // Delete confirmation with toastr notification
         function confirmDeleteWithToastr(event, commentId, message) {
             event.preventDefault();
@@ -830,32 +993,107 @@
             if (typeof feather !== 'undefined') {
                 // Replace icons with size constraints
                 feather.replace({
-                    width: 18,
-                    height: 18
+                    width: 16,
+                    height: 16,
+                    'stroke-width': 2
                 });
 
                 // Ensure all feather icons have proper size
                 setTimeout(function() {
-                    document.querySelectorAll('svg[data-feather]').forEach(function(svg) {
-                        svg.setAttribute('width', '18');
-                        svg.setAttribute('height', '18');
-                        svg.style.width = '18px';
-                        svg.style.height = '18px';
-                        svg.style.maxWidth = '18px';
-                        svg.style.maxHeight = '18px';
+                    // Main sidebar menu icons
+                    document.querySelectorAll('.sidebar-menu > li > a > svg[data-feather]').forEach(
+                        function(svg) {
+                            svg.setAttribute('width', '16');
+                            svg.setAttribute('height', '16');
+                            svg.setAttribute('stroke-width', '2');
+                            svg.style.width = '16px';
+                            svg.style.height = '16px';
+                            svg.style.maxWidth = '16px';
+                            svg.style.maxHeight = '16px';
+                            svg.style.minWidth = '16px';
+                            svg.style.minHeight = '16px';
+                            svg.style.verticalAlign = 'middle';
+                            svg.style.marginRight = '10px';
+                            svg.style.display = 'inline-block';
+                        });
+
+                    // Treeview menu icons (submenu) - ensure they're small and inline
+                    document.querySelectorAll('.treeview-menu > li > a > svg[data-feather]').forEach(
+                        function(svg) {
+                            svg.setAttribute('width', '14');
+                            svg.setAttribute('height', '14');
+                            svg.setAttribute('stroke-width', '2');
+                            svg.style.width = '14px';
+                            svg.style.height = '14px';
+                            svg.style.maxWidth = '14px';
+                            svg.style.maxHeight = '14px';
+                            svg.style.minWidth = '14px';
+                            svg.style.minHeight = '14px';
+                            svg.style.verticalAlign = 'middle';
+                            svg.style.marginRight = '8px';
+                            svg.style.display = 'inline-block';
+                            svg.style.float = 'none';
+                            svg.style.textAlign = 'left';
+                            svg.style.lineHeight = 'normal';
+                            svg.style.flexShrink = '0';
+                        });
+
+                    // Ensure treeview menu links use flexbox for proper alignment
+                    document.querySelectorAll('.treeview-menu > li > a').forEach(function(link) {
+                        if (!link.style.display || link.style.display !== 'flex') {
+                            link.style.display = 'flex';
+                            link.style.alignItems = 'center';
+                            link.style.flexDirection = 'row';
+                        }
                     });
 
-                    // Fix treeview menu icons
-                    document.querySelectorAll('.treeview-menu svg[data-feather]').forEach(function(svg) {
-                        svg.setAttribute('width', '16');
-                        svg.setAttribute('height', '16');
-                        svg.style.width = '16px';
-                        svg.style.height = '16px';
-                        svg.style.maxWidth = '16px';
-                        svg.style.maxHeight = '16px';
+                    // All other feather icons
+                    document.querySelectorAll('svg[data-feather]').forEach(function(svg) {
+                        if (!svg.closest('.sidebar-menu > li > a') && !svg.closest(
+                                '.treeview-menu > li > a')) {
+                            svg.setAttribute('width', '16');
+                            svg.setAttribute('height', '16');
+                            svg.setAttribute('stroke-width', '2');
+                            svg.style.width = '16px';
+                            svg.style.height = '16px';
+                            svg.style.maxWidth = '16px';
+                            svg.style.maxHeight = '16px';
+                        }
                     });
                 }, 100);
+
+                // Re-run after a short delay to catch any dynamically loaded icons
+                setTimeout(function() {
+                    feather.replace({
+                        width: 16,
+                        height: 16,
+                        'stroke-width': 2
+                    });
+                }, 300);
             }
+        });
+
+        // Keep sidebar always open
+        document.addEventListener('DOMContentLoaded', function() {
+            // Remove sidebar-collapse class if it exists
+            document.body.classList.remove('sidebar-collapse');
+
+            // Prevent sidebar toggle from collapsing
+            const sidebarToggle = document.querySelector('[data-toggle="push-menu"]');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Keep sidebar open
+                    document.body.classList.remove('sidebar-collapse');
+                    return false;
+                });
+            }
+
+            // Ensure sidebar stays open on window resize
+            window.addEventListener('resize', function() {
+                document.body.classList.remove('sidebar-collapse');
+            });
         });
     </script>
 </body>

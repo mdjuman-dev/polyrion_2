@@ -7,6 +7,7 @@ use App\Models\Market;
 use App\Models\Trade;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\TradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,20 +17,28 @@ use Illuminate\Validation\Rule;
 
 class TradeController extends Controller
 {
+    protected $tradeService;
+
+    public function __construct(TradeService $tradeService)
+    {
+        $this->tradeService = $tradeService;
+    }
     /**
      * Place a trade (bet) on a market
+     * Uses TradeService according to Polymarket-style trading system
      */
     public function placeTrade(Request $request, $marketId)
     {
         $request->validate([
             'option' => ['required', Rule::in(['yes', 'no'])],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
             'price' => ['nullable', 'numeric', 'min:0.0001', 'max:0.9999'],
+        ], [
+            'amount.min' => 'Minimum trade amount is $0.01',
+            'amount.max' => 'Maximum trade amount is $100,000',
         ]);
 
         try {
-            DB::beginTransaction();
-
             $user = Auth::user();
             if (!$user) {
                 return response()->json([
@@ -41,109 +50,26 @@ class TradeController extends Controller
             // Get market
             $market = Market::findOrFail($marketId);
 
-            // Check if market is open for trading
-            if (!$market->isOpenForTrading()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This market is closed for trading',
-                ], 400);
-            }
-
-            // Get or create wallet
-            $wallet = Wallet::firstOrCreate(
-                ['user_id' => $user->id],
-                ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
-            );
-
-            $amount = $request->amount;
-            $option = $request->option;
-
-            // Calculate price if not provided (use current market price)
-            $price = $request->price;
-            if (!$price) {
-                $outcomePrices = json_decode($market->outcome_prices, true);
-                if (is_array($outcomePrices)) {
-                    if ($option === 'yes' && isset($outcomePrices[0])) {
-                        $price = $outcomePrices[0];
-                    } elseif ($option === 'no' && isset($outcomePrices[1])) {
-                        $price = $outcomePrices[1];
-                    } else {
-                        // Default price if not available
-                        $price = $option === 'yes' ? 0.5 : 0.5;
-                    }
-                } else {
-                    $price = 0.5; // Default
-                }
-            }
-
-            // Check if user has enough balance
-            if ($wallet->balance < $amount) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Insufficient balance',
-                    'balance' => $wallet->balance,
-                    'required' => $amount,
-                ], 400);
-            }
-
-            // Deduct amount from wallet
-            $balanceBefore = $wallet->balance;
-            $wallet->balance -= $amount;
-            $wallet->save();
-
-            // Calculate token amount (shares): amount / price
-            $tokenAmount = $price > 0 ? $amount / $price : 0;
-            
             // Convert option to outcome format (yes/no -> YES/NO)
-            $outcome = strtoupper($option);
+            $outcome = strtoupper($request->option);
+            $amount = (float) $request->amount;
 
-            // Create trade
-            $trade = Trade::create([
-                'user_id' => $user->id,
-                'market_id' => $market->id,
-                'option' => $option,
-                'amount' => $amount,
-                'price' => $price,
-                'status' => 'PENDING',
-                // Required fields for new schema
-                'outcome' => $outcome,
-                'amount_invested' => $amount,
-                'token_amount' => $tokenAmount,
-                'price_at_buy' => $price,
-            ]);
+            // Use TradeService to create trade
+            $trade = $this->tradeService->createTrade($user, $market, $outcome, $amount);
 
-            // Create wallet transaction
-            WalletTransaction::create([
-                'user_id' => $user->id,
-                'wallet_id' => $wallet->id,
-                'type' => 'trade',
-                'amount' => -$amount, // Negative for deduction
-                'balance_before' => $balanceBefore,
-                'balance_after' => $wallet->balance,
-                'reference_type' => Trade::class,
-                'reference_id' => $trade->id,
-                'description' => "Placed {$option} bet on market: {$market->question}",
-                'metadata' => [
-                    'trade_id' => $trade->id,
-                    'market_id' => $market->id,
-                    'option' => $option,
-                    'price' => $price,
-                ]
-            ]);
+            // Get updated wallet balance
+            $wallet = Wallet::where('user_id', $user->id)->first();
 
-            // Calculate potential payout
-            $potentialPayout = $option === 'yes' 
-                ? $amount + ($amount * (1 - $price))
-                : $amount + ($amount * $price);
+            // Calculate potential payout (for display purposes)
+            $potentialPayout = $trade->token_amount * 1.00;
 
-            DB::commit();
-
-            Log::info('Trade placed successfully', [
+            Log::info('Trade placed successfully via TradeService', [
                 'trade_id' => $trade->id,
                 'user_id' => $user->id,
                 'market_id' => $market->id,
-                'option' => $option,
-                'amount' => $amount,
+                'outcome' => $outcome,
+                'amount_invested' => $amount,
+                'token_amount' => $trade->token_amount,
             ]);
 
             return response()->json([
@@ -151,24 +77,37 @@ class TradeController extends Controller
                 'message' => 'Trade placed successfully',
                 'trade' => [
                     'id' => $trade->id,
-                    'option' => $trade->option,
-                    'amount' => $trade->amount,
-                    'price' => $trade->price,
+                    'outcome' => $trade->outcome,
+                    'option' => $trade->option ?? strtolower($trade->outcome),
+                    'amount_invested' => $trade->amount_invested,
+                    'token_amount' => $trade->token_amount,
+                    'price_at_buy' => $trade->price_at_buy,
                     'potential_payout' => $potentialPayout,
                     'status' => $trade->status,
                 ],
                 'wallet' => [
-                    'balance' => $wallet->balance,
+                    'balance' => $wallet ? $wallet->balance : 0,
                 ],
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            Log::warning('Trade placement validation failed', [
+                'user_id' => Auth::id(),
+                'market_id' => $marketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            
             Log::error('Trade placement failed', [
                 'user_id' => Auth::id(),
                 'market_id' => $marketId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
@@ -185,23 +124,27 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info
+        // Get all trades with market info - eager load market.event
         $trades = Trade::where('user_id', $user->id)
-            ->with('market')
+            ->with('market.event')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Calculate statistics
-        $totalTrades = Trade::where('user_id', $user->id)->count();
-        $totalAmount = Trade::where('user_id', $user->id)->sum('amount');
-        $pendingTrades = Trade::where('user_id', $user->id)->where('status', 'pending')->count();
-        $winTrades = Trade::where('user_id', $user->id)->where('status', 'win')->count();
-        $lossTrades = Trade::where('user_id', $user->id)->where('status', 'loss')->count();
-        $totalPayout = Trade::where('user_id', $user->id)->where('status', 'win')->sum('payout_amount');
+        // Calculate statistics - optimize with base query
+        $baseQuery = Trade::where('user_id', $user->id);
+        $totalTrades = (clone $baseQuery)->count();
+        $totalAmount = (clone $baseQuery)->sum('amount');
+        $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
+        $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
+        $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
         
-        // Get first and last trade dates
-        $firstTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'asc')->first();
-        $lastTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
+        // Get first and last trade dates - optimize with single query
+        $tradeDates = (clone $baseQuery)
+            ->selectRaw('MIN(created_at) as first_trade, MAX(created_at) as last_trade')
+            ->first();
+        $firstTrade = $tradeDates ? (object)['created_at' => $tradeDates->first_trade] : null;
+        $lastTrade = $tradeDates ? (object)['created_at' => $tradeDates->last_trade] : null;
 
         return response()->json([
             'success' => true,
@@ -226,23 +169,27 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info
+        // Get all trades with market info - eager load market.event
         $trades = Trade::where('user_id', $user->id)
-            ->with('market')
+            ->with('market.event')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Calculate statistics
-        $totalTrades = Trade::where('user_id', $user->id)->count();
-        $totalAmount = Trade::where('user_id', $user->id)->sum('amount');
-        $pendingTrades = Trade::where('user_id', $user->id)->where('status', 'pending')->count();
-        $winTrades = Trade::where('user_id', $user->id)->where('status', 'win')->count();
-        $lossTrades = Trade::where('user_id', $user->id)->where('status', 'loss')->count();
-        $totalPayout = Trade::where('user_id', $user->id)->where('status', 'win')->sum('payout_amount');
+        // Calculate statistics - optimize with base query
+        $baseQuery = Trade::where('user_id', $user->id);
+        $totalTrades = (clone $baseQuery)->count();
+        $totalAmount = (clone $baseQuery)->sum('amount');
+        $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
+        $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
+        $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
         
-        // Get first and last trade dates
-        $firstTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'asc')->first();
-        $lastTrade = Trade::where('user_id', $user->id)->orderBy('created_at', 'desc')->first();
+        // Get first and last trade dates - optimize with single query
+        $tradeDates = (clone $baseQuery)
+            ->selectRaw('MIN(created_at) as first_trade, MAX(created_at) as last_trade')
+            ->first();
+        $firstTrade = $tradeDates ? (object)['created_at' => $tradeDates->first_trade] : null;
+        $lastTrade = $tradeDates ? (object)['created_at' => $tradeDates->last_trade] : null;
 
         return view('frontend.trades_history', compact('trades', 'totalTrades', 'totalAmount', 'pendingTrades', 'winTrades', 'lossTrades', 'totalPayout', 'firstTrade', 'lastTrade'));
     }
@@ -264,4 +211,49 @@ class TradeController extends Controller
             'trades' => $trades,
         ]);
     }
+
+    /**
+     * Get a specific trade by ID
+     * API endpoint: GET /api/trades/{id}
+     */
+    public function getTrade($id)
+    {
+        $user = Auth::user();
+        
+        $trade = Trade::where('id', $id)
+            ->where('user_id', $user->id) // Only allow users to see their own trades
+            ->with(['market.event', 'user'])
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'trade' => [
+                'id' => $trade->id,
+                'market' => [
+                    'id' => $trade->market->id,
+                    'question' => $trade->market->question,
+                    'slug' => $trade->market->slug,
+                    'event' => $trade->market->event ? [
+                        'id' => $trade->market->event->id,
+                        'title' => $trade->market->event->title,
+                        'slug' => $trade->market->event->slug,
+                    ] : null,
+                ],
+                'outcome' => $trade->outcome,
+                'amount_invested' => $trade->amount_invested,
+                'token_amount' => $trade->token_amount,
+                'shares' => $trade->shares ?? $trade->token_amount,
+                'price_at_buy' => $trade->price_at_buy,
+                'status' => $trade->status,
+                'payout' => $trade->payout ?? 0,
+                'settled_at' => $trade->settled_at,
+                'created_at' => $trade->created_at,
+                'updated_at' => $trade->updated_at,
+                'is_pending' => $trade->isPending(),
+                'is_win' => $trade->isWin(),
+                'is_loss' => $trade->isLoss(),
+            ],
+        ]);
+    }
+
 }

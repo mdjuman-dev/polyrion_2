@@ -602,7 +602,16 @@
 
                 if (Math.abs(sum - 1.0) > 0.001) {
                     isValid = false;
-                    alert('Yes and No prices must sum to 1.0 for all markets');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Prices',
+                            text: 'Yes and No prices must sum to 1.0 for all markets',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    } else {
+                        alert('Yes and No prices must sum to 1.0 for all markets');
+                    }
                     e.preventDefault();
                     return false;
                 }

@@ -9,6 +9,8 @@ use App\Http\Controllers\Backend\EventController;
 use App\Http\Controllers\Backend\CommentController;
 use App\Http\Controllers\Backend\BinancePayController;
 use App\Http\Controllers\Backend\RolePermissionController;
+use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\Backend\PaymentSettingsController;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -16,6 +18,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+
+    // Return to admin route (accessible without admin auth when impersonating)
+    Route::post('/users/return-to-admin', [UserController::class, 'returnToAdmin'])->name('users.return-to-admin');
 
     Route::middleware('auth:admin')->group(function () {
         Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('backend.dashboard');
@@ -45,6 +50,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
         // Event Management Routes
         Route::controller(EventController::class)->group(function () {
             Route::get('/events', 'index')->name('events.index');
+            Route::get('/events/create', 'create')->name('events.create');
             Route::get('/events/create-with-markets', 'createWithMarkets')->name('events.create-with-markets');
             Route::post('/events', 'store')->name('events.store');
             Route::post('/events/with-markets', 'storeWithMarkets')->name('events.store-with-markets');
@@ -69,9 +75,23 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::post('/setting/update', 'settingUpdate')->name('setting.update');
         });
 
+        // Payment Settings Routes
+        Route::controller(PaymentSettingsController::class)->prefix('payment')->name('payment.')->group(function () {
+            Route::get('/settings', 'index')->name('settings');
+            Route::post('/settings', 'update')->name('settings.update');
+        });
+
         // Binance Pay Management Routes
         Route::controller(BinancePayController::class)->group(function () {
             Route::post('/deposit/{depositId}/process', 'manualProcess')->name('deposit.manual.process');
+        });
+
+        // Deposit Management Routes
+        Route::controller(\App\Http\Controllers\Backend\DepositController::class)->prefix('deposits')->name('deposits.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{id}', 'show')->name('show');
+            Route::post('/{id}/approve', 'approve')->name('approve');
+            Route::post('/{id}/reject', 'reject')->name('reject');
         });
 
         // Withdrawal Management Routes
@@ -81,6 +101,16 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::post('/{id}/approve', 'approve')->name('approve');
             Route::post('/{id}/reject', 'reject')->name('reject');
             Route::post('/{id}/processing', 'processing')->name('processing');
+        });
+
+        // User Management Routes
+        Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{id}', 'show')->name('show');
+            Route::post('/{id}/login-as', 'loginAsUser')->name('login-as');
+            Route::post('/{id}/update-status', 'updateStatus')->name('update-status');
+            Route::post('/{id}/test-deposit', 'addTestDeposit')->name('test-deposit');
+            Route::delete('/{id}', 'destroy')->name('destroy');
         });
 
         // Roles and Permissions Management Routes
