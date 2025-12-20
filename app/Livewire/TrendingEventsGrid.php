@@ -40,7 +40,8 @@ class TrendingEventsGrid extends Component
 
     public function render()
     {
-        $query = Event::with('markets')
+        try {
+            $query = Event::with('markets')
             ->where('active', true)
             ->where('closed', false);
 
@@ -79,5 +80,18 @@ class TrendingEventsGrid extends Component
             'events' => $events,
             'hasMore' => $hasMore
         ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in TrendingEventsGrid: ' . $e->getMessage());
+            return view('livewire.trending-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in TrendingEventsGrid: ' . $e->getMessage());
+            return view('livewire.trending-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        }
     }
 }

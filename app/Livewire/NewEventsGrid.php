@@ -40,7 +40,8 @@ class NewEventsGrid extends Component
 
     public function render()
     {
-        $query = Event::with('markets')
+        try {
+            $query = Event::with('markets')
             ->where('active', true)
             ->where('closed', false);
 
@@ -79,5 +80,18 @@ class NewEventsGrid extends Component
             'events' => $events,
             'hasMore' => $hasMore
         ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in NewEventsGrid: ' . $e->getMessage());
+            return view('livewire.new-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in NewEventsGrid: ' . $e->getMessage());
+            return view('livewire.new-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        }
     }
 }

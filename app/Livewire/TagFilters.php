@@ -23,7 +23,17 @@ class TagFilters extends Component
 
     public function render()
     {
-        $tags = Tag::orderBy('label', 'asc')->get();
+        try {
+            $tags = Tag::orderBy('label', 'asc')->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // If database connection fails, return empty collection
+            \Log::error('Failed to load tags: ' . $e->getMessage());
+            $tags = collect([]);
+        } catch (\Exception $e) {
+            // Catch any other exceptions
+            \Log::error('Error loading tags: ' . $e->getMessage());
+            $tags = collect([]);
+        }
 
         return view('livewire.tag-filters', [
             'tags' => $tags

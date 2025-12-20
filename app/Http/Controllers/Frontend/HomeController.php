@@ -179,12 +179,13 @@ class HomeController extends Controller
 
     function marketDetails($slug)
     {
-        // Only load first 8 markets to improve performance (we only show 4 in chart)
-        $event = Event::where('slug', $slug)
-            ->with(['markets' => function($query) {
-                $query->limit(8)->orderBy('id');
-            }])
-            ->firstOrFail();
+        try {
+            // Only load first 8 markets to improve performance (we only show 4 in chart)
+            $event = Event::where('slug', $slug)
+                ->with(['markets' => function($query) {
+                    $query->limit(8)->orderBy('id');
+                }])
+                ->firstOrFail();
 
         // Color palette for markets (Polymarket style) - fallback if series_color not set
         $marketColors = [
@@ -313,6 +314,19 @@ class HomeController extends Controller
         }
 
         return view('frontend.market_details', compact('event', 'seriesData', 'labels'));
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in marketDetails: ' . $e->getMessage());
+            return redirect()->route('home')
+                ->with('error', 'Unable to load market details. Please try again later.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Event not found: ' . $slug);
+            return redirect()->route('home')
+                ->with('error', 'Event not found.');
+        } catch (\Exception $e) {
+            \Log::error('Error in marketDetails: ' . $e->getMessage());
+            return redirect()->route('home')
+                ->with('error', 'An error occurred. Please try again later.');
+        }
     }
 
     function savedEvents()
@@ -322,8 +336,18 @@ class HomeController extends Controller
 
     function eventsByTag($slug)
     {
-        $tag = Tag::where('slug', $slug)->firstOrFail();
-        return view('frontend.events_by_tag', compact('tag'));
+        try {
+            $tag = Tag::where('slug', $slug)->firstOrFail();
+            return view('frontend.events_by_tag', compact('tag'));
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in eventsByTag: ' . $e->getMessage());
+            return redirect()->route('home')
+                ->with('error', 'Unable to load tag. Please try again later.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Tag not found: ' . $slug);
+            return redirect()->route('home')
+                ->with('error', 'Tag not found.');
+        }
     }
 
     function trending()
@@ -348,12 +372,13 @@ class HomeController extends Controller
 
     function getMarketPriceData($slug)
     {
-        // Only load first market to improve performance
-        $event = Event::where('slug', $slug)
-            ->with(['markets' => function($query) {
-                $query->limit(1)->orderBy('id');
-            }])
-            ->firstOrFail();
+        try {
+            // Only load first market to improve performance
+            $event = Event::where('slug', $slug)
+                ->with(['markets' => function($query) {
+                    $query->limit(1)->orderBy('id');
+                }])
+                ->firstOrFail();
         
         $marketData = [];
         if ($event->markets && $event->markets->count() > 0) {
@@ -389,6 +414,16 @@ class HomeController extends Controller
         }
         
         return response()->json($marketData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in getMarketPriceData: ' . $e->getMessage());
+            return response()->json(['error' => 'Unable to load market data. Please try again later.'], 500);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Event not found in getMarketPriceData: ' . $slug);
+            return response()->json(['error' => 'Event not found.'], 404);
+        } catch (\Exception $e) {
+            \Log::error('Error in getMarketPriceData: ' . $e->getMessage());
+            return response()->json(['error' => 'An error occurred. Please try again later.'], 500);
+        }
     }
 
     function getMarketLivePrice($marketId)
@@ -504,12 +539,13 @@ class HomeController extends Controller
 
     function getMarketHistoryData($slug)
     {
-        // Only load first 8 markets to improve performance (we only show 4 in chart)
-        $event = Event::where('slug', $slug)
-            ->with(['markets' => function($query) {
-                $query->limit(8)->orderBy('id');
-            }])
-            ->firstOrFail();
+        try {
+            // Only load first 8 markets to improve performance (we only show 4 in chart)
+            $event = Event::where('slug', $slug)
+                ->with(['markets' => function($query) {
+                    $query->limit(8)->orderBy('id');
+                }])
+                ->firstOrFail();
 
         $marketsData = [];
         $now = now();
@@ -697,5 +733,15 @@ class HomeController extends Controller
             'success' => true,
             'markets' => $marketsData,
         ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in getMarketHistoryData: ' . $e->getMessage());
+            return response()->json(['error' => 'Unable to load market history. Please try again later.'], 500);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Event not found in getMarketHistoryData: ' . $slug);
+            return response()->json(['error' => 'Event not found.'], 404);
+        } catch (\Exception $e) {
+            \Log::error('Error in getMarketHistoryData: ' . $e->getMessage());
+            return response()->json(['error' => 'An error occurred. Please try again later.'], 500);
+        }
     }
 }

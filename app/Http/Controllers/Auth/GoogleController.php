@@ -89,13 +89,25 @@ class GoogleController extends Controller
             }
 
             // Find user by Google ID first
-            $user = User::where('google_id', $googleId)->first();
+            try {
+                $user = User::where('google_id', $googleId)->first();
+            } catch (\Illuminate\Database\QueryException $e) {
+                Log::error('Database connection failed in GoogleController: ' . $e->getMessage());
+                return redirect()->route('login')
+                    ->with('error', 'Unable to connect to database. Please try again later.');
+            }
 
             if ($user) {
                 Auth::login($user);
             } else {
                 // Try to find existing user by email
-                $existingUser = User::where('email', $email)->first();
+                try {
+                    $existingUser = User::where('email', $email)->first();
+                } catch (\Illuminate\Database\QueryException $e) {
+                    Log::error('Database connection failed in GoogleController (email lookup): ' . $e->getMessage());
+                    return redirect()->route('login')
+                        ->with('error', 'Unable to connect to database. Please try again later.');
+                }
 
                 if ($existingUser) {
                     // Link Google account to existing user
@@ -103,15 +115,21 @@ class GoogleController extends Controller
                     Auth::login($existingUser);
                 } else {
                     // Create new user
-                    $user = User::create([
-                        'name' => $name,
-                        'email' => $email,
-                        'google_id' => $googleId,
-                        'password' => bcrypt(Str::random(16)),
-                        'email_verified_at' => now(),
-                    ]);
+                    try {
+                        $user = User::create([
+                            'name' => $name,
+                            'email' => $email,
+                            'google_id' => $googleId,
+                            'password' => bcrypt(Str::random(16)),
+                            'email_verified_at' => now(),
+                        ]);
 
-                    Auth::login($user);
+                        Auth::login($user);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        Log::error('Database connection failed in GoogleController (user creation): ' . $e->getMessage());
+                        return redirect()->route('login')
+                            ->with('error', 'Unable to create user account. Please try again later.');
+                    }
                 }
             }
 

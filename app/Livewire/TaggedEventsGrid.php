@@ -37,7 +37,23 @@ class TaggedEventsGrid extends Component
 
     public function render()
     {
-        $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
+        try {
+            $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in TaggedEventsGrid: ' . $e->getMessage());
+            return view('livewire.tagged-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false,
+                'tag' => null
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Tag not found: ' . $this->tagSlug);
+            return view('livewire.tagged-events-grid', [
+                'events' => collect([]),
+                'hasMore' => false,
+                'tag' => null
+            ]);
+        }
 
         // Frontend always shows only active events
         $query = Event::where('active', true)
