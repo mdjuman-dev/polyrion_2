@@ -88,23 +88,33 @@ class AppServiceProvider extends ServiceProvider
             $mailFromAddress = GlobalSetting::getValue('mail_from_address');
             $mailFromName = GlobalSetting::getValue('mail_from_name');
 
-            // Load SMTP settings from database
-            Log::info('Loading SMTP settings from database', [
-                'mailer' => $mailMailer,
-                'host' => $mailHost,
-                'port' => $mailPort,
-                'username' => $mailUsername ? '***' : null,
-                'encryption' => $mailEncryption,
-                'from_address' => $mailFromAddress,
-                'from_name' => $mailFromName,
-            ]);
+            // Only log if settings are actually configured (not all null)
+            $hasSettings = $mailMailer || $mailHost || $mailPort || $mailUsername || $mailPassword;
+            
+            if ($hasSettings) {
+                // Load SMTP settings from database
+                Log::info('Loading SMTP settings from database', [
+                    'mailer' => $mailMailer,
+                    'host' => $mailHost,
+                    'port' => $mailPort,
+                    'username' => $mailUsername ? '***' : null,
+                    'encryption' => $mailEncryption,
+                    'from_address' => $mailFromAddress,
+                    'from_name' => $mailFromName,
+                ]);
+            }
 
             // Validate and set mailer
             if ($mailMailer && in_array($mailMailer, ['smtp', 'ses', 'postmark', 'resend', 'mailgun', 'sendmail', 'log'])) {
                 config(['mail.default' => $mailMailer]);
-                Log::info('Mailer set from database', ['mailer' => $mailMailer]);
+                if ($hasSettings) {
+                    Log::info('Mailer set from database', ['mailer' => $mailMailer]);
+                }
             } else {
-                Log::info('Using default mailer (no valid mailer in database)', ['mailer' => $mailMailer]);
+                // Only log if we expected settings but didn't find valid mailer
+                if ($hasSettings && $mailMailer) {
+                    Log::warning('Invalid mailer in database, using default', ['mailer' => $mailMailer]);
+                }
             }
 
             // Only configure SMTP settings if mailer is SMTP and settings are valid
