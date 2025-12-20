@@ -129,9 +129,10 @@ class MarketsGrid extends Component
 
     public function render()
     {
-        // Frontend always shows only active events
-        // Eager load only active markets
-        $query = Event::with(['markets' => function ($q) {
+        try {
+            // Frontend always shows only active events
+            // Eager load only active markets
+            $query = Event::with(['markets' => function ($q) {
             // Only active markets: active=true AND closed=false
             $q->where('active', true)
               ->where('closed', false)
@@ -266,5 +267,18 @@ class MarketsGrid extends Component
             'events' => $events,
             'hasMore' => $hasMore
         ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database connection failed in MarketsGrid: ' . $e->getMessage());
+            return view('livewire.markets-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in MarketsGrid: ' . $e->getMessage());
+            return view('livewire.markets-grid', [
+                'events' => collect([]),
+                'hasMore' => false
+            ]);
+        }
     }
 }

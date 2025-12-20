@@ -18,14 +18,20 @@ class SuperAdminPermission
      */
     public function handle(Request $request, Closure $next, string $permission, ?string $guard = null): Response
     {
-        $guard = $guard ?? 'admin';
-        
-        // Check if user is authenticated with the guard
-        if (!auth()->guard($guard)->check()) {
-            abort(403, 'Unauthorized');
-        }
+        try {
+            $guard = $guard ?? 'admin';
+            
+            // Check if user is authenticated with the guard
+            if (!auth()->guard($guard)->check()) {
+                abort(403, 'Unauthorized');
+            }
 
-        $user = auth()->guard($guard)->user();
+            $user = auth()->guard($guard)->user();
+            
+            // If user is null due to database error, deny access
+            if (!$user) {
+                abort(403, 'Unable to verify user. Please try again later.');
+            }
 
         // If user is super admin, allow access (no permission check needed)
         if ($user instanceof Admin && $user->isSuperAdmin()) {
@@ -49,6 +55,13 @@ class SuperAdminPermission
         }
 
         return $next($request);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::error('Database connection failed in SuperAdminPermission middleware: ' . $e->getMessage());
+            abort(503, 'Service temporarily unavailable. Please try again later.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in SuperAdminPermission middleware: ' . $e->getMessage());
+            abort(500, 'An error occurred. Please try again later.');
+        }
     }
 }
 
