@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\Event;
 use App\Models\Market;
 use App\Models\Tag;
@@ -298,6 +299,79 @@ class MarketController extends Controller
         }
     }
 
+    /**
+     * Determine market outcome from Polymarket API data
+     */
+    private function determineMarketOutcome($mk)
+    {
+        $outcomeResult = null;
+        $finalOutcome = null;
+        $finalResult = null;
+        
+        // Method 1: Check umaResolutionStatus and lastTradePrice (Polymarket standard method)
+        if (isset($mk['umaResolutionStatus']) && $mk['umaResolutionStatus'] === 'resolved') {
+            if (isset($mk['lastTradePrice']) && isset($mk['outcomePrices']) && isset($mk['outcomes'])) {
+                $lastTradePrice = floatval($mk['lastTradePrice']);
+                $outcomePrices = is_string($mk['outcomePrices']) ? json_decode($mk['outcomePrices'], true) : $mk['outcomePrices'];
+                $outcomes = is_string($mk['outcomes']) ? json_decode($mk['outcomes'], true) : $mk['outcomes'];
+                
+                if (is_array($outcomePrices) && is_array($outcomes) && count($outcomePrices) > 0 && count($outcomes) > 0) {
+                    $winningIndex = null;
+                    foreach ($outcomePrices as $index => $price) {
+                        if (abs(floatval($price) - $lastTradePrice) < 0.0001) {
+                            $winningIndex = $index;
+                            break;
+                        }
+                    }
+                    
+                    if ($winningIndex !== null && isset($outcomes[$winningIndex])) {
+                        $winningOutcome = $outcomes[$winningIndex];
+                        $winningOutcomeUpper = strtoupper(trim($winningOutcome));
+                        if ($winningOutcomeUpper === 'YES' || $winningOutcomeUpper === 'NO') {
+                            $finalOutcome = $winningOutcomeUpper;
+                            $outcomeResult = strtolower($finalOutcome);
+                            $finalResult = $outcomeResult;
+                        } elseif ($winningIndex === 0) {
+                            $finalOutcome = 'YES';
+                            $outcomeResult = 'yes';
+                            $finalResult = 'yes';
+                        } elseif ($winningIndex === 1 && count($outcomes) === 2) {
+                            $finalOutcome = 'NO';
+                            $outcomeResult = 'no';
+                            $finalResult = 'no';
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Method 2: Check various possible fields from Polymarket API (fallback)
+        if (!$outcomeResult && isset($mk['resolved']) && $mk['resolved'] === true) {
+            if (isset($mk['outcome'])) {
+                $outcomeResult = strtolower($mk['outcome']);
+                $finalOutcome = strtoupper($mk['outcome']);
+                $finalResult = $outcomeResult;
+            } elseif (isset($mk['finalOutcome'])) {
+                $outcomeResult = strtolower($mk['finalOutcome']);
+                $finalOutcome = strtoupper($mk['finalOutcome']);
+                $finalResult = $outcomeResult;
+            } elseif (isset($mk['resolution'])) {
+                $outcomeResult = strtolower($mk['resolution']);
+                $finalOutcome = strtoupper($mk['resolution']);
+                $finalResult = $outcomeResult;
+            }
+        }
+        
+        // Method 3: Also check if market is closed and has resolution info
+        if (($mk['closed'] ?? false) && !$outcomeResult && isset($mk['winningOutcome'])) {
+            $outcomeResult = strtolower($mk['winningOutcome']);
+            $finalOutcome = strtoupper($mk['winningOutcome']);
+            $finalResult = $outcomeResult;
+        }
+
+        return [$outcomeResult, $finalOutcome, $finalResult];
+    }
+
     function storeEvents()
     {
         $startTime = time();
@@ -308,7 +382,8 @@ class MarketController extends Controller
         $batchCount = 0;
         $totalProcessed = 0;
         $consecutiveEmptyBatches = 0;
-        $maxConsecutiveEmpty = 3; 
+        $maxConsecutiveEmpty = 3;
+        $marketsToSettle = []; // Batch settlement operations
 
         Log::info("=== Starting event fetch process at " . date('Y-m-d H:i:s') . " ===");
 
@@ -329,6 +404,7 @@ class MarketController extends Controller
                     })
                     ->get('https://gamma-api.polymarket.com/events', [
                         'limit' => $limit,
+                        'closed' => false,
                         'offset' => $offset,
                         'ascending' => false,
                     ]);
@@ -382,191 +458,226 @@ class MarketController extends Controller
             // Reset consecutive empty counter if we got events
             $consecutiveEmptyBatches = 0;
 
-            // Process each event
+            // Pre-fetch existing event slugs to reduce queries
+            $eventSlugs = array_filter(array_column($events, 'slug'));
+            $existingEvents = Event::whereIn('slug', $eventSlugs)
+                ->pluck('id', 'slug')
+                ->toArray();
+
+            // Pre-fetch existing market slugs
+            $allMarketSlugs = [];
             foreach ($events as $ev) {
-
-                // Time check inside loop
-                if ((time() - $startTime) >= $maxExecutionTime) {
-                    Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
-                    break 2;
-                }
-
                 if (!empty($ev['markets'])) {
-
-                    $event = Event::updateOrCreate(
-                        ['slug' => $ev['slug']],
-                        [
-                            'slug' => $ev['slug'],
-                            'ticker' => $ev['ticker'] ?? null,
-                            'polymarket_event_id' => $ev['id'] ?? null,
-                            'title' => $ev['title'] ?? null,
-                            'description' => $ev['description'] ?? null,
-                            'image' => $ev['image'] ?? null,
-                            'icon' => $ev['icon'] ?? null,
-
-                            'liquidity' => $ev['liquidity'] ?? null,
-                            'volume' => $ev['volume'] ?? null,
-                            'volume_24hr' => $ev['volume24hr'] ?? null,
-                            'volume_1wk' => $ev['volume1wk'] ?? null,
-                            'volume_1mo' => $ev['volume1mo'] ?? null,
-                            'volume_1yr' => $ev['volume1yr'] ?? null,
-
-                            'liquidity_clob' => $ev['liquidityClob'] ?? null,
-                            'competitive' => isset($ev['competitive']) ? floatval($ev['competitive']) : null,
-                            'comment_count' => $ev['commentCount'] ?? 0,
-
-                            'active' => $ev['active'] ?? null,
-                            'closed' => $ev['closed'] ?? null,
-                            'archived' => $ev['archived'] ?? null,
-                            'new' => $ev['new'] ?? null,
-                            'featured' => $ev['featured'] ?? null,
-
-                            'start_date' => toMysqlDate($ev['startDate'] ?? null),
-                            'end_date' => toMysqlDate($ev['endDate'] ?? null),
-                        ]
-                    );
-
-                    // Save markets
                     foreach ($ev['markets'] as $mk) {
-                        // Determine market resolution/outcome from Polymarket API
-                        // Polymarket API may provide: resolved, outcome, finalOutcome, or resolution fields
-                        $outcomeResult = null;
-                        $finalOutcome = null;
-                        $finalResult = null;
-                        
-                        // Check various possible fields from Polymarket API
-                        if (isset($mk['resolved']) && $mk['resolved'] === true) {
-                            // Market is resolved, check for outcome
-                            if (isset($mk['outcome'])) {
-                                $outcomeResult = strtolower($mk['outcome']); // 'yes' or 'no'
-                                $finalOutcome = strtoupper($mk['outcome']); // 'YES' or 'NO'
-                                $finalResult = $outcomeResult;
-                            } elseif (isset($mk['finalOutcome'])) {
-                                $outcomeResult = strtolower($mk['finalOutcome']);
-                                $finalOutcome = strtoupper($mk['finalOutcome']);
-                                $finalResult = $outcomeResult;
-                            } elseif (isset($mk['resolution'])) {
-                                $outcomeResult = strtolower($mk['resolution']);
-                                $finalOutcome = strtoupper($mk['resolution']);
-                                $finalResult = $outcomeResult;
-                            }
+                        if (!empty($mk['slug'])) {
+                            $allMarketSlugs[] = $mk['slug'];
                         }
-                        
-                        // Also check if market is closed and has resolution info
-                        if (($mk['closed'] ?? false) && !$outcomeResult) {
-                            // Try to infer from other fields
-                            if (isset($mk['winningOutcome'])) {
-                                $outcomeResult = strtolower($mk['winningOutcome']);
-                                $finalOutcome = strtoupper($mk['winningOutcome']);
-                                $finalResult = $outcomeResult;
-                            }
-                        }
+                    }
+                }
+            }
+            $existingMarkets = !empty($allMarketSlugs) 
+                ? Market::whereIn('slug', $allMarketSlugs)->pluck('id', 'slug')->toArray()
+                : [];
 
-                        // Determine if market should be closed
-                        $isClosed = $mk['closed'] ?? false;
-                        if ($outcomeResult) {
-                            // If we have a result, market should be closed
-                            $isClosed = true;
-                        }
+            // Process events in transaction for better performance
+            DB::beginTransaction();
+            try {
+                // Process each event
+                foreach ($events as $ev) {
+                    // Time check inside loop
+                    if ((time() - $startTime) >= $maxExecutionTime) {
+                        Log::info("Time limit reached during processing. Processed {$totalProcessed} events.");
+                        break 2;
+                    }
 
-                        $market = Market::updateOrCreate(
-                            ['slug' => $mk['slug']],
+                    // Skip closed events - we only want active events
+                    if (isset($ev['closed']) && $ev['closed'] === true) {
+                        continue;
+                    }
+
+                    // Skip archived events
+                    if (isset($ev['archived']) && $ev['archived'] === true) {
+                        continue;
+                    }
+
+                    // Skip if event is not active
+                    if (isset($ev['active']) && $ev['active'] === false) {
+                        continue;
+                    }
+
+                    if (!empty($ev['markets'])) {
+                        // Check if event exists
+                        $eventExists = isset($existingEvents[$ev['slug']]);
+                        
+                        $event = Event::updateOrCreate(
+                            ['slug' => $ev['slug']],
                             [
-                                'event_id' => $event->id,
-                                'question' => $mk['question'] ?? null,
-                                'condition_id' => $mk['conditionId'] ?? null,
-                                'groupItem_title' => $mk['groupItemTitle'] ?? null,
-                                'group_item_threshold' => $mk['groupItemThreshold'] ?? null,
-                                'description' => $mk['description'] ?? null,
-                                'resolution_source' => $mk['resolutionSource'] ?? null,
-                                'image' => $mk['image'] ?? null,
-                                'icon' => $mk['icon'] ?? null,
+                                'slug' => $ev['slug'],
+                                'ticker' => $ev['ticker'] ?? null,
+                                'polymarket_event_id' => $ev['id'] ?? null,
+                                'title' => $ev['title'] ?? null,
+                                'description' => $ev['description'] ?? null,
+                                'image' => cleanImageUrl($ev['image'] ?? null),
+                                'icon' => cleanImageUrl($ev['icon'] ?? null),
 
-                                'liquidity_clob' => $mk['liquidityClob'] ?? $mk['liquidityNum'] ?? null,
-                                'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
-                                'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
-                                'volume1wk' => $mk['volume1wk'] ?? $mk['volume1wkClob'] ?? null,
-                                'volume1mo' => $mk['volume1mo'] ?? $mk['volume1moClob'] ?? null,
-                                'volume1yr' => $mk['volume1yr'] ?? $mk['volume1yrClob'] ?? null,
+                                'liquidity' => $ev['liquidity'] ?? null,
+                                'volume' => $ev['volume'] ?? null,
+                                'volume_24hr' => $ev['volume24hr'] ?? null,
+                                'volume_1wk' => $ev['volume1wk'] ?? null,
+                                'volume_1mo' => $ev['volume1mo'] ?? null,
+                                'volume_1yr' => $ev['volume1yr'] ?? null,
 
-                                'outcome_prices' => $mk['outcomePrices'] ?? null,
-                                'outcomes' => $mk['outcomes'] ?? null,
+                                'liquidity_clob' => $ev['liquidityClob'] ?? null,
+                                'competitive' => isset($ev['competitive']) ? floatval($ev['competitive']) : null,
+                                'comment_count' => $ev['commentCount'] ?? 0,
 
-                                // Trading prices
-                                'best_bid' => isset($mk['bestBid']) ? floatval($mk['bestBid']) : null,
-                                'best_ask' => isset($mk['bestAsk']) ? floatval($mk['bestAsk']) : null,
-                                'last_trade_price' => isset($mk['lastTradePrice']) ? floatval($mk['lastTradePrice']) : null,
-                                'spread' => isset($mk['spread']) ? floatval($mk['spread']) : null,
+                                'active' => $ev['active'] ?? true,
+                                'closed' => $ev['closed'] ?? false,
+                                'archived' => $ev['archived'] ?? false,
+                                'new' => $ev['new'] ?? false,
+                                'featured' => $ev['featured'] ?? false,
 
-                                // Price changes
-                                'one_day_price_change' => isset($mk['oneDayPriceChange']) ? floatval($mk['oneDayPriceChange']) : null,
-                                'one_week_price_change' => isset($mk['oneWeekPriceChange']) ? floatval($mk['oneWeekPriceChange']) : null,
-                                'one_month_price_change' => isset($mk['oneMonthPriceChange']) ? floatval($mk['oneMonthPriceChange']) : null,
-
-                                // Chart and display
-                                'series_color' => $mk['seriesColor'] ?? null,
-                                'competitive' => isset($mk['competitive']) ? floatval($mk['competitive']) : null,
-
-                                'active' => $mk['active'] ?? null,
-                                'closed' => $isClosed ?? ($mk['closed'] ?? null),
-                                'archived' => $mk['archived'] ?? null,
-                                'featured' => $mk['featured'] ?? null,
-                                'new' => $mk['new'] ?? null,
-                                'restricted' => $mk['restricted'] ?? null,
-                                'approved' => $mk['approved'] ?? null,
-
-                                // Market resolution fields (if available from API)
-                                'outcome_result' => $outcomeResult,
-                                'final_outcome' => $finalOutcome,
-                                'final_result' => $finalResult,
-                                'result_set_at' => ($outcomeResult && !isset($mk['result_set_at'])) ? now() : ($mk['result_set_at'] ?? null),
-                                'is_closed' => $isClosed ?? ($mk['closed'] ?? false),
-                                'settled' => ($outcomeResult && $isClosed) ? false : null, // Will be set to true after settlement
-
-                                'start_date' => toMysqlDate($mk['startDate'] ?? null),
-                                'end_date' => toMysqlDate($mk['endDate'] ?? null),
+                                'start_date' => toMysqlDate($ev['startDate'] ?? null),
+                                'end_date' => toMysqlDate($ev['endDate'] ?? null),
                             ]
                         );
 
-                        // If market has result and is closed but not settled, trigger settlement
-                        // (Scheduled task will also handle this, but this ensures immediate settlement)
-                        if ($outcomeResult && $isClosed && !$market->settled) {
-                            try {
-                                $settlementService = app(\App\Services\SettlementService::class);
-                                $settlementService->settleMarket($market->id);
-                                Log::info('Market auto-settled after result update from API', [
-                                    'market_id' => $market->id,
-                                    'slug' => $market->slug,
+                        // Update existing events cache
+                        $existingEvents[$ev['slug']] = $event->id;
+
+                        // Process tags first (batch operation)
+                        $tagIds = [];
+                        if (!empty($ev['tags'])) {
+                            $tagSlugs = array_column($ev['tags'], 'slug');
+                            $existingTags = Tag::whereIn('slug', $tagSlugs)->pluck('id', 'slug')->toArray();
+                            
+                            foreach ($ev['tags'] as $tag) {
+                                if (!isset($existingTags[$tag['slug']])) {
+                                    $tagModel = Tag::create([
+                                        'slug' => $tag['slug'],
+                                        'label' => $tag['label'],
+                                    ]);
+                                    $existingTags[$tag['slug']] = $tagModel->id;
+                                }
+                                $tagIds[] = $existingTags[$tag['slug']];
+                            }
+                            // Batch sync tags
+                            $event->tags()->sync($tagIds);
+                        }
+
+                        // Save markets
+                        foreach ($ev['markets'] as $mk) {
+                            // Use helper method to determine outcome
+                            [$outcomeResult, $finalOutcome, $finalResult] = $this->determineMarketOutcome($mk);
+
+                            // Determine if market should be closed
+                            $isClosed = $mk['closed'] ?? false;
+                            if ($outcomeResult) {
+                                $isClosed = true;
+                            }
+
+                            $market = Market::updateOrCreate(
+                                ['slug' => $mk['slug']],
+                                [
+                                    'event_id' => $event->id,
+                                    'question' => $mk['question'] ?? null,
+                                    'condition_id' => $mk['conditionId'] ?? null,
+                                    'groupItem_title' => $mk['groupItemTitle'] ?? null,
+                                    'group_item_threshold' => $mk['groupItemThreshold'] ?? null,
+                                    'description' => $mk['description'] ?? null,
+                                    'resolution_source' => $mk['resolutionSource'] ?? null,
+                                    'image' => cleanImageUrl($mk['image'] ?? null),
+                                    'icon' => cleanImageUrl($mk['icon'] ?? null),
+
+                                    'liquidity_clob' => $mk['liquidityClob'] ?? $mk['liquidityNum'] ?? null,
+                                    'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
+                                    'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
+                                    'volume1wk' => $mk['volume1wk'] ?? $mk['volume1wkClob'] ?? null,
+                                    'volume1mo' => $mk['volume1mo'] ?? $mk['volume1moClob'] ?? null,
+                                    'volume1yr' => $mk['volume1yr'] ?? $mk['volume1yrClob'] ?? null,
+
+                                    'outcome_prices' => $mk['outcomePrices'] ?? null,
+                                    'outcomes' => $mk['outcomes'] ?? null,
+
+                                    // Trading prices
+                                    'best_bid' => isset($mk['bestBid']) ? floatval($mk['bestBid']) : null,
+                                    'best_ask' => isset($mk['bestAsk']) ? floatval($mk['bestAsk']) : null,
+                                    'last_trade_price' => isset($mk['lastTradePrice']) ? floatval($mk['lastTradePrice']) : null,
+                                    'spread' => isset($mk['spread']) ? floatval($mk['spread']) : null,
+
+                                    // Price changes
+                                    'one_day_price_change' => isset($mk['oneDayPriceChange']) ? floatval($mk['oneDayPriceChange']) : null,
+                                    'one_week_price_change' => isset($mk['oneWeekPriceChange']) ? floatval($mk['oneWeekPriceChange']) : null,
+                                    'one_month_price_change' => isset($mk['oneMonthPriceChange']) ? floatval($mk['oneMonthPriceChange']) : null,
+
+                                    // Chart and display
+                                    'series_color' => $mk['seriesColor'] ?? null,
+                                    'competitive' => isset($mk['competitive']) ? floatval($mk['competitive']) : null,
+
+                                    'active' => $mk['active'] ?? true,
+                                    'closed' => $isClosed ?? ($mk['closed'] ?? false),
+                                    'archived' => $mk['archived'] ?? false,
+                                    'featured' => $mk['featured'] ?? false,
+                                    'new' => $mk['new'] ?? false,
+                                    'restricted' => $mk['restricted'] ?? false,
+                                    'approved' => $mk['approved'] ?? true,
+
+                                    // Market resolution fields (if available from API)
                                     'outcome_result' => $outcomeResult,
-                                ]);
-                            } catch (\Exception $e) {
-                                // Log error but don't fail the entire process
-                                Log::error('Failed to auto-settle market after API update', [
-                                    'market_id' => $market->id,
-                                    'error' => $e->getMessage(),
-                                ]);
+                                    'final_outcome' => $finalOutcome,
+                                    'final_result' => $finalResult,
+                                    'result_set_at' => ($outcomeResult && !isset($mk['result_set_at'])) ? now() : ($mk['result_set_at'] ?? null),
+                                    'is_closed' => $isClosed ?? ($mk['closed'] ?? false),
+                                    'settled' => false, // Default to false, will be set to true after settlement
+
+                                    'start_date' => toMysqlDate($mk['startDate'] ?? null),
+                                    'end_date' => toMysqlDate($mk['endDate'] ?? null),
+                                ]
+                            );
+
+                            // Collect markets that need settlement (batch later)
+                            if ($outcomeResult && $isClosed && !$market->settled) {
+                                $marketsToSettle[] = $market->id;
                             }
                         }
                     }
 
-                    // Save Tags
-                    $tagIds = [];
-                    if (!empty($ev['tags'])) {
-                        foreach ($ev['tags'] as $tag) {
-                            $tagModel = Tag::updateOrCreate(
-                                ['slug' => $tag['slug']],
-                                [
-                                    'label' => $tag['label'],
-                                ]
-                            );
-                            $tagIds[] = $tagModel->id;
-                        }
-                        // Attach tags to event
-                        $event->tags()->sync($tagIds);
-                    }
+                    $totalProcessed++;
                 }
 
-                $totalProcessed++;
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Error processing events batch: " . $e->getMessage(), [
+                    'offset' => $offset,
+                    'batch' => $batchCount,
+                    'exception' => $e
+                ]);
+                // Continue to next batch instead of breaking
+                $offset += $limit;
+                $batchCount++;
+                continue;
+            }
+
+            // Batch settlement operations (after transaction commit)
+            if (!empty($marketsToSettle)) {
+                try {
+                    $settlementService = app(\App\Services\SettlementService::class);
+                    foreach ($marketsToSettle as $marketId) {
+                        try {
+                            $settlementService->settleMarket($marketId);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to auto-settle market after API update', [
+                                'market_id' => $marketId,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                    Log::info('Batch settled markets', ['count' => count($marketsToSettle)]);
+                    $marketsToSettle = []; // Reset for next batch
+                } catch (\Exception $e) {
+                    Log::error('Error in batch settlement: ' . $e->getMessage());
+                }
             }
 
             $eventsCount = count($events);

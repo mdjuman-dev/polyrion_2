@@ -42,6 +42,10 @@ class TaggedEventsGrid extends Component
         // Frontend always shows only active events
         $query = Event::where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->whereHas('tags', function ($q) use ($tag) {
                 $q->where('tags.id', $tag->id);
             })
