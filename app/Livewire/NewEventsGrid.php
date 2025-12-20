@@ -41,7 +41,7 @@ class NewEventsGrid extends Component
     public function render()
     {
         try {
-            $query = Event::with('markets')
+        $query = Event::with('markets')
             ->where('active', true)
             ->where('closed', false);
 

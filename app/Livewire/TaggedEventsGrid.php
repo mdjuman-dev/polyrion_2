@@ -38,7 +38,7 @@ class TaggedEventsGrid extends Component
     public function render()
     {
         try {
-            $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
+        $tag = Tag::where('slug', $this->tagSlug)->firstOrFail();
         } catch (\Illuminate\Database\QueryException $e) {
             \Log::error('Database connection failed in TaggedEventsGrid: ' . $e->getMessage());
             return view('livewire.tagged-events-grid', [

@@ -89,7 +89,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-user-shield me-2"></i>
-                        <strong>You are logged in as: {{ auth()->user()->name }}</strong>
+                        <strong>You are logged in as: {{ $authUser->name ?? 'User' }}</strong>
                     </div>
                     <form action="{{ route('admin.users.return-to-admin') }}" method="POST" class="d-inline">
                         @csrf
@@ -132,7 +132,7 @@
                     <div class="header-actions d-flex align-items-center justify-content-end">
                         @if (auth()->check())
                             @php
-                                $wallet = auth()->user()->wallet;
+                                $wallet = $authUser?->wallet;
                                 $portfolio = $wallet->portfolio ?? 0;
                                 $cash = $wallet->balance ?? 0;
                             @endphp
@@ -159,8 +159,8 @@
                         <div class="header-menu-wrapper">
                             @if (auth()->check())
                                 <div class="header-user-avatar" id="headerMenuTrigger" style="cursor: pointer;">
-                                    <img src="{{ auth()->user()->profile_image ? asset('storage/' . auth()->user()->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
-                                        alt="{{ auth()->user()->username }}">
+                                    <img src="{{ $authUser?->profile_image ? asset('storage/' . $authUser->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
+                                        alt="{{ $authUser?->username ?? 'User' }}">
                                 </div>
                             @else
                                 <button class="header-menu-trigger" id="headerMenuTrigger" aria-label="More">
@@ -172,19 +172,19 @@
                                     @if (auth()->check())
                                         <div class="header-user">
                                             <div class="header-user-avatar">
-                                                <img src="{{ auth()->user()->profile_image ? asset('storage/' . auth()->user()->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
-                                                    alt="{{ auth()->user()->username }}">
+                                                <img src="{{ $authUser?->profile_image ? asset('storage/' . $authUser->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
+                                                    alt="{{ $authUser?->username ?? 'User' }}">
                                             </div>
                                             <div class="header-user-info">
                                                 <a href="{{ route('profile.index') }}">
-                                                    @if (auth()->user()->name)
+                                                    @if ($authUser?->name)
                                                         <div class="header-user-name">
-                                                            {{ auth()->user()->name }}
+                                                            {{ $authUser->name }}
                                                         </div>
                                                     @endif
 
                                                     <div class="header-user-name text-muted">
-                                                        {{ auth()->user()->username }}
+                                                        {{ $authUser?->username ?? 'User' }}
                                                     </div>
                                                 </a>
 
@@ -286,8 +286,8 @@
                                 <div class="header-menu-wrapper">
                                     @if (auth()->check())
                                         <div class="header-user-avatar" id="moreMenuBtn" style="cursor: pointer;">
-                                            <img src="{{ auth()->user()->profile_image ? asset('storage/' . auth()->user()->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
-                                                alt="{{ auth()->user()->username }}">
+                                            <img src="{{ $authUser?->profile_image ? asset('storage/' . $authUser->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
+                                                alt="{{ $authUser?->username ?? 'User' }}">
                                         </div>
                                     @else
                                         <a href="{{ route('login') }}" id="loginBtn" class="btn-header">Log In</a>
@@ -298,18 +298,18 @@
                                             @if (auth()->check())
                                                 <div class="header-user">
                                                     <div class="header-user-avatar">
-                                                        <img src="{{ auth()->user()->profile_image ? asset('storage/' . auth()->user()->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
-                                                            alt="{{ auth()->user()->username }}">
+                                                        <img src="{{ $authUser?->profile_image ? asset('storage/' . $authUser->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
+                                                            alt="{{ $authUser?->username ?? 'User' }}">
                                                     </div>
                                                     <div class="header-user-info">
                                                         <a href="{{ route('profile.index') }}">
                                                             <div class="header-user-name">
-                                                                {{ auth()->user()->username }}
+                                                                {{ $authUser?->username ?? 'User' }}
                                                             </div>
                                                         </a>
-                                                        @if (auth()->user()->email)
+                                                        @if ($authUser?->email)
                                                             <div class="header-user-sub">
-                                                                {{ auth()->user()->email }}
+                                                                {{ $authUser->email }}
                                                             </div>
                                                         @endif
                                                     </div>
@@ -402,7 +402,7 @@
         </a>
         <a href="{{ route('profile.index') }}" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
-            <span>${{ auth()->user()->wallet->balance ?? '0.00' }}</span>
+            <span>${{ $authUser?->wallet?->balance ?? '0.00' }}</span>
         </a>
     </div>
 
@@ -440,17 +440,17 @@
         @if (auth()->check())
             <div class="header-user p-0">
                 <div class="header-user-avatar">
-                    <img src="{{ isset(auth()->user()->profile_image) ? asset('storage/' . auth()->user()->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
-                        alt="{{ auth()->user()->username }}">
+                    <img src="{{ isset($authUser->profile_image) ? asset('storage/' . $authUser->profile_image) : asset('frontend/assets/images/default-avatar.png') }}"
+                        alt="{{ $authUser?->username ?? 'User' }}">
                 </div>
                 <div class="header-user-info">
                     <a href="{{ route('profile.index') }}">
                         <div class="header-user-name">
-                            {{ auth()->user()->username }}
+                            {{ $authUser?->username ?? 'User' }}
                         </div>
-                        @if (auth()->user()->email)
+                        @if ($authUser?->email)
                             <div class="header-user-sub">
-                                {{ auth()->user()->email }}
+                                {{ $authUser->email }}
                             </div>
                         @endif
                     </a>
@@ -1114,7 +1114,7 @@
                         limitPrice = 0,
                         @auth
                     @php
-                        $userWallet = auth()->user()->wallet;
+                        $userWallet = $authUser?->wallet;
                         $userBalance = $userWallet ? $userWallet->balance : 0;
                     @endphp
                     userBalance = {{ $userBalance }};
@@ -1912,8 +1912,9 @@
 
                 // Handle Binance Pay
                 if (method === 'binancepay') {
-                    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Creating payment...');
-                    
+                    $btn.prop("disabled", true).html(
+                        '<i class="fas fa-spinner fa-spin"></i> Creating payment...');
+
                     $.ajax({
                         url: '{{ route('binance.create') }}',
                         method: 'POST',
@@ -1933,13 +1934,15 @@
                                     window.location.href = response.checkoutUrl;
                                 }, 100);
                             } else {
-                                let errorMsg = response.message || "Failed to create payment. Please try again.";
-                                
+                                let errorMsg = response.message ||
+                                    "Failed to create payment. Please try again.";
+
                                 // Show helpful message for IP whitelist errors
                                 if (errorMsg.includes('IP') || errorMsg.includes('whitelist')) {
-                                    errorMsg += '\n\nPlease contact support to whitelist the server IP address.';
+                                    errorMsg +=
+                                        '\n\nPlease contact support to whitelist the server IP address.';
                                 }
-                                
+
                                 showError(errorMsg, 'Payment Error');
                                 $btn.prop("disabled", false).html(originalText);
                             }
@@ -1949,22 +1952,29 @@
 
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
-                                
+
                                 // Add helpful tips for common errors
-                                if (errorMessage.includes('IP') || errorMessage.includes('whitelist')) {
-                                    errorMessage += '\n\n💡 Tip: Server IP needs to be whitelisted in Binance Pay dashboard.';
-                                } else if (errorMessage.includes('authentication') || errorMessage.includes('API')) {
-                                    errorMessage += '\n\n💡 Tip: Please check API credentials in admin settings.';
+                                if (errorMessage.includes('IP') || errorMessage.includes(
+                                        'whitelist')) {
+                                    errorMessage +=
+                                        '\n\n💡 Tip: Server IP needs to be whitelisted in Binance Pay dashboard.';
+                                } else if (errorMessage.includes('authentication') ||
+                                    errorMessage.includes('API')) {
+                                    errorMessage +=
+                                        '\n\n💡 Tip: Please check API credentials in admin settings.';
                                 } else if (errorMessage.includes('signature')) {
-                                    errorMessage += '\n\n💡 Tip: Please verify API secret key is correct.';
+                                    errorMessage +=
+                                        '\n\n💡 Tip: Please verify API secret key is correct.';
                                 }
                             } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                                 const errors = Object.values(xhr.responseJSON.errors).flat();
                                 errorMessage = errors.join('\n');
                             } else if (xhr.status === 0) {
-                                errorMessage = "Network error. Please check your internet connection and try again.";
+                                errorMessage =
+                                    "Network error. Please check your internet connection and try again.";
                             } else if (xhr.status === 500) {
-                                errorMessage = "Server error. Please try again later or contact support.";
+                                errorMessage =
+                                    "Server error. Please try again later or contact support.";
                             }
 
                             showError(errorMessage, 'Payment Error');
@@ -2067,7 +2077,7 @@
             function handleMetaMaskDeposit(amount, currency, $btn, originalText) {
                 // Check if MetaMask is installed - check multiple ways
                 const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
-                
+
                 if (!ethereum) {
                     showError(
                         'MetaMask is not installed. Please install MetaMask extension to continue.',
@@ -2090,8 +2100,8 @@
                 function getUserAddress() {
                     return new Promise(function(resolve, reject) {
                         // First try to get accounts without requesting (if already connected)
-                        provider.request({ 
-                            method: 'eth_accounts' 
+                        provider.request({
+                            method: 'eth_accounts'
                         }).then(function(accounts) {
                             if (accounts && accounts.length > 0) {
                                 console.log('MetaMask already connected:', accounts[0]);
@@ -2099,15 +2109,21 @@
                             } else {
                                 // No accounts, request access - this will trigger MetaMask popup
                                 console.log('Requesting MetaMask accounts...');
-                                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
-                                
-                                provider.request({ 
-                                    method: 'eth_requestAccounts' 
+                                $btn.prop("disabled", true).html(
+                                    '<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...'
+                                    );
+
+                                provider.request({
+                                    method: 'eth_requestAccounts'
                                 }).then(function(requestedAccounts) {
-                                    if (!requestedAccounts || requestedAccounts.length === 0) {
-                                        reject(new Error('No accounts found. Please unlock MetaMask.'));
+                                    if (!requestedAccounts || requestedAccounts.length ===
+                                        0) {
+                                        reject(new Error(
+                                            'No accounts found. Please unlock MetaMask.'
+                                            ));
                                     } else {
-                                        console.log('MetaMask connected:', requestedAccounts[0]);
+                                        console.log('MetaMask connected:',
+                                            requestedAccounts[0]);
                                         resolve(requestedAccounts[0]);
                                     }
                                 }).catch(reject);
@@ -2118,14 +2134,15 @@
 
                 // Step 1: Get user address (will trigger popup if not connected)
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Connecting...');
-                
+
                 getUserAddress()
                     .then(function(userAddress) {
                         console.log('Got user address, creating deposit record...');
 
                         // Step 2: Create deposit record
-                        $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Creating deposit...');
-                        
+                        $btn.prop("disabled", true).html(
+                            '<i class="fas fa-spinner fa-spin"></i> Creating deposit...');
+
                         return $.ajax({
                             url: '{{ route('metamask.deposit.create') }}',
                             method: 'POST',
@@ -2138,10 +2155,14 @@
                             }
                         }).then(function(createDepositResponse) {
                             if (!createDepositResponse.success) {
-                                throw new Error(createDepositResponse.message || "Failed to create deposit");
+                                throw new Error(createDepositResponse.message ||
+                                    "Failed to create deposit");
                             }
                             console.log('Deposit record created:', createDepositResponse);
-                            return { response: createDepositResponse, userAddress: userAddress };
+                            return {
+                                response: createDepositResponse,
+                                userAddress: userAddress
+                            };
                         });
                     })
                     .then(function(data) {
@@ -2155,7 +2176,7 @@
                         const amountFloat = parseFloat(amount);
                         const multiplier = Math.pow(10, decimals);
                         const amountInWei = Math.floor(amountFloat * multiplier);
-                        
+
                         // Convert to hex (handle large numbers safely)
                         let amountHex;
                         try {
@@ -2172,19 +2193,20 @@
 
                         // Step 3: Send transaction - THIS WILL OPEN METAMASK POPUP
                         // IMPORTANT: Don't close modal yet - keep it open so popup isn't blocked
-                        $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
-                        
+                        $btn.prop("disabled", true).html(
+                            '<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
+
                         console.log('Preparing transaction...');
                         console.log('Merchant Address:', merchantAddress);
                         console.log('Amount (hex):', amountHex);
                         console.log('User Address:', userAddress);
-                        
+
                         // Get gas price and send transaction
                         return provider.request({
                             method: 'eth_gasPrice'
                         }).then(function(gasPrice) {
                             console.log('Gas price:', gasPrice);
-                            
+
                             // Prepare transaction parameters
                             const transactionParameters = {
                                 from: userAddress,
@@ -2195,7 +2217,8 @@
                             };
 
                             console.log('Transaction parameters:', transactionParameters);
-                            console.log('Calling eth_sendTransaction - MetaMask popup should open now...');
+                            console.log(
+                                'Calling eth_sendTransaction - MetaMask popup should open now...');
                             console.log('Provider:', provider);
                             console.log('Provider.isMetaMask:', provider.isMetaMask);
                             console.log('Provider type:', typeof provider);
@@ -2209,7 +2232,9 @@
                             // Send transaction - THIS WILL OPEN METAMASK POPUP
                             // This must be called directly to trigger the popup
                             if (!provider || typeof provider.request !== 'function') {
-                                throw new Error('MetaMask provider is not available or request method is missing');
+                                throw new Error(
+                                    'MetaMask provider is not available or request method is missing'
+                                    );
                             }
 
                             console.log('Making eth_sendTransaction request...');
@@ -2251,32 +2276,35 @@
                             });
 
                             // Automatically verify transaction
-                            verifyMetaMaskTransaction(txHash, response.deposit_id, network, $btn, originalText);
+                            verifyMetaMaskTransaction(txHash, response.deposit_id, network, $btn,
+                                originalText);
                         });
                     })
-                .catch(function(error) {
-                    console.error('MetaMask Error:', error);
-                    console.error('Error details:', JSON.stringify(error, null, 2));
-                    
-                    let errorMessage = 'Failed to process payment. Please try again.';
-                    
-                    if (error.code === 4001) {
-                        errorMessage = 'Transaction was rejected by user. Please try again.';
-                    } else if (error.code === -32002) {
-                        errorMessage = 'MetaMask request is pending. Please check your MetaMask extension and approve the request.';
-                    } else if (error.code === -32603) {
-                        errorMessage = 'Internal MetaMask error. Please try again or check your MetaMask extension.';
-                    } else if (error.message) {
-                        errorMessage = error.message;
-                    } else if (error.responseJSON && error.responseJSON.message) {
-                        errorMessage = error.responseJSON.message;
-                    }
-                    
-                    // Show detailed error for debugging
-                    console.log('Showing error to user:', errorMessage);
-                    showError(errorMessage, 'Payment Error');
-                    $btn.prop("disabled", false).html(originalText);
-                });
+                    .catch(function(error) {
+                        console.error('MetaMask Error:', error);
+                        console.error('Error details:', JSON.stringify(error, null, 2));
+
+                        let errorMessage = 'Failed to process payment. Please try again.';
+
+                        if (error.code === 4001) {
+                            errorMessage = 'Transaction was rejected by user. Please try again.';
+                        } else if (error.code === -32002) {
+                            errorMessage =
+                                'MetaMask request is pending. Please check your MetaMask extension and approve the request.';
+                        } else if (error.code === -32603) {
+                            errorMessage =
+                                'Internal MetaMask error. Please try again or check your MetaMask extension.';
+                        } else if (error.message) {
+                            errorMessage = error.message;
+                        } else if (error.responseJSON && error.responseJSON.message) {
+                            errorMessage = error.responseJSON.message;
+                        }
+
+                        // Show detailed error for debugging
+                        console.log('Showing error to user:', errorMessage);
+                        showError(errorMessage, 'Payment Error');
+                        $btn.prop("disabled", false).html(originalText);
+                    });
             }
 
             // Verify MetaMask Transaction

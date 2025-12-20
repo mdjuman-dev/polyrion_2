@@ -30,16 +30,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Share global settings with all views
         View::composer('*', function ($view) {
+            // Safely get authenticated user using helper function
+            $authUser = safeAuthUser('web');
+
             try {
-            $view->with([
-                'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
-                'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
-                'favicon' => GlobalSetting::getValue('favicon'),
-                'logo' => GlobalSetting::getValue('logo'),
-                'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
-                'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
-                'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
-            ]);
+                $view->with([
+                    'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
+                    'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
+                    'favicon' => GlobalSetting::getValue('favicon'),
+                    'logo' => GlobalSetting::getValue('logo'),
+                    'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
+                    'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
+                    'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
+                    'authUser' => $authUser, // Safe user variable
+                ]);
             } catch (\Illuminate\Database\QueryException $e) {
                 // If database connection fails, use default values
                 Log::warning('Database connection failed in View composer, using defaults', [
@@ -53,6 +57,7 @@ class AppServiceProvider extends ServiceProvider
                     'gaTrackingId' => null,
                     'fbPixelId' => null,
                     'tawkWidgetCode' => null,
+                    'authUser' => $authUser, // Still include user if we got it before
                 ]);
             } catch (\Exception $e) {
                 // Catch any other exceptions
@@ -67,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
                     'gaTrackingId' => null,
                     'fbPixelId' => null,
                     'tawkWidgetCode' => null,
+                    'authUser' => $authUser, // Still include user if we got it before
                 ]);
             }
         });
@@ -92,23 +98,23 @@ class AppServiceProvider extends ServiceProvider
             $hasSettings = $mailMailer || $mailHost || $mailPort || $mailUsername || $mailPassword;
             
             if ($hasSettings) {
-                // Load SMTP settings from database
-                Log::info('Loading SMTP settings from database', [
-                    'mailer' => $mailMailer,
-                    'host' => $mailHost,
-                    'port' => $mailPort,
-                    'username' => $mailUsername ? '***' : null,
-                    'encryption' => $mailEncryption,
-                    'from_address' => $mailFromAddress,
-                    'from_name' => $mailFromName,
-                ]);
+            // Load SMTP settings from database
+            Log::info('Loading SMTP settings from database', [
+                'mailer' => $mailMailer,
+                'host' => $mailHost,
+                'port' => $mailPort,
+                'username' => $mailUsername ? '***' : null,
+                'encryption' => $mailEncryption,
+                'from_address' => $mailFromAddress,
+                'from_name' => $mailFromName,
+            ]);
             }
 
             // Validate and set mailer
             if ($mailMailer && in_array($mailMailer, ['smtp', 'ses', 'postmark', 'resend', 'mailgun', 'sendmail', 'log'])) {
                 config(['mail.default' => $mailMailer]);
                 if ($hasSettings) {
-                    Log::info('Mailer set from database', ['mailer' => $mailMailer]);
+                Log::info('Mailer set from database', ['mailer' => $mailMailer]);
                 }
             } else {
                 // Only log if we expected settings but didn't find valid mailer

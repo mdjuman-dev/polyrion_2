@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'binance/*',
         ]);
 
+        // Handle database authentication errors globally
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleDatabaseAuthErrors::class,
+        ]);
+
         // Register Spatie permission middleware aliases
         // Use custom permission middleware that bypasses super admin
         $middleware->alias([
