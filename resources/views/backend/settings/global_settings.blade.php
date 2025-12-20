@@ -85,6 +85,15 @@
                                                         </a>
                                                     </li>
                                                     <li class="nav-item">
+                                                        <a class="nav-link" data-bs-toggle="pill" href="#google-oauth"
+                                                            role="tab">
+                                                            <div class="nav-icon">
+                                                                <i data-feather="log-in"></i>
+                                                            </div>
+                                                            <span>Google OAuth Login</span>
+                                                        </a>
+                                                    </li>
+                                                    <li class="nav-item">
                                                         <a class="nav-link" data-bs-toggle="pill" href="#smtp"
                                                             role="tab">
                                                             <div class="nav-icon">
@@ -207,7 +216,9 @@
                                                                 <!-- Current Logo Display -->
                                                                 @if (isset($generalSettings['logo']) && $generalSettings['logo'])
                                                                     <div class="current-image-container mb-3">
-                                                                        <label class="text-muted small mb-2 d-block">Current Logo:</label>
+                                                                        <label
+                                                                            class="text-muted small mb-2 d-block">Current
+                                                                            Logo:</label>
                                                                         <div class="image-preview-wrapper">
                                                                             <img src="{{ str_starts_with($generalSettings['logo'], 'http') ? $generalSettings['logo'] : asset('storage/' . $generalSettings['logo']) }}"
                                                                                 alt="Current Logo" id="current_logo_img"
@@ -221,12 +232,16 @@
                                                                 <!-- Simple File Input for Logo -->
                                                                 <input type="file" name="site_logo" id="site_logo"
                                                                     class="form-control" accept="image/*">
-                                                                <small class="text-muted mt-2 d-block">PNG, JPG, GIF, SVG (Max 2MB)</small>
+                                                                <small class="text-muted mt-2 d-block">PNG, JPG, GIF, SVG
+                                                                    (Max 2MB)</small>
 
                                                                 <!-- New Logo Preview -->
-                                                                <div id="site_logo_preview" class="mt-3" style="display: none;">
-                                                                    <label class="text-muted small mb-2 d-block">New Logo Preview:</label>
-                                                                    <img id="site_logo_preview_img" src="" alt="Logo Preview" 
+                                                                <div id="site_logo_preview" class="mt-3"
+                                                                    style="display: none;">
+                                                                    <label class="text-muted small mb-2 d-block">New Logo
+                                                                        Preview:</label>
+                                                                    <img id="site_logo_preview_img" src=""
+                                                                        alt="Logo Preview"
                                                                         style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
                                                                 </div>
                                                             </div>
@@ -242,10 +257,13 @@
                                                                 <!-- Current Favicon Display -->
                                                                 @if (isset($generalSettings['favicon']) && $generalSettings['favicon'])
                                                                     <div class="current-image-container mb-3">
-                                                                        <label class="text-muted small mb-2 d-block">Current Favicon:</label>
+                                                                        <label
+                                                                            class="text-muted small mb-2 d-block">Current
+                                                                            Favicon:</label>
                                                                         <div class="favicon-preview-wrapper">
                                                                             <img src="{{ str_starts_with($generalSettings['favicon'], 'http') ? $generalSettings['favicon'] : asset('storage/' . $generalSettings['favicon']) }}"
-                                                                                alt="Current Favicon" id="current_favicon_img"
+                                                                                alt="Current Favicon"
+                                                                                id="current_favicon_img"
                                                                                 style="max-width: 64px; max-height: 64px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;"
                                                                                 onerror="this.src='{{ asset('backend/assets/images/avatar.png') }}'; this.onerror=null;">
                                                                         </div>
@@ -255,12 +273,16 @@
                                                                 <!-- Simple File Input for Favicon -->
                                                                 <input type="file" name="favicon" id="favicon"
                                                                     class="form-control" accept="image/*,.ico">
-                                                                <small class="text-muted mt-2 d-block">ICO, PNG, JPG (Max 1MB, Recommended: 32x32 or 64x64)</small>
+                                                                <small class="text-muted mt-2 d-block">ICO, PNG, JPG (Max
+                                                                    1MB, Recommended: 32x32 or 64x64)</small>
 
                                                                 <!-- New Favicon Preview -->
-                                                                <div id="favicon_preview" class="mt-3" style="display: none;">
-                                                                    <label class="text-muted small mb-2 d-block">New Favicon Preview:</label>
-                                                                    <img id="favicon_preview_img" src="" alt="Favicon Preview"
+                                                                <div id="favicon_preview" class="mt-3"
+                                                                    style="display: none;">
+                                                                    <label class="text-muted small mb-2 d-block">New
+                                                                        Favicon Preview:</label>
+                                                                    <img id="favicon_preview_img" src=""
+                                                                        alt="Favicon Preview"
                                                                         style="max-width: 64px; max-height: 64px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
                                                                 </div>
                                                             </div>
@@ -271,7 +293,8 @@
                                                         <strong><i class="fa fa-info-circle"></i> Tips:</strong>
                                                         <ul class="mb-0 mt-2">
                                                             <li>Logo: Recommended size 200x60px or similar aspect ratio</li>
-                                                            <li>Favicon: Recommended size 32x32px or 64x64px (square format)</li>
+                                                            <li>Favicon: Recommended size 32x32px or 64x64px (square format)
+                                                            </li>
                                                             <li>Supported formats: PNG, JPG, GIF, ICO</li>
                                                             <li>Maximum file size: 2MB for logo, 1MB for favicon</li>
                                                         </ul>
@@ -351,6 +374,102 @@
                                                                     placeholder="Enter your Facebook Pixel ID">
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Google OAuth Login Tab -->
+                                                <div class="tab-pane fade" id="google-oauth" role="tabpanel">
+                                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                                        <div>
+                                                            <h5 class="mb-1">Google OAuth Login Settings</h5>
+                                                            <p class="text-muted mb-0">Configure Google OAuth credentials
+                                                                for user login. These credentials will be stored in the
+                                                                database settings.</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="alert alert-info mb-4">
+                                                        <i class="fa fa-info-circle me-2"></i>
+                                                        Get your OAuth credentials from <a
+                                                            href="https://console.cloud.google.com/apis/credentials"
+                                                            target="_blank" class="alert-link">Google Cloud Console</a>
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Google Client ID <span
+                                                                        class="text-danger">*</span></label>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text"><i
+                                                                            class="fa fa-key"></i></span>
+                                                                    <input type="text" name="google_client_id"
+                                                                        id="google_client_id" class="form-control"
+                                                                        value="{{ old('google_client_id', $googleSettings['google_client_id'] ?? '') }}"
+                                                                        placeholder="Enter Google Client ID (e.g., 498087143603-xxxxx.apps.googleusercontent.com)">
+                                                                </div>
+                                                                <small class="form-text text-muted mt-2">Your Google OAuth
+                                                                    Client ID from Google Cloud Console</small>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Google Client Secret <span
+                                                                        class="text-danger">*</span></label>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text"><i
+                                                                            class="fa fa-lock"></i></span>
+                                                                    <input type="password" name="google_client_secret"
+                                                                        id="google_client_secret" class="form-control"
+                                                                        value="{{ old('google_client_secret', $googleSettings['google_client_secret'] ?? '') }}"
+                                                                        placeholder="Enter Google Client Secret">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary"
+                                                                        onclick="togglePasswordVisibility('google_client_secret', 'google_client_secret_icon')">
+                                                                        <i class="fa fa-eye"
+                                                                            id="google_client_secret_icon"></i>
+                                                                    </button>
+                                                                </div>
+                                                                <small class="form-text text-muted mt-2">Your Google OAuth
+                                                                    Client Secret from Google Cloud Console</small>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Google Redirect URL <span
+                                                                        class="text-danger">*</span></label>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text"><i
+                                                                            class="fa fa-link"></i></span>
+                                                                    <input type="url" name="google_redirect"
+                                                                        id="google_redirect" class="form-control"
+                                                                        value="{{ old('google_redirect', $googleSettings['google_redirect'] ?? env('APP_URL') . '/auth/google/callback') }}"
+                                                                        placeholder="https://yourdomain.com/auth/google/callback">
+                                                                </div>
+                                                                <small class="form-text text-muted mt-2">The callback URL
+                                                                    where Google will redirect after authentication. Must
+                                                                    match exactly with the URL configured in Google Cloud
+                                                                    Console.</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="alert alert-warning mt-4">
+                                                        <strong><i class="fa fa-exclamation-triangle"></i>
+                                                            Important:</strong>
+                                                        <ul class="mb-0 mt-2">
+                                                            <li>Make sure the Redirect URL matches exactly with the one
+                                                                configured in Google Cloud Console</li>
+                                                            <li>For local development, use:
+                                                                <code>http://localhost:8000/auth/google/callback</code></li>
+                                                            <li>For production, use:
+                                                                <code>https://yourdomain.com/auth/google/callback</code>
+                                                            </li>
+                                                            <li>After updating these settings, clear the cache for changes
+                                                                to take effect</li>
+                                                        </ul>
                                                     </div>
                                                 </div>
 
@@ -749,7 +868,8 @@
 
                                                     <div class="row">
                                                         <div class="col-md-12">
-                                                            <button type="button" class="btn btn-danger" id="clearDatabaseBtn">
+                                                            <button type="button" class="btn btn-danger"
+                                                                id="clearDatabaseBtn">
                                                                 <i data-feather="trash-2"></i> Clear Database
                                                             </button>
                                                             <script>
@@ -1706,7 +1826,7 @@
             } else if (confirm('Are you sure you want to reset all form fields? This will clear any unsaved changes.')) {
                 performReset();
             }
-            
+
             function performReset() {
                 const form = document.getElementById('settingsForm');
                 const logoInput = document.getElementById('site_logo');
@@ -1736,7 +1856,7 @@
                 removeLogoPreview();
                 removeFaviconPreview();
             }
-            
+
             // Call confirmation first
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -1764,33 +1884,50 @@
             $('body').on('click', 'button.template-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 var templateName = $(this).attr('data-template');
                 console.log('Template clicked:', templateName);
-                
+
                 // Hide all templates
                 $('#reset-password-template').hide();
                 $('#welcome-template').hide();
                 $('#verification-template').hide();
-                
+
                 // Show selected template
                 var targetTemplate = '#' + templateName + '-template';
                 console.log('Showing template:', targetTemplate);
                 $(targetTemplate).show();
-                
+
                 // Update button states - remove all active states first
                 $('button.template-btn').removeClass('active btn-primary').addClass('btn-outline-primary');
-                
+
                 // Add active state to clicked button
                 $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
-                
+
                 return false;
             });
-            
+
             // Show reset-password template by default on page load
             $('#welcome-template').hide();
             $('#verification-template').hide();
             $('#reset-password-template').show();
         });
+        // Toggle Password Visibility for Google Client Secret
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
     </script>
 @endpush

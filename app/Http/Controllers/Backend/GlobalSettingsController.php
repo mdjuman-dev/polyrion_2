@@ -465,11 +465,22 @@ class GlobalSettingsController extends Controller
             if ($request->has($key)) {
                 $value = $request->input($key);
                 // Convert empty strings, null, or whitespace-only strings to null
+                // But keep the value if it's a valid non-empty string
                 if ($value === null || (is_string($value) && trim($value) === '') || $value === '') {
                     $value = null;
+                } else {
+                    $value = is_string($value) ? trim($value) : $value;
                 }
                 GlobalSetting::setValue($key, $value);
             }
+        }
+        
+        // Clear config cache after updating settings so changes take effect immediately
+        try {
+            \Artisan::call('config:clear');
+            Log::info('Config cache cleared after settings update');
+        } catch (\Exception $e) {
+            Log::warning('Failed to clear config cache', ['error' => $e->getMessage()]);
         }
 
         $redirect = redirect()->route('admin.setting');
