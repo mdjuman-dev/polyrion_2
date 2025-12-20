@@ -24,7 +24,7 @@ class TagFilters extends Component
     public function render()
     {
         try {
-            $tags = Tag::orderBy('label', 'asc')->get();
+        $tags = Tag::orderBy('label', 'asc')->get();
         } catch (\Illuminate\Database\QueryException $e) {
             // If database connection fails, return empty collection
             \Log::error('Failed to load tags: ' . $e->getMessage());

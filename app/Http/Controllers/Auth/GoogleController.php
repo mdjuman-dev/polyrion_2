@@ -90,7 +90,7 @@ class GoogleController extends Controller
 
             // Find user by Google ID first
             try {
-                $user = User::where('google_id', $googleId)->first();
+            $user = User::where('google_id', $googleId)->first();
             } catch (\Illuminate\Database\QueryException $e) {
                 Log::error('Database connection failed in GoogleController: ' . $e->getMessage());
                 return redirect()->route('login')
@@ -102,7 +102,7 @@ class GoogleController extends Controller
             } else {
                 // Try to find existing user by email
                 try {
-                    $existingUser = User::where('email', $email)->first();
+                $existingUser = User::where('email', $email)->first();
                 } catch (\Illuminate\Database\QueryException $e) {
                     Log::error('Database connection failed in GoogleController (email lookup): ' . $e->getMessage());
                     return redirect()->route('login')
@@ -116,15 +116,15 @@ class GoogleController extends Controller
                 } else {
                     // Create new user
                     try {
-                        $user = User::create([
-                            'name' => $name,
-                            'email' => $email,
-                            'google_id' => $googleId,
-                            'password' => bcrypt(Str::random(16)),
-                            'email_verified_at' => now(),
-                        ]);
+                    $user = User::create([
+                        'name' => $name,
+                        'email' => $email,
+                        'google_id' => $googleId,
+                        'password' => bcrypt(Str::random(16)),
+                        'email_verified_at' => now(),
+                    ]);
 
-                        Auth::login($user);
+                    Auth::login($user);
                     } catch (\Illuminate\Database\QueryException $e) {
                         Log::error('Database connection failed in GoogleController (user creation): ' . $e->getMessage());
                         return redirect()->route('login')

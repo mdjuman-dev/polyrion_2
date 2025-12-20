@@ -162,3 +162,40 @@ if (!function_exists('cleanImageUrl')) {
         return $currentUrl;
     }
 }
+
+if (!function_exists('safeAuthUser')) {
+    /**
+     * Safely get the authenticated user, handling database connection failures
+     *
+     * @param string|null $guard The guard to use (default: 'web')
+     * @return \App\Models\User|null
+     */
+    function safeAuthUser(?string $guard = 'web'): ?\App\Models\User
+    {
+        try {
+            if (!auth($guard)->check()) {
+                return null;
+            }
+            
+            return auth($guard)->user();
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::warning('Database connection failed when getting authenticated user', [
+                'error' => $e->getMessage(),
+                'guard' => $guard
+            ]);
+            // Clear the session to prevent further errors
+            try {
+                auth($guard)->logout();
+            } catch (\Exception $logoutException) {
+                // Ignore logout errors
+            }
+            return null;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting authenticated user', [
+                'error' => $e->getMessage(),
+                'guard' => $guard
+            ]);
+            return null;
+        }
+    }
+}

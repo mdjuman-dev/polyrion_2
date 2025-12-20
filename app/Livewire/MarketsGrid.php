@@ -49,7 +49,7 @@ class MarketsGrid extends Component
     {
         // Handle both event dispatch and direct call
         if ($query !== null) {
-            $this->search = $query;
+        $this->search = $query;
         }
         $this->perPage = 20; // Reset pagination when search changes
     }
@@ -130,9 +130,9 @@ class MarketsGrid extends Component
     public function render()
     {
         try {
-            // Frontend always shows only active events
-            // Eager load only active markets
-            $query = Event::with(['markets' => function ($q) {
+        // Frontend always shows only active events
+        // Eager load only active markets
+        $query = Event::with(['markets' => function ($q) {
             // Only active markets: active=true AND closed=false
             $q->where('active', true)
               ->where('closed', false)

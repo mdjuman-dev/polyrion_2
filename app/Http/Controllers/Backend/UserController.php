@@ -57,8 +57,8 @@ class UserController extends Controller
     public function show($id)
     {
         try {
-            $user = User::with(['wallet', 'trades.market.event', 'deposits', 'withdrawals'])
-                ->findOrFail($id);
+        $user = User::with(['wallet', 'trades.market.event', 'deposits', 'withdrawals'])
+            ->findOrFail($id);
 
         // User Statistics - optimize with base query
         $tradesQuery = $user->trades();
@@ -116,12 +116,12 @@ class UserController extends Controller
     public function updateStatus(Request $request, $id)
     {
         try {
-            $user = User::findOrFail($id);
-            
-            // You can add status field to users table if needed
-            // For now, we'll just return success
-            
-            return redirect()->back()->with('success', 'User status updated successfully');
+        $user = User::findOrFail($id);
+        
+        // You can add status field to users table if needed
+        // For now, we'll just return success
+        
+        return redirect()->back()->with('success', 'User status updated successfully');
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database connection failed in UserController@updateStatus: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to update user. Please try again later.');
@@ -139,18 +139,18 @@ class UserController extends Controller
     public function loginAsUser($id)
     {
         try {
-            $user = User::findOrFail($id);
-            
-            // Store admin session before logging in as user
-            session(['admin_id' => Auth::guard('admin')->id()]);
-            
-            // Logout admin and login as user
-            Auth::guard('admin')->logout();
-            Auth::guard('web')->login($user);
-            
-            // Redirect to user profile/dashboard
-            // Using url() to avoid route name resolution issues
-            return redirect('/profile')->with('success', 'Logged in as ' . $user->name);
+        $user = User::findOrFail($id);
+        
+        // Store admin session before logging in as user
+        session(['admin_id' => Auth::guard('admin')->id()]);
+        
+        // Logout admin and login as user
+        Auth::guard('admin')->logout();
+        Auth::guard('web')->login($user);
+        
+        // Redirect to user profile/dashboard
+        // Using url() to avoid route name resolution issues
+        return redirect('/profile')->with('success', 'Logged in as ' . $user->name);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database connection failed in UserController@loginAsUser: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to login as user. Please try again later.');
@@ -201,17 +201,17 @@ class UserController extends Controller
     public function destroy($id)
     {
         try {
-            $user = User::findOrFail($id);
-            
-            // Delete related records
-            $user->trades()->delete();
-            $user->wallet()->delete();
-            $user->deposits()->delete();
-            $user->withdrawals()->delete();
-            
-            $user->delete();
+        $user = User::findOrFail($id);
+        
+        // Delete related records
+        $user->trades()->delete();
+        $user->wallet()->delete();
+        $user->deposits()->delete();
+        $user->withdrawals()->delete();
+        
+        $user->delete();
 
-            return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
+        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database connection failed in UserController@destroy: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to delete user. Please try again later.');
@@ -237,7 +237,7 @@ class UserController extends Controller
             DB::beginTransaction();
 
             try {
-                $user = User::findOrFail($id);
+            $user = User::findOrFail($id);
             } catch (\Illuminate\Database\QueryException $e) {
                 Log::error('Database connection failed in UserController@addTestDeposit (user lookup): ' . $e->getMessage());
                 return redirect()->back()->with('error', 'Unable to load user. Please try again later.');
