@@ -16,8 +16,8 @@ Artisan::command('inspire', function () {
 Schedule::command('events:store')
     ->name('store-events')
     ->everyMinute()
-    ->withoutOverlapping(10) // Increased to 10 minutes to prevent overlapping
-    ->onOneServer(); // Ensure only one server runs this if using multiple servers
+    ->withoutOverlapping(10); // Increased to 10 minutes to prevent overlapping
+    // Note: onOneServer() removed - if using multiple servers, add it back and ensure cache is properly configured
 
 // Schedule category detection for events
 // Runs daily at 2 AM to detect/update categories for new events
@@ -25,7 +25,7 @@ Schedule::command('events:detect-categories')
     ->name('detect-event-categories')
     ->dailyAt('02:00')
     ->withoutOverlapping(10)
-    ->onOneServer()
+    // Note: onOneServer() removed - if using multiple servers, add it back and ensure cache is properly configured
     ->appendOutputTo(storage_path('logs/category-detection.log'));
 
 // Schedule automatic market settlement
@@ -37,4 +37,5 @@ Schedule::call(function () {
     if ($results['total'] > 0) {
         \Illuminate\Support\Facades\Log::info('Market settlement scheduler executed', $results);
     }
-})->name('settle-markets')->everyMinute()->withoutOverlapping(5)->onOneServer();
+})->name('settle-markets')->everyMinute()->withoutOverlapping(5);
+// Note: onOneServer() removed - if using multiple servers, add it back and ensure cache is properly configured

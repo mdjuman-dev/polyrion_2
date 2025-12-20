@@ -137,27 +137,8 @@
                                     <li class="status-option" data-status="closed"
                                         onclick="setStatus('closed', 'Resolved')">
                                         Resolved</li>
-                                    <li class="status-option" data-status="pending"
-                                        onclick="setStatus('pending', 'Pending')">Pending</li>
                                 </ul>
                             </div>
-                        </div>
-                        <div class="filter-checkboxes">
-                            <label class="filter-checkbox">
-                                <span>Hide sports?</span>
-                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideSports"
-                                    id="hideSports">
-                            </label>
-                            <label class="filter-checkbox">
-                                <span>Hide crypto?</span>
-                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideCrypto"
-                                    id="hideCrypto">
-                            </label>
-                            <label class="filter-checkbox">
-                                <span>Hide earnings?</span>
-                                <input class="filter-checkbox-input" type="checkbox" wire:model.live="hideEarnings"
-                                    id="hideEarnings">
-                            </label>
                         </div>
                     </div>
                 </div>
@@ -542,7 +523,7 @@
             // Event Countdown Timer
             function updateEventCountdowns() {
                 const countdowns = document.querySelectorAll('.event-countdown');
-                
+
                 countdowns.forEach(countdown => {
                     const endDateStr = countdown.getAttribute('data-end-date');
                     if (!endDateStr) return;
@@ -569,7 +550,7 @@
                     const daysEl = countdown.querySelector('[data-days]');
                     const hoursEl = countdown.querySelector('[data-hours]');
                     const minutesEl = countdown.querySelector('[data-minutes]');
-                    
+
                     if (daysEl) daysEl.textContent = days;
                     if (hoursEl) hoursEl.textContent = hours;
                     if (minutesEl) minutesEl.textContent = minutes;
@@ -592,21 +573,105 @@
             });
 
             // Original Livewire search functionality
-            document.addEventListener('livewire:init', function() {
+            document.addEventListener('livewire:initialized', function() {
                 const searchInput = document.getElementById('marketSearchInput');
                 const clearBtn = document.getElementById('clearSearchBtn');
                 let searchTimeout;
+                let marketsGridComponent = null;
 
                 function findMarketsGridComponent() {
+                    // Try to get cached component first
+                    if (marketsGridComponent && marketsGridComponent.$wire) {
+                        return marketsGridComponent;
+                    }
+
+                    // Ensure Livewire is available
+                    if (typeof Livewire === 'undefined') {
+                        console.warn('Livewire is not loaded');
+                        return null;
+                    }
+
                     // Find MarketsGrid component by data attribute
                     const marketsGridElement = document.querySelector('[data-component="markets-grid"]');
                     if (marketsGridElement) {
                         const wireId = marketsGridElement.getAttribute('wire:id');
                         if (wireId) {
-                            return Livewire.find(wireId);
+                            try {
+                                // Livewire v3 method
+                                if (Livewire.find) {
+                                    marketsGridComponent = Livewire.find(wireId);
+                                    if (marketsGridComponent) {
+                                        return marketsGridComponent;
+                                    }
+                                }
+                                // Livewire v2 method
+                                else if (Livewire.all) {
+                                    const components = Livewire.all();
+                                    for (let i = 0; i < components.length; i++) {
+                                        const comp = components[i];
+                                        if (comp && comp.__instance && comp.__instance.id === wireId) {
+                                            marketsGridComponent = comp;
+                                            return comp;
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('Could not find Livewire component by ID:', e);
+                            }
+                        }
+
+                        // Try to get component from element's properties (v3)
+                        if (marketsGridElement.__livewire) {
+                            marketsGridComponent = marketsGridElement.__livewire;
+                            return marketsGridComponent;
+                        }
+
+                        // Try Alpine.js $wire (v3)
+                        if (marketsGridElement._x_dataStack && marketsGridElement._x_dataStack[0] && marketsGridElement
+                            ._x_dataStack[0].$wire) {
+                            marketsGridComponent = marketsGridElement._x_dataStack[0];
+                            return marketsGridComponent;
                         }
                     }
+
+                    // Fallback: try to find by component name
+                    try {
+                        if (Livewire.all) {
+                            const components = Livewire.all();
+                            for (let i = 0; i < components.length; i++) {
+                                const component = components[i];
+                                if (component) {
+                                    const element = component.el || component.$el || (component.__instance && component
+                                        .__instance.el);
+                                    if (element && element.getAttribute && element.getAttribute('data-component') ===
+                                        'markets-grid') {
+                                        marketsGridComponent = component;
+                                        return component;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error finding component:', e);
+                    }
+
                     return null;
+                }
+
+                // Initialize component on load
+                function initializeComponent() {
+                    marketsGridComponent = findMarketsGridComponent();
+                    if (!marketsGridComponent) {
+                        // Retry after a short delay if component not found
+                        setTimeout(initializeComponent, 100);
+                    }
+                }
+
+                // Wait for DOM and Livewire to be ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeComponent);
+                } else {
+                    setTimeout(initializeComponent, 100);
                 }
 
                 if (searchInput && clearBtn) {
@@ -624,9 +689,27 @@
                         // Debounce search
                         clearTimeout(searchTimeout);
                         searchTimeout = setTimeout(function() {
-                            const component = findMarketsGridComponent();
-                            if (component && component.set) {
-                                component.set('search', value);
+                            // Use Livewire event dispatch (most reliable method)
+                            if (typeof Livewire !== 'undefined') {
+                                // Livewire v3 method
+                                if (Livewire.dispatch) {
+                                    Livewire.dispatch('search-query-updated', {
+                                        query: value
+                                    });
+                                }
+                                // Livewire v2 fallback
+                                else if (Livewire.emit) {
+                                    Livewire.emit('search-query-updated', value);
+                                }
+                                // Try to find component and update directly
+                                else {
+                                    const component = findMarketsGridComponent();
+                                    if (component && component.$wire) {
+                                        component.$wire.set('search', value);
+                                    }
+                                }
+                            } else {
+                                console.warn('Livewire is not loaded');
                             }
                         }, 300);
                     });
@@ -637,35 +720,80 @@
                         this.style.display = 'none';
 
                         // Clear Livewire search
-                        const component = findMarketsGridComponent();
-                        if (component && component.set) {
-                            component.set('search', '');
+                        if (typeof Livewire !== 'undefined') {
+                            if (Livewire.dispatch) {
+                                Livewire.dispatch('search-query-updated', {
+                                    query: ''
+                                });
+                            } else if (Livewire.emit) {
+                                Livewire.emit('search-query-updated', '');
+                            }
                         }
                     });
                 }
 
-                // Filter functions
+                // Filter functions - Improved with better component access
                 function setSortBy(sort, label) {
                     const component = findMarketsGridComponent();
-                    if (component && component.call) {
-                        component.call('setSortBy', sort);
-                        document.getElementById('sortByText').textContent = label;
+                    if (component) {
+                        // Try Livewire v3 method first
+                        if (component.$wire && typeof component.$wire.call === 'function') {
+                            component.$wire.call('setSortBy', sort);
+                        }
+                        // Try Livewire v2 method
+                        else if (typeof component.call === 'function') {
+                            component.call('setSortBy', sort);
+                        }
+                        // Try direct method call
+                        else if (component.__instance && component.__instance.call) {
+                            component.__instance.call('setSortBy', sort);
+                        } else {
+                            console.warn('Could not call setSortBy on component');
+                        }
+                        const sortByText = document.getElementById('sortByText');
+                        if (sortByText) {
+                            sortByText.textContent = label;
+                        }
+                    } else {
+                        console.warn('MarketsGrid component not found for setSortBy');
                     }
                 }
 
                 function setFrequency(frequency, label) {
                     const component = findMarketsGridComponent();
-                    if (component && component.call) {
-                        component.call('setFrequency', frequency);
-                        document.getElementById('frequencyText').textContent = label;
+                    if (component) {
+                        if (component.$wire && typeof component.$wire.call === 'function') {
+                            component.$wire.call('setFrequency', frequency);
+                        } else if (typeof component.call === 'function') {
+                            component.call('setFrequency', frequency);
+                        } else if (component.__instance && component.__instance.call) {
+                            component.__instance.call('setFrequency', frequency);
+                        }
+                        const frequencyText = document.getElementById('frequencyText');
+                        if (frequencyText) {
+                            frequencyText.textContent = label;
+                        }
+                    } else {
+                        console.warn('MarketsGrid component not found for setFrequency');
                     }
                 }
 
                 function setStatus(status, label) {
                     const component = findMarketsGridComponent();
-                    if (component && component.call) {
-                        component.call('setStatus', status);
-                        document.getElementById('statusText').textContent = label;
+                    if (component) {
+                        if (component.$wire && typeof component.$wire.call === 'function') {
+                            component.$wire.call('setStatus', status);
+                        } else if (typeof component.call === 'function') {
+                            component.call('setStatus', status);
+                        } else if (component.__instance && component.__instance.call) {
+                            component.__instance.call('setStatus', status);
+                        }
+                        const statusText = document.getElementById('statusText');
+                        if (statusText) {
+                            statusText.textContent = label;
+                        }
+                    } else {
+                        console.warn('MarketsGrid component not found for setStatus');
                     }
                 }
 

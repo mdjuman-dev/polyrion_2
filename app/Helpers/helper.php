@@ -105,3 +105,60 @@ if (!function_exists('format_time_ago')) {
         }
     }
 }
+
+if (!function_exists('cleanImageUrl')) {
+    /**
+     * Clean and fix multiple-encoded image URLs
+     * Handles URLs that have been encoded multiple times
+     *
+     * @param string|null $url The URL to clean
+     * @param int $maxLength Maximum URL length (default: 1000)
+     * @return string|null
+     */
+    function cleanImageUrl(?string $url, int $maxLength = 1000): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        // Decode multiple times until we get a stable URL
+        $previousUrl = '';
+        $currentUrl = $url;
+        $maxIterations = 10;
+        $iteration = 0;
+
+        while ($currentUrl !== $previousUrl && $iteration < $maxIterations) {
+            $previousUrl = $currentUrl;
+            
+            // Try to decode
+            $decoded = urldecode($currentUrl);
+            
+            // If decoding didn't change anything, we're done
+            if ($decoded === $currentUrl) {
+                break;
+            }
+            
+            // Check if decoded URL looks valid (starts with http)
+            if (preg_match('/^https?:\/\//', $decoded)) {
+                $currentUrl = $decoded;
+            } else {
+                // If decoded doesn't look like a URL, keep the previous one
+                break;
+            }
+            
+            $iteration++;
+        }
+
+        // Trim to max length if needed
+        if (strlen($currentUrl) > $maxLength) {
+            $currentUrl = substr($currentUrl, 0, $maxLength);
+        }
+
+        // Validate it's a proper URL
+        if (!filter_var($currentUrl, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return $currentUrl;
+    }
+}

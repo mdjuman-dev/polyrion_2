@@ -23,6 +23,14 @@ class MarketsGrid extends Component
         'search-query-updated' => 'updateSearch'
     ];
 
+    // Enable Livewire to track search property changes
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'sortBy' => ['except' => '24hr-volume'],
+        'frequency' => ['except' => 'all'],
+        'status' => ['except' => 'active'],
+    ];
+
     public function mount()
     {
         // Listen for tag selection from TagFilters component
@@ -37,9 +45,18 @@ class MarketsGrid extends Component
         }
     }
     
-    public function updateSearch($query)
+    public function updateSearch($query = null)
     {
-        $this->search = $query;
+        // Handle both event dispatch and direct call
+        if ($query !== null) {
+            $this->search = $query;
+        }
+        $this->perPage = 20; // Reset pagination when search changes
+    }
+
+    // This method is called when search property is updated via wire:model
+    public function updatedSearch()
+    {
         $this->perPage = 20; // Reset pagination when search changes
     }
 
@@ -131,8 +148,27 @@ class MarketsGrid extends Component
             });
         }
 
-        // Frontend always shows only active events
-        $query->where('active', true)->where('closed', false);
+        // Frontend shows active events by default
+        // But also shows ended events if status filter is set to 'closed' or 'resolved'
+        if ($this->status === 'closed' || $this->status === 'resolved') {
+            // Show closed/resolved events
+            $query->where(function ($q) {
+                $q->where('closed', true)
+                  ->orWhere(function ($subQ) {
+                      $subQ->whereNotNull('end_date')
+                           ->where('end_date', '<=', now());
+                  });
+            });
+        } else {
+            // Show active events
+            $query->where('active', true)->where('closed', false);
+
+            // Hide events where end_date has passed
+            $query->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            });
+        }
 
         // Filter by frequency (based on end_date)
         if ($this->frequency === 'daily') {

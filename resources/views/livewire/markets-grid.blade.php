@@ -1,13 +1,9 @@
-<div wire:poll.5s="refreshEvents" data-component="markets-grid" >
+<div wire:poll.5s="refreshEvents" data-component="markets-grid"
+    wire:key="markets-grid-{{ $search }}-{{ $sortBy }}-{{ $frequency }}-{{ $status }}">
     <!-- Markets Grid -->
     <div class="markets-grid mt-3 mt-lg-0" class='row'>
         @foreach ($events as $event)
-            <x-event-card 
-                :event="$event" 
-                :titleLength="90" 
-                :keyPrefix="'grid'" 
-                :showNewBadge="true" 
-                :newBadgeThreshold="10" />
+            <x-event-card :event="$event" :titleLength="90" :keyPrefix="'grid'" :showNewBadge="true" :newBadgeThreshold="10" />
         @endforeach
     </div>
 

@@ -33,6 +33,10 @@ class BreakingEventsGrid extends Component
             ->where('active', true)
             ->where('closed', false)
             ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
+            ->where(function ($q) {
                 $q->where('featured', true)
                     ->orWhere('new', true)
                     ->orWhere('created_at', '>=', now()->subDays(7)); // Recent events

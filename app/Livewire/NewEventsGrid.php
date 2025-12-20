@@ -44,6 +44,12 @@ class NewEventsGrid extends Component
             ->where('active', true)
             ->where('closed', false);
 
+        // Hide events where end_date has passed
+        $query->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+        });
+
         // Filter by tag if selected
         if (!empty($this->selectedTag)) {
             $query->whereHas('tags', function ($q) {

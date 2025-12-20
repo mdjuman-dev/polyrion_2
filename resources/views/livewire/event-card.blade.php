@@ -13,7 +13,8 @@
             <div class="market-card-header">
                 <div class="market-profile-img">
                     <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}"
-                        alt="{{ $event->title }}">
+                        alt="{{ $event->title }}"
+                        onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
                 </div>
                 <a href="{{ route('market.details', $event->slug) }}"
                     class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>

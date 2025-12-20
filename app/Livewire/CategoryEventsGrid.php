@@ -39,6 +39,12 @@ class CategoryEventsGrid extends Component
             ->where('active', true)
             ->where('closed', false);
 
+        // Hide events where end_date has passed
+        $query->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+        });
+
         // Filter by category
         if ($this->category && $this->category !== 'all') {
             // Convert to proper case (first letter uppercase)

@@ -132,6 +132,10 @@ class MobileSearch extends Component
             }])
                 ->where('active', true)
                 ->where('closed', false)
+                ->where(function ($q) {
+                    $q->whereNull('end_date')
+                      ->orWhere('end_date', '>', now());
+                })
                 ->whereHas('markets', function ($q) {
                     // Only events with at least one active market
                     $q->where('active', true)

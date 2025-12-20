@@ -120,6 +120,61 @@ class Market extends Model
             return strtoupper($this->outcome_result);
         }
 
+        // Last resort: Try to determine from lastTradePrice and outcomePrices (Polymarket method)
+        if ($this->last_trade_price !== null && $this->outcome_prices && $this->outcomes) {
+            $outcome = $this->determineOutcomeFromLastTradePrice();
+            if ($outcome) {
+                return $outcome;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine outcome from lastTradePrice using Polymarket logic
+     * If lastTradePrice matches a value in outcomePrices, the outcome at that index wins
+     */
+    public function determineOutcomeFromLastTradePrice()
+    {
+        if ($this->last_trade_price === null || !$this->outcome_prices || !$this->outcomes) {
+            return null;
+        }
+
+        $outcomePrices = is_string($this->outcome_prices) ? json_decode($this->outcome_prices, true) : $this->outcome_prices;
+        $outcomes = is_string($this->outcomes) ? json_decode($this->outcomes, true) : $this->outcomes;
+
+        if (!is_array($outcomePrices) || !is_array($outcomes) || count($outcomePrices) === 0 || count($outcomes) === 0) {
+            return null;
+        }
+
+        $lastTradePrice = floatval($this->last_trade_price);
+
+        // Find which index in outcomePrices matches lastTradePrice
+        $winningIndex = null;
+        foreach ($outcomePrices as $index => $price) {
+            if (abs(floatval($price) - $lastTradePrice) < 0.0001) {
+                $winningIndex = $index;
+                break;
+            }
+        }
+
+        if ($winningIndex !== null && isset($outcomes[$winningIndex])) {
+            $winningOutcome = $outcomes[$winningIndex];
+            $winningOutcomeUpper = strtoupper(trim($winningOutcome));
+            
+            if ($winningOutcomeUpper === 'YES' || $winningOutcomeUpper === 'NO') {
+                return $winningOutcomeUpper;
+            } else {
+                // For binary markets, usually first is YES, second is NO
+                if ($winningIndex === 0 && count($outcomes) === 2) {
+                    return 'YES';
+                } elseif ($winningIndex === 1 && count($outcomes) === 2) {
+                    return 'NO';
+                }
+            }
+        }
+
         return null;
     }
 
