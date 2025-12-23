@@ -18,8 +18,8 @@ class GlobalSetting extends Model
     public static function getValue($key, $default = null)
     {
         try {
-            $setting = self::where('key', $key)->first();
-            return $setting ? $setting->value : $default;
+        $setting = self::where('key', $key)->first();
+        return $setting ? $setting->value : $default;
         } catch (\Illuminate\Database\QueryException $e) {
             // Log the error but don't throw - return default value
             \Illuminate\Support\Facades\Log::warning('Database connection failed in GlobalSetting::getValue', [
@@ -55,7 +55,7 @@ class GlobalSetting extends Model
     public static function getAllSettings()
     {
         try {
-            return self::pluck('value', 'key')->toArray();
+        return self::pluck('value', 'key')->toArray();
         } catch (\Illuminate\Database\QueryException $e) {
             \Illuminate\Support\Facades\Log::warning('Database connection failed in GlobalSetting::getAllSettings', [
                 'error' => $e->getMessage()

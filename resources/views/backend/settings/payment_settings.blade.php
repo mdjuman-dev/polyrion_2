@@ -17,30 +17,6 @@
                     </div>
                 </div>
 
-                @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="fa fa-check-circle me-2"></i> {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fa fa-exclamation-circle me-2"></i> {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                @if ($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
 
                 <div class="row">
                     <div class="col-12">
@@ -73,7 +49,7 @@
                                                             <span>MetaMask</span>
                                                         </a>
                                                     </li>
-                                                    <li class="nav-item">
+                                                    <!-- <li class="nav-item">
                                                         <a class="nav-link" data-bs-toggle="pill" href="#trustwallet"
                                                             role="tab">
                                                             <div class="nav-icon">
@@ -81,8 +57,8 @@
                                                             </div>
                                                             <span>Trust Wallet</span>
                                                         </a>
-                                                    </li>
-                                                    <li class="nav-item">
+                                                    </li> -->
+                                                    <!-- <li class="nav-item">
                                                         <a class="nav-link" data-bs-toggle="pill" href="#crypto-link"
                                                             role="tab">
                                                             <div class="nav-icon">
@@ -90,7 +66,7 @@
                                                             </div>
                                                             <span>Crypto Link (USDT/USDC)</span>
                                                         </a>
-                                                    </li>
+                                                    </li> -->
                                                 </ul>
                                             </div>
                                         </div>
