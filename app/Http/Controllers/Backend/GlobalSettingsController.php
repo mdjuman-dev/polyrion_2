@@ -337,13 +337,6 @@ class GlobalSettingsController extends Controller
             try {
                 $favicon = $request->file('favicon');
                 
-                \Log::info('Favicon file received', [
-                    'name' => $favicon->getClientOriginalName(),
-                    'size' => $favicon->getSize(),
-                    'mime' => $favicon->getMimeType(),
-                    'isValid' => $favicon->isValid(),
-                    'error' => $favicon->getError()
-                ]);
                 
                 if (!$favicon->isValid()) {
                     \Log::error('Invalid favicon file uploaded', [

@@ -180,12 +180,12 @@ class HomeController extends Controller
     function marketDetails($slug)
     {
         try {
-            // Only load first 8 markets to improve performance (we only show 4 in chart)
-            $event = Event::where('slug', $slug)
-                ->with(['markets' => function($query) {
-                    $query->limit(8)->orderBy('id');
-                }])
-                ->firstOrFail();
+        // Only load first 8 markets to improve performance (we only show 4 in chart)
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(8)->orderBy('id');
+            }])
+            ->firstOrFail();
 
         // Color palette for markets (Polymarket style) - fallback if series_color not set
         $marketColors = [
@@ -337,8 +337,8 @@ class HomeController extends Controller
     function eventsByTag($slug)
     {
         try {
-            $tag = Tag::where('slug', $slug)->firstOrFail();
-            return view('frontend.events_by_tag', compact('tag'));
+        $tag = Tag::where('slug', $slug)->firstOrFail();
+        return view('frontend.events_by_tag', compact('tag'));
         } catch (\Illuminate\Database\QueryException $e) {
             \Log::error('Database connection failed in eventsByTag: ' . $e->getMessage());
             return redirect()->route('home')
@@ -373,12 +373,12 @@ class HomeController extends Controller
     function getMarketPriceData($slug)
     {
         try {
-            // Only load first market to improve performance
-            $event = Event::where('slug', $slug)
-                ->with(['markets' => function($query) {
-                    $query->limit(1)->orderBy('id');
-                }])
-                ->firstOrFail();
+        // Only load first market to improve performance
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(1)->orderBy('id');
+            }])
+            ->firstOrFail();
         
         $marketData = [];
         if ($event->markets && $event->markets->count() > 0) {
@@ -540,12 +540,12 @@ class HomeController extends Controller
     function getMarketHistoryData($slug)
     {
         try {
-            // Only load first 8 markets to improve performance (we only show 4 in chart)
-            $event = Event::where('slug', $slug)
-                ->with(['markets' => function($query) {
-                    $query->limit(8)->orderBy('id');
-                }])
-                ->firstOrFail();
+        // Only load first 8 markets to improve performance (we only show 4 in chart)
+        $event = Event::where('slug', $slug)
+            ->with(['markets' => function($query) {
+                $query->limit(8)->orderBy('id');
+            }])
+            ->firstOrFail();
 
         $marketsData = [];
         $now = now();
