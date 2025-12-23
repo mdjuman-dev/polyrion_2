@@ -7,278 +7,280 @@ use Livewire\Component;
 
 class MarketsGrid extends Component
 {
-    public $search = '';
-    public $perPage = 20;
-    public $selectedTag = null;
-    public $sortBy = '24hr-volume';
-    public $frequency = 'all';
-    public $status = 'active';
-    public $hideSports = false;
-    public $hideCrypto = false;
-    public $hideEarnings = false;
+   public $search = '';
+   public $perPage = 20;
+   public $selectedTag = null;
+   public $sortBy = '24hr-volume';
+   public $frequency = 'all';
+   public $status = 'active';
+   public $hideSports = false;
+   public $hideCrypto = false;
+   public $hideEarnings = false;
 
-    protected $listeners = [
-        'tag-selected' => 'filterByTag',
-        'filter-selected' => 'handleBrowseFilter',
-        'search-query-updated' => 'updateSearch'
-    ];
+   protected $listeners = [
+      'tag-selected' => 'filterByTag',
+      'filter-selected' => 'handleBrowseFilter',
+      'search-query-updated' => 'updateSearch'
+   ];
 
-    // Enable Livewire to track search property changes
-    protected $queryString = [
-        'search' => ['except' => ''],
-        'sortBy' => ['except' => '24hr-volume'],
-        'frequency' => ['except' => 'all'],
-        'status' => ['except' => 'active'],
-    ];
+   // Enable Livewire to track search property changes
+   protected $queryString = [
+      'search' => ['except' => ''],
+      'sortBy' => ['except' => '24hr-volume'],
+      'frequency' => ['except' => 'all'],
+      'status' => ['except' => 'active'],
+   ];
 
-    public function mount()
-    {
-        // Listen for tag selection from TagFilters component
-        // Check if filter is passed via query parameter
-        if (request()->has('filter')) {
-            $this->handleBrowseFilter(request()->get('filter'));
-        }
-        
-        // Check if search query is passed via query parameter
-        if (request()->has('search')) {
-            $this->search = request()->get('search');
-        }
-    }
-    
-    public function updateSearch($query = null)
-    {
-        // Handle both event dispatch and direct call
-        if ($query !== null) {
-        $this->search = $query;
-        }
-        $this->perPage = 20; // Reset pagination when search changes
-    }
+   public function mount()
+   {
+      // Listen for tag selection from TagFilters component
+      // Check if filter is passed via query parameter
+      if (request()->has('filter')) {
+         $this->handleBrowseFilter(request()->get('filter'));
+      }
 
-    // This method is called when search property is updated via wire:model
-    public function updatedSearch()
-    {
-        $this->perPage = 20; // Reset pagination when search changes
-    }
+      // Check if search query is passed via query parameter
+      if (request()->has('search')) {
+         $this->search = request()->get('search');
+      }
+   }
 
-    public function filterByTag($tagSlug)
-    {
-        $this->selectedTag = $tagSlug;
-        $this->perPage = 20; // Reset pagination when filter changes
-    }
+   public function updateSearch($query = null)
+   {
+      // Handle both event dispatch and direct call
+      if ($query !== null) {
+         $this->search = $query;
+      }
+      $this->perPage = 20; // Reset pagination when search changes
+   }
 
-    public function handleBrowseFilter($filter)
-    {
-        $this->perPage = 20; // Reset pagination when filter changes
-        
-        // Map filter to sortBy
-        switch ($filter) {
-            case 'new':
-                $this->sortBy = 'newest';
-                break;
-            case 'trending':
-                $this->sortBy = '24hr-volume';
-                break;
-            case 'popular':
-                $this->sortBy = 'total-volume';
-                break;
-            case 'liquid':
-                $this->sortBy = 'liquidity';
-                break;
-            case 'ending-soon':
-                $this->sortBy = 'ending-soon';
-                break;
-            case 'competitive':
-                $this->sortBy = 'competitive';
-                break;
-        }
-    }
+   // This method is called when search property is updated via wire:model
+   public function updatedSearch()
+   {
+      $this->perPage = 20; // Reset pagination when search changes
+   }
 
-    public function setSortBy($sort)
-    {
-        $this->sortBy = $sort;
-        $this->perPage = 20;
-    }
+   public function filterByTag($tagSlug)
+   {
+      $this->selectedTag = $tagSlug;
+      $this->perPage = 20; // Reset pagination when filter changes
+   }
 
-    public function setFrequency($frequency)
-    {
-        $this->frequency = $frequency;
-        $this->perPage = 20;
-    }
+   public function handleBrowseFilter($filter)
+   {
+      $this->perPage = 20; // Reset pagination when filter changes
 
-    public function setStatus($status)
-    {
-        $this->status = $status;
-        $this->perPage = 20;
-    }
+      // Map filter to sortBy
+      switch ($filter) {
+         case 'new':
+            $this->sortBy = 'newest';
+            break;
+         case 'trending':
+            $this->sortBy = '24hr-volume';
+            break;
+         case 'popular':
+            $this->sortBy = 'total-volume';
+            break;
+         case 'liquid':
+            $this->sortBy = 'liquidity';
+            break;
+         case 'ending-soon':
+            $this->sortBy = 'ending-soon';
+            break;
+         case 'competitive':
+            $this->sortBy = 'competitive';
+            break;
+      }
+   }
 
-    public function loadMore()
-    {
-        if ($this->perPage < 1000) {
-            $this->perPage += 20;
-        }
-    }
+   public function setSortBy($sort)
+   {
+      $this->sortBy = $sort;
+      $this->perPage = 20;
+   }
 
-    public function updatingSearch()
-    {
-        $this->perPage = 20;
-    }
+   public function setFrequency($frequency)
+   {
+      $this->frequency = $frequency;
+      $this->perPage = 20;
+   }
 
-    public function refreshEvents()
-    {
-    }
+   public function setStatus($status)
+   {
+      $this->status = $status;
+      $this->perPage = 20;
+   }
 
-    public function render()
-    {
-        try {
-        // Frontend always shows only active events
-        // Eager load only active markets
-        $query = Event::with(['markets' => function ($q) {
-            // Only active markets: active=true AND closed=false
-            $q->where('active', true)
-              ->where('closed', false)
-              ->where(function ($query) {
+   public function loadMore()
+   {
+      if ($this->perPage < 1000) {
+         $this->perPage += 20;
+      }
+   }
+
+   public function updatingSearch()
+   {
+      $this->perPage = 20;
+   }
+
+   public function refreshEvents()
+   {
+   }
+
+   public function render()
+   {
+      try {
+         // Frontend always shows only active events
+         // Eager load only active markets
+         $query = Event::with([
+            'markets' => function ($q) {
+               // Only active markets: active=true AND closed=false
+               $q->where('active', true)
+                  ->where('closed', false)
+                  ->where(function ($query) {
                   $query->whereNull('close_time')
-                        ->orWhere('close_time', '>', now());
-              });
-        }]);
+                     ->orWhere('close_time', '>', now());
+               });
+            }
+         ]);
 
-        // Filter by tag if selected
-        if (!empty($this->selectedTag)) {
+         // Filter by tag if selected
+         if (!empty($this->selectedTag)) {
             $query->whereHas('tags', function ($q) {
-                $q->where('tags.slug', $this->selectedTag);
+               $q->where('tags.slug', $this->selectedTag);
             });
-        }
+         }
 
-        // Frontend shows active events by default
-        // But also shows ended events if status filter is set to 'closed' or 'resolved'
-        if ($this->status === 'closed' || $this->status === 'resolved') {
+         // Frontend shows active events by default
+         // But also shows ended events if status filter is set to 'closed' or 'resolved'
+         if ($this->status === 'closed' || $this->status === 'resolved') {
             // Show closed/resolved events
             $query->where(function ($q) {
-                $q->where('closed', true)
+               $q->where('closed', true)
                   ->orWhere(function ($subQ) {
-                      $subQ->whereNotNull('end_date')
-                           ->where('end_date', '<=', now());
+                     $subQ->whereNotNull('end_date')
+                        ->where('end_date', '<=', now());
                   });
             });
-        } else {
+         } else {
             // Show active events
             $query->where('active', true)->where('closed', false);
 
             // Hide events where end_date has passed
             $query->where(function ($q) {
-                $q->whereNull('end_date')
+               $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
             });
-        }
+         }
 
-        // Filter by frequency (based on end_date)
-        if ($this->frequency === 'daily') {
+         // Filter by frequency (based on end_date)
+         if ($this->frequency === 'daily') {
             $query->where('end_date', '>=', now())
-                ->where('end_date', '<=', now()->addDay());
-        } elseif ($this->frequency === 'weekly') {
+               ->where('end_date', '<=', now()->addDay());
+         } elseif ($this->frequency === 'weekly') {
             $query->where('end_date', '>=', now())
-                ->where('end_date', '<=', now()->addWeek());
-        } elseif ($this->frequency === 'monthly') {
+               ->where('end_date', '<=', now()->addWeek());
+         } elseif ($this->frequency === 'monthly') {
             $query->where('end_date', '>=', now())
-                ->where('end_date', '<=', now()->addMonth());
-        }
+               ->where('end_date', '<=', now()->addMonth());
+         }
 
-        // Hide categories (based on tags)
-        if ($this->hideSports) {
+         // Hide categories (based on tags)
+         if ($this->hideSports) {
             $query->whereDoesntHave('tags', function ($q) {
-                $q->where('slug', 'like', '%sport%');
+               $q->where('slug', 'like', '%sport%');
             });
-        }
-        if ($this->hideCrypto) {
+         }
+         if ($this->hideCrypto) {
             $query->whereDoesntHave('tags', function ($q) {
-                $q->whereIn('slug', ['crypto', 'bitcoin', 'crypto-prices']);
+               $q->whereIn('slug', ['crypto', 'bitcoin', 'crypto-prices']);
             });
-        }
-        if ($this->hideEarnings) {
+         }
+         if ($this->hideEarnings) {
             $query->whereDoesntHave('tags', function ($q) {
-                $q->where('slug', 'like', '%earning%');
+               $q->where('slug', 'like', '%earning%');
             });
-        }
+         }
 
-        if (!empty($this->search)) {
+         if (!empty($this->search)) {
             $query->where(function ($q) {
-                $q->where('title', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('markets', function ($marketQuery) {
-                        // Only search in active markets
-                        $marketQuery->where('active', true)
-                          ->where('closed', false)
-                          ->where(function ($query) {
-                              $query->whereNull('close_time')
-                                    ->orWhere('close_time', '>', now());
-                          })
-                          ->where(function ($mq) {
-                              $mq->where('groupItem_title', 'like', '%' . $this->search . '%')
-                                ->orWhere('question', 'like', '%' . $this->search . '%');
-                          });
-                    });
+               $q->where('title', 'like', '%' . $this->search . '%')
+                  ->orWhereHas('markets', function ($marketQuery) {
+                     // Only search in active markets
+                     $marketQuery->where('active', true)
+                        ->where('closed', false)
+                        ->where(function ($query) {
+                        $query->whereNull('close_time')
+                           ->orWhere('close_time', '>', now());
+                     })
+                        ->where(function ($mq) {
+                        $mq->where('groupItem_title', 'like', '%' . $this->search . '%')
+                           ->orWhere('question', 'like', '%' . $this->search . '%');
+                     });
+                  });
             });
-        }
+         }
 
-        // Sort by
-        switch ($this->sortBy) {
+         // Sort by
+         switch ($this->sortBy) {
             case '24hr-volume':
-                $query->orderBy('volume_24hr', 'desc');
-                break;
+               $query->orderBy('volume_24hr', 'desc');
+               break;
             case 'total-volume':
-                $query->orderBy('volume', 'desc');
-                break;
+               $query->orderBy('volume', 'desc');
+               break;
             case 'liquidity':
-                $query->orderBy('liquidity', 'desc');
-                break;
+               $query->orderBy('liquidity', 'desc');
+               break;
             case 'newest':
-                $query->orderBy('created_at', 'desc');
-                break;
+               $query->orderBy('created_at', 'desc');
+               break;
             case 'ending-soon':
-                $query->orderBy('end_date', 'asc');
-                break;
+               $query->orderBy('end_date', 'asc');
+               break;
             case 'competitive':
-                // Assuming competitive is based on volume or some other metric
-                $query->orderBy('volume', 'desc');
-                break;
+               // Assuming competitive is based on volume or some other metric
+               $query->orderBy('volume', 'desc');
+               break;
             default:
-                $query->orderBy('volume_24hr', 'desc');
-        }
+               $query->orderBy('volume_24hr', 'desc');
+         }
 
-        // Only show events that have at least one active market
-        $query->whereHas('markets', function ($q) {
+         // Only show events that have at least one active market
+         $query->whereHas('markets', function ($q) {
             // Only active markets: active=true AND closed=false
             $q->where('active', true)
-              ->where('closed', false)
-              ->where(function ($query) {
+               ->where('closed', false)
+               ->where(function ($query) {
                   $query->whereNull('close_time')
-                        ->orWhere('close_time', '>', now());
-              });
-        });
+                     ->orWhere('close_time', '>', now());
+               });
+         });
 
-        // Use clone for count to avoid affecting the main query
-        $totalCount = (clone $query)->count();
+         // Use clone for count to avoid affecting the main query
+         $totalCount = (clone $query)->count();
 
-        $events = $query->take($this->perPage)
+         $events = $query->take($this->perPage)
             ->get();
 
-        $hasMore = $totalCount > $this->perPage;
+         $hasMore = $totalCount > $this->perPage;
 
-        return view('livewire.markets-grid', [
+         return view('livewire.markets-grid', [
             'events' => $events,
             'hasMore' => $hasMore
-        ]);
-        } catch (\Illuminate\Database\QueryException $e) {
-            \Log::error('Database connection failed in MarketsGrid: ' . $e->getMessage());
-            return view('livewire.markets-grid', [
-                'events' => collect([]),
-                'hasMore' => false
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in MarketsGrid: ' . $e->getMessage());
-            return view('livewire.markets-grid', [
-                'events' => collect([]),
-                'hasMore' => false
-            ]);
-        }
-    }
+         ]);
+      } catch (\Illuminate\Database\QueryException $e) {
+         \Log::error('Database connection failed in MarketsGrid: ' . $e->getMessage());
+         return view('livewire.markets-grid', [
+            'events' => collect([]),
+            'hasMore' => false
+         ]);
+      } catch (\Exception $e) {
+         \Log::error('Error in MarketsGrid: ' . $e->getMessage());
+         return view('livewire.markets-grid', [
+            'events' => collect([]),
+            'hasMore' => false
+         ]);
+      }
+   }
 }

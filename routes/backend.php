@@ -98,8 +98,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
       Route::controller(\App\Http\Controllers\Backend\DepositController::class)->prefix('deposits')->name('deposits.')->middleware('permission:view deposits,admin')->group(function () {
          Route::get('/', 'index')->name('index');
          Route::get('/{id}', 'show')->name('show');
-         Route::post('/{id}/approve', 'approve')->middleware('permission:approve deposits,admin')->name('approve');
-         Route::post('/{id}/reject', 'reject')->middleware('permission:reject deposits,admin')->name('reject');
+         Route::get('/{id}/approve', 'approve')->middleware('permission:approve deposits,admin')->name('approve');
+         Route::get('/{id}/reject', 'reject')->middleware('permission:reject deposits,admin')->name('reject');
       });
 
       // Withdrawal Management Routes
