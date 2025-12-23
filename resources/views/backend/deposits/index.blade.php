@@ -6,23 +6,6 @@
             <section class="content">
                 <div class="row">
                     <div class="col-12">
-                        <!-- Success/Error Messages -->
-                        @if (session('success'))
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <strong>Success!</strong> {{ session('success') }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                        @endif
-                        @if (session('error'))
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <strong>Error!</strong> {{ session('error') }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                        @endif
                         <!-- Header -->
                         <div class="box mb-3">
                             <div class="box-body">
@@ -236,8 +219,7 @@
                                                                 </form>
                                                                 <form
                                                                     action="{{ route('admin.deposits.reject', $deposit->id) }}"
-                                                                    method="POST" style="display: inline-block;"
-                                                                    onsubmit="var reason = prompt('Please provide a rejection reason:'); if(!reason || !reason.trim()) { alert('Rejection reason is required'); return false; } document.getElementById('reject_reason_{{ $deposit->id }}').value = reason; return true;">
+                                                                    method="POST" style="display: inline-block;">
                                                                     @csrf
                                                                     <input type="hidden" name="admin_note"
                                                                         id="reject_reason_{{ $deposit->id }}"

@@ -118,7 +118,7 @@ class GoogleController extends Controller
                try {
                   $user = User::create([
                      'name' => $name,
-                     'username' => $name . '-' . Str::number(10),
+                     'username' => Str::slug($name) . '_' . Str::random(12),
                      'email' => $email,
                      'google_id' => $googleId,
                      'password' => bcrypt(Str::random(16)),
