@@ -207,7 +207,7 @@
                                                                 <i class="fa fa-eye"></i>
                                                             </a>
                                                             @if ($deposit->status == 'pending')
-                                                                <form
+                                                                <!-- <form
                                                                     action="{{ route('admin.deposits.approve', $deposit->id) }}"
                                                                     method="POST" style="display: inline-block;"
                                                                     onsubmit="return confirm('Are you sure you want to approve this deposit? This will add ${{ number_format($deposit->amount, 2) }} to user wallet.');">
@@ -228,7 +228,7 @@
                                                                         title="Reject">
                                                                         <i class="fa fa-times"></i>
                                                                     </button>
-                                                                </form>
+                                                                </form> -->
                                                             @elseif ($deposit->status == 'completed')
                                                                 <span class="badge bg-success">
                                                                     <i class="fa fa-check-circle"></i> Approved

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('merchant_trade_no')->unique();
-            $table->string('prepay_id')->nullable();
-            $table->string('transaction_id')->nullable();
+            $table->string('prepay_id')->nullable()->unique();
+            $table->string('transaction_id')->nullable()->unique();
             $table->decimal('amount', 12, 2);
             $table->string('currency', 10)->default('USDT');
             $table->enum('status', ['pending', 'completed', 'failed', 'expired'])->default('pending');

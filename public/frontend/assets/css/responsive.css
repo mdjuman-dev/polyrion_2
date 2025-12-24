@@ -1462,7 +1462,7 @@
     }
 
     .content-tabs {
-        gap: 12px;
+        gap: 10px;
         margin-bottom: 16px;
     }
 
@@ -1566,7 +1566,7 @@
     }
 
     .content-tab {
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
     }
 
     .subtab-btn {
