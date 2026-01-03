@@ -40,6 +40,10 @@ Route::controller(ProfileController::class)->prefix('profile')->name('profile.')
     Route::put('/update', 'update')->name('update');
 });
 
+// Password update routes
+Route::post('/password/send-otp', [ProfileController::class, 'sendPasswordChangeOtp'])->middleware(['auth'])->name('password.send.otp');
+Route::post('/password/update', [ProfileController::class, 'updatePassword'])->middleware(['auth'])->name('user.password.update');
+
 // Wallet routes
 Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->middleware(['auth'])->group(function () {
     Route::post('/deposit', 'deposit')->name('deposit');
