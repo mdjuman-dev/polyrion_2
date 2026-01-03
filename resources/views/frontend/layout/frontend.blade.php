@@ -108,14 +108,14 @@
                 <div class="header-content d-lg-flex d-none">
                     <a href="{{ route('home') }}" class="logo">
                         @php
-                            $logoExists = false;
-                            if ($logo) {
-                                if (str_starts_with($logo, 'http')) {
-                                    $logoExists = true;
-                                } else {
-                                    $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
-                                }
-                            }
+$logoExists = false;
+if ($logo) {
+   if (str_starts_with($logo, 'http')) {
+      $logoExists = true;
+   } else {
+      $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+   }
+}
                         @endphp
                         @if ($logo && $logoExists)
                             <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
@@ -132,9 +132,9 @@
                     <div class="header-actions d-flex align-items-center justify-content-end">
                         @if (auth()->check())
                             @php
-                                $wallet = $authUser?->wallet;
-                                $portfolio = $wallet->portfolio ?? 0;
-                                $cash = $wallet->balance ?? 0;
+   $wallet = $authUser?->wallet;
+   $portfolio = $wallet->portfolio ?? 0;
+   $cash = $wallet->balance ?? 0;
                             @endphp
 
                             <div class="wallet-summary">
@@ -192,6 +192,15 @@
                                         </div>
                                         <div class="header-menu-divider">
                                         </div>
+                                       <a href="{{ route('profile.index') }}">
+                                          <div class="header-menu-item d-flex align-items-center justify-content-between w-100 ">
+                                             <span class="header-menu-icon">
+                                            <i class="fas fa-user"></i>
+
+                                             </span>
+                                             <span class="header-menu-label">Profile</span>
+                                          </div>
+                                       </a>
                                     @endif
 
                                     <a href="#">
@@ -257,16 +266,16 @@
                         <div class="col-5 text-start">
                             <a href="{{ route('home') }}" class="logo text-start">
                                 @php
-                                    $logoExistsMobile = false;
-                                    if ($logo) {
-                                        if (str_starts_with($logo, 'http')) {
-                                            $logoExistsMobile = true;
-                                        } else {
-                                            $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
-                                                'public',
-                                            )->exists($logo);
-                                        }
-                                    }
+$logoExistsMobile = false;
+if ($logo) {
+   if (str_starts_with($logo, 'http')) {
+      $logoExistsMobile = true;
+   } else {
+      $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
+         'public',
+      )->exists($logo);
+   }
+}
                                 @endphp
                                 @if ($logo && $logoExistsMobile)
                                     <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
@@ -417,14 +426,14 @@
     <div class="more-menu-sidebar" id="moreMenuSidebar">
         <div class="more-menu-header">
             @php
-                $logoExistsSidebar = false;
-                if ($logo) {
-                    if (str_starts_with($logo, 'http')) {
-                        $logoExistsSidebar = true;
-                    } else {
-                        $logoExistsSidebar = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
-                    }
-                }
+$logoExistsSidebar = false;
+if ($logo) {
+   if (str_starts_with($logo, 'http')) {
+      $logoExistsSidebar = true;
+   } else {
+      $logoExistsSidebar = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+   }
+}
             @endphp
             @if ($logo && $logoExistsSidebar)
                 <a href="{{ route('home') }}" class="logo-link">
@@ -1114,8 +1123,8 @@
                         limitPrice = 0,
                         @auth
                     @php
-                        $userWallet = $authUser?->wallet;
-                        $userBalance = $userWallet ? $userWallet->balance : 0;
+   $userWallet = $authUser?->wallet;
+   $userBalance = $userWallet ? $userWallet->balance : 0;
                     @endphp
                     userBalance = {{ $userBalance }};
                 @else
