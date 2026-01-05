@@ -47,7 +47,7 @@
                                 <i class="fas fa-arrow-down"></i>
                                 <span>Deposit</span>
                             </button>
-                            <button onclick="openWithdrawalModal()"
+                            <button onclick="handleWithdrawalClick()"
                                 style="flex: 1; background: rgba(255, 255, 255, 0.05); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
                                 onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'"
                                 onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
@@ -125,7 +125,7 @@
                             <button type="button" class="content-tab" data-tab="activity">Activity</button>
                             <button type="button" class="content-tab" data-tab="deposits">Deposits</button>
                             <button type="button" class="content-tab" data-tab="withdrawals">Withdrawal</button>
-                            <button type="button" class="content-tab" data-tab="settings">Settings</button>
+                            <button type="button" class="content-tab" data-tab="settings">Profile</button>
                         </div>
 
                         <!-- Positions Tab Content -->
@@ -1050,21 +1050,31 @@
                                     <input type="text" class="search-input" id="withdrawalSearchInput"
                                         placeholder="Search by amount or transaction ID">
                                 </div>
-                                <div class="filter-dropdown-wrapper">
-                                    <button type="button" class="filter-dropdown-btn" id="withdrawalStatusFilterBtn">
-                                        <span>All Status</span>
-                                        <i class="fas fa-chevron-down"></i>
+                                <div class="wallet-list-wrapper d-flex align-items-center gap-2">
+                                    <button type="button" onclick="openWalletListModal()"
+                                        style="padding: 10px 16px; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; margin-right: 12px;"
+                                        onmouseover="this.style.background='var(--hover)'; this.style.borderColor='var(--accent)'"
+                                        onmouseout="this.style.background='var(--secondary)'; this.style.borderColor='var(--border)'">
+                                        <i class="fas fa-wallet"></i> Wallets
                                     </button>
-                                    <div class="filter-dropdown-menu" id="withdrawalStatusFilterMenu">
-                                        <a href="#" class="filter-dropdown-item active" data-status="all">All
-                                            Status</a>
-                                        <a href="#" class="filter-dropdown-item" data-status="pending">Pending</a>
-                                        <a href="#" class="filter-dropdown-item"
-                                            data-status="approved">Approved</a>
-                                        <a href="#" class="filter-dropdown-item"
-                                            data-status="completed">Completed</a>
-                                        <a href="#" class="filter-dropdown-item"
-                                            data-status="rejected">Rejected</a>
+                                    <div class="filter-dropdown-wrapper">
+                                        <button type="button" class="filter-dropdown-btn"
+                                            id="withdrawalStatusFilterBtn">
+                                            <span>All Status</span>
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                        <div class="filter-dropdown-menu" id="withdrawalStatusFilterMenu">
+                                            <a href="#" class="filter-dropdown-item active" data-status="all">All
+                                                Status</a>
+                                            <a href="#" class="filter-dropdown-item"
+                                                data-status="pending">Pending</a>
+                                            <a href="#" class="filter-dropdown-item"
+                                                data-status="approved">Approved</a>
+                                            <a href="#" class="filter-dropdown-item"
+                                                data-status="completed">Completed</a>
+                                            <a href="#" class="filter-dropdown-item"
+                                                data-status="rejected">Rejected</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1145,6 +1155,20 @@
 
                         <!-- Settings Tab Content -->
                         <div class="tab-content-wrapper d-none" id="settings-tab">
+                            @if (!$hasWithdrawalPassword)
+                                <div
+                                    class="p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                                    <p class="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        <strong>Withdrawal password not set.</strong> Please set your withdrawal password
+                                        before making withdrawals.
+                                    </p>
+                                    <a href="{{ route('withdrawal-settings.edit') }}"
+                                        class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md font-semibold text-sm hover:bg-yellow-700 transition">
+                                        Set Withdrawal Password
+                                    </a>
+                                </div>
+                            @endif
                             <div class="settings-card"
                                 style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 2rem;">
                                 <h3 class="card-title"
@@ -1337,9 +1361,26 @@
     <!-- Withdrawal Modal Overlay -->
     <div class="withdrawal-modal-overlay" id="withdrawalModalOverlay"></div>
 
+    <!-- Password Set Modal -->
+    <div id="passwordSetModal" class="withdrawal-modal-popup">
+        @livewire('set-withdrawal-password-modal')
+    </div>
+
+    <!-- Add Wallet Modal -->
+    <div id="addWalletModal" class="withdrawal-modal-popup" style="z-index: 8001; max-width: 450px;">
+        @livewire('add-wallet-modal')
+    </div>
+
+    <!-- Wallet List Modal -->
+    <div id="walletListModal" class="withdrawal-modal-popup" style="max-width: 500px;">
+        @livewire('wallet-list-modal')
+    </div>
+
     <!-- Withdrawal Modal -->
     <div id="withdrawalModal" class="withdrawal-modal-popup">
-        @livewire('withdrawal-request')
+        @livewire('withdrawal-request', [
+            'has_withdrawal_password' => $hasWithdrawalPassword ?? false,
+        ])
     </div>
 
     <style>
@@ -1506,13 +1547,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 7000;
             display: none;
             opacity: 0;
-            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.3s ease;
         }
 
         .withdrawal-modal-overlay.active {
@@ -1520,37 +1560,31 @@
             opacity: 1;
         }
 
-        /* Withdrawal Modal Popup - Matching Withdrawal Request Design */
+        /* Withdrawal Modal Popup - Matching Deposit Design */
         .withdrawal-modal-popup {
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
+            transform: translate(-50%, -50%) scale(0.95);
             width: 90%;
-            max-width: 520px;
+            max-width: 500px;
             max-height: 90vh;
-            background: #2a2a2a;
-            border-radius: 12px;
-            border: 1px solid #ffb11a;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 177, 26, 0.3);
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             z-index: 7001;
             display: none;
             opacity: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             overflow: hidden;
-        }
-
-        /* Ensure Livewire component styles are applied */
-        .withdrawal-modal-popup .withdrawal-modal-header,
-        .withdrawal-modal-popup .withdrawal-modal-content {
-            background: transparent;
         }
 
         .withdrawal-modal-popup.active {
             display: block;
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
-            overflow-y: scroll;
+            overflow-y: auto;
         }
 
         /* Responsive */
@@ -1560,13 +1594,15 @@
                 max-width: none;
                 border-radius: 20px 20px 0 0;
                 top: auto;
+                left: 0;
+                right: 0;
                 bottom: 0;
-                transform: translate(-50%, 100%);
+                transform: translate(0, 100%);
                 max-height: 85vh;
             }
 
             .withdrawal-modal-popup.active {
-                transform: translate(-50%, 0);
+                transform: translate(0, 0) !important;
             }
         }
 
@@ -1706,7 +1742,7 @@
                         data: formData,
                         success: function(response) {
                             console.log('Password update success:', response);
-                            
+
                             if (!response || !response.success) {
                                 // If response doesn't have success flag, treat as error
                                 messageDiv.removeClass('alert-success').addClass('alert-error')
@@ -1716,11 +1752,12 @@
                                         'color': '#721c24',
                                         'border': '1px solid #f5c6cb'
                                     })
-                                    .text(response.message || 'Password update failed. Please try again.');
+                                    .text(response.message ||
+                                        'Password update failed. Please try again.');
                                 btn.prop('disabled', false).html(originalText);
                                 return;
                             }
-                            
+
                             btn.prop('disabled', false).html(originalText);
                             messageDiv.removeClass('alert-error').addClass('alert-success')
                                 .css({
@@ -2208,6 +2245,30 @@
                 updateProfitLoss('1D');
 
                 // Withdrawal Modal Functions (Matching Deposit Modal)
+                window.handleWithdrawalClick = function() {
+                    @if (!$hasWithdrawalPassword)
+                        openPasswordSetModal();
+                        return;
+                    @endif
+                    openWithdrawalModal();
+                };
+
+                window.openPasswordSetModal = function() {
+                    const $modal = $('#passwordSetModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.addClass('active');
+                    $overlay.addClass('active');
+                    $('body').css('overflow', 'hidden');
+                };
+
+                window.closePasswordSetModal = function() {
+                    const $modal = $('#passwordSetModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.removeClass('active');
+                    $overlay.removeClass('active');
+                    $('body').css('overflow', '');
+                };
+
                 window.openWithdrawalModal = function() {
                     const $modal = $('#withdrawalModal');
                     const $overlay = $('#withdrawalModalOverlay');
@@ -2224,10 +2285,49 @@
                     $('body').css('overflow', '');
                 };
 
+                window.openAddWalletModal = function() {
+                    const $modal = $('#addWalletModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.addClass('active');
+                    $overlay.css('z-index', '8000');
+                };
+
+                window.closeAddWalletModal = function() {
+                    const $modal = $('#addWalletModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.removeClass('active');
+                    $overlay.css('z-index', '7000');
+                };
+
+                window.openWalletListModal = function() {
+                    const $modal = $('#walletListModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.addClass('active');
+                    $overlay.addClass('active');
+                    $('body').css('overflow', 'hidden');
+                };
+
+                window.closeWalletListModal = function() {
+                    const $modal = $('#walletListModal');
+                    const $overlay = $('#withdrawalModalOverlay');
+                    $modal.removeClass('active');
+                    $overlay.removeClass('active');
+                    $('body').css('overflow', '');
+                };
+
                 // Close modal on overlay click
                 $('#withdrawalModalOverlay').on('click', function() {
-                    closeWithdrawalModal();
+                    if ($('#addWalletModal').hasClass('active')) {
+                        closeAddWalletModal();
+                    } else if ($('#walletListModal').hasClass('active')) {
+                        closeWalletListModal();
+                    } else if ($('#withdrawalModal').hasClass('active')) {
+                        closeWithdrawalModal();
+                    } else if ($('#passwordSetModal').hasClass('active')) {
+                        closePasswordSetModal();
+                    }
                 });
+
 
                 // Open modal if redirected from withdrawal page
                 @if (session('open_withdrawal_modal'))
@@ -2235,6 +2335,59 @@
                         openWithdrawalModal();
                     }, 500);
                 @endif
+
+                // Listen for password set event and wallet events
+                document.addEventListener('livewire:init', () => {
+                    Livewire.on('withdrawal-password-set', () => {
+                        closePasswordSetModal();
+                        setTimeout(() => {
+                            openWithdrawalModal();
+                        }, 300);
+                    });
+
+                    Livewire.on('wallet-added', () => {
+                        closeAddWalletModal();
+                    });
+
+                    Livewire.on('refresh-withdrawal-wallets', () => {
+                        const withdrawalComponent = Livewire.find(document.querySelector(
+                            '#withdrawalModal').getAttribute('wire:id'));
+                        if (withdrawalComponent) {
+                            withdrawalComponent.call('refreshWallets');
+                        }
+                    });
+
+                    Livewire.on('withdrawal-submitted', (event) => {
+                        const data = Array.isArray(event) ? event[0] : event;
+
+                        setTimeout(() => {
+                            if (typeof closeWithdrawalModal === 'function') {
+                                closeWithdrawalModal();
+                            }
+
+                            if (typeof showSuccess !== 'undefined') {
+                                showSuccess(data.message ||
+                                    'Withdrawal request submitted successfully.', 'Success');
+                            } else if (typeof toastr !== 'undefined') {
+                                toastr.success(data.message ||
+                                    'Withdrawal request submitted successfully.', 'Success');
+                            } else if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Request Submitted',
+                                    text: data.message ||
+                                        'Withdrawal request submitted successfully.',
+                                    confirmButtonColor: '#ffb11a',
+                                    confirmButtonText: 'OK',
+                                    allowOutsideClick: false
+                                });
+                            } else {
+                                alert(data.message ||
+                                    'Withdrawal request submitted successfully.');
+                            }
+                        }, 100);
+                    });
+                });
 
                 // Profile image preview
                 window.previewProfileImage = function(input) {

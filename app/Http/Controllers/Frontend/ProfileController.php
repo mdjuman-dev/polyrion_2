@@ -114,7 +114,11 @@ class ProfileController extends Controller
       }
       $allActivity = $allActivity->sortByDesc('date');
 
-      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData'));
+      $hasWithdrawalPassword = !empty($user->withdrawal_password);
+      $binanceWallet = $user->binance_wallet_address;
+      $metamaskWallet = $user->metamask_wallet_address;
+
+      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet'));
    }
 
    function settings()
