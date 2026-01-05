@@ -9,6 +9,7 @@ use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class WithdrawalController extends Controller
@@ -38,14 +39,31 @@ class WithdrawalController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'payment_method' => 'required|string|in:bank,crypto,paypal',
+            'payment_method' => 'required|string|in:crypto',
             'payment_details' => 'required|array',
+            'withdrawal_password' => 'required|string',
         ]);
 
         try {
             DB::beginTransaction();
 
             $user = Auth::user();
+            
+            // Check withdrawal password
+            if (!$user->withdrawal_password) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Withdrawal password not set. Please set your withdrawal password first.'
+                ], 400);
+            }
+
+            if (!Hash::check($request->withdrawal_password, $user->withdrawal_password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Incorrect withdrawal password.'
+                ], 400);
+            }
+
             $wallet = Wallet::lockForUpdate()
                 ->firstOrCreate(
                     ['user_id' => $user->id],

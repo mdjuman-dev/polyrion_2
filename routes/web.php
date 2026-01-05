@@ -5,18 +5,16 @@ use Laravel\Fortify\Features;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Backend\BinancePayController;
 use App\Http\Controllers\Backend\MetaMaskController;
+use App\Http\Controllers\Frontend\ProfileController;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
-
-Route::view('profile', 'dashboard')->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/profile', [ProfileController::class, 'profile'])->middleware(['auth', 'verified'])->name('profile');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
+    Volt::route('settings/withdrawal', 'settings.withdrawal-settings')->name('withdrawal-settings.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
     
     // Withdrawal request Livewire component (no route needed, used as component)

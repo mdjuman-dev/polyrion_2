@@ -44,6 +44,9 @@ class User extends Authenticatable
         'facebook_id',
         'password',
         'profile_image',
+        'binance_wallet_address',
+        'metamask_wallet_address',
+        'withdrawal_password',
     ];
 
     /**
@@ -53,6 +56,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'withdrawal_password',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
@@ -68,7 +72,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'withdrawal_password' => 'hashed',
         ];
+    }
+
+    protected static function booted()
+    {
+        static::updating(function ($user) {
+            if ($user->isDirty('withdrawal_password') && $user->getOriginal('withdrawal_password')) {
+                unset($user->withdrawal_password);
+            }
+        });
     }
 
     /**
@@ -100,6 +114,11 @@ class User extends Authenticatable
     public function withdrawals()
     {
         return $this->hasMany(Withdrawal::class);
+    }
+
+    public function userWallets()
+    {
+        return $this->hasMany(UserWallet::class);
     }
 
     public function savedEvents()
