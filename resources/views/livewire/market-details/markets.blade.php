@@ -194,9 +194,8 @@
 
          @foreach ($endedMarkets as $index => $market)
             @php
-               // Get final result from market
-               // Assuming market has 'winning_outcome' field: 'YES', 'NO', or null (unresolved)
-               $winningOutcome = $market->winning_outcome ?? null;
+               // Get final result from market - use getFinalOutcome() method
+               $winningOutcome = $market->getFinalOutcome(); // Returns 'YES', 'NO', or null
 
                // Get final prices at market close
                $prices = json_decode($market->outcome_prices, true) ?? [0.5, 0.5];
@@ -218,7 +217,7 @@
                      : $finalYesProb;
                }
 
-               // Determine result display
+               // Determine result display - show which outcome won
                if ($winningOutcome === 'YES') {
                   $resultText = 'YES Won';
                   $resultClass = 'result-yes';
@@ -267,11 +266,11 @@
                <div class="outcome-result">
                   <div class="result-badge {{ $resultClass }}">
                      @if ($winningOutcome === 'YES')
-                        <i class="fas fa-check-circle"></i> {{ $resultText }}
+                        <i class="fas fa-check-circle"></i> <span>YES Won</span>
                      @elseif ($winningOutcome === 'NO')
-                        <i class="fas fa-times-circle"></i> {{ $resultText }}
+                        <i class="fas fa-times-circle"></i> <span>NO Won</span>
                      @else
-                        <i class="fas fa-clock"></i> {{ $resultText }}
+                        <i class="fas fa-clock"></i> <span>Resolving...</span>
                      @endif
                   </div>
 
@@ -293,94 +292,147 @@
       </div>
    @endif
 
-   {{-- Additional CSS for Ended Markets (Minimal styling that matches existing design) --}}
+   {{-- Additional CSS for Ended Markets (Dark theme matching active markets) --}}
    <style>
       /* Ended Markets Section */
       .ended-markets-section {
          margin-top: 24px;
          padding-top: 24px;
-         border-top: 2px solid #e9ecef;
+         border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .ended-markets-header {
          padding: 12px 20px;
-         background: #f8f9fa;
+         background: rgba(255, 255, 255, 0.03);
          border-radius: 8px;
          margin-bottom: 16px;
+         border: 1px solid rgba(255, 255, 255, 0.05);
       }
 
       .ended-label {
          font-weight: 600;
          font-size: 13px;
-         color: #6c757d;
+         color: rgba(255, 255, 255, 0.7);
          letter-spacing: 0.5px;
+         text-transform: uppercase;
       }
 
-      /* Ended Market Row Styling */
+      /* Ended Market Row Styling - Match active market theme */
       .outcome-row.outcome-ended {
-         opacity: 0.7;
-         background: #f8f9fa;
+         background: rgba(255, 255, 255, 0.02);
+         border: 1px solid rgba(255, 255, 255, 0.08);
+         border-radius: 8px;
+         padding: 16px 20px;
+         margin-bottom: 12px;
+         transition: all 0.2s;
+      }
+
+      .outcome-row.outcome-ended:hover {
+         background: rgba(255, 255, 255, 0.04);
+         border-color: rgba(255, 255, 255, 0.12);
       }
 
       .outcome-icon-ended {
-         opacity: 0.6;
-         filter: grayscale(50%);
+         width: 40px;
+         height: 40px;
+         border-radius: 8px;
+         object-fit: cover;
+         opacity: 0.9;
       }
 
       .outcome-name-ended {
-         color: #6c757d;
+         color: rgba(255, 255, 255, 0.9);
+         font-weight: 500;
+         font-size: 15px;
+         margin-bottom: 4px;
+      }
+
+      .outcome-volume {
+         color: rgba(255, 255, 255, 0.6);
+         font-size: 13px;
       }
 
       .outcome-percent-ended {
-         color: #6c757d;
+         color: rgba(255, 255, 255, 0.9);
+         font-weight: 600;
+         font-size: 15px;
       }
 
-      /* Result Display */
+      /* Result Display - Match image design */
       .outcome-result {
          display: flex;
-         align-items: center;
-         gap: 12px;
+         flex-direction: column;
+         align-items: flex-start;
+         gap: 8px;
          margin-top: 12px;
+         padding-top: 12px;
+         border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .result-badge {
-         padding: 8px 16px;
-         border-radius: 8px;
+         padding: 6px 12px;
+         border-radius: 6px;
          font-weight: 600;
-         font-size: 14px;
-         display: flex;
+         font-size: 13px;
+         display: inline-flex;
          align-items: center;
          gap: 6px;
+         border-width: 1px;
+         border-style: solid;
       }
 
       .result-badge.result-yes {
-         background: rgba(16, 185, 129, 0.1);
+         background: rgba(16, 185, 129, 0.15);
          color: #10b981;
-         border: 2px solid #10b981;
+         border-color: #10b981;
       }
 
       .result-badge.result-no {
-         background: rgba(239, 68, 68, 0.1);
+         background: rgba(239, 68, 68, 0.15);
          color: #ef4444;
-         border: 2px solid #ef4444;
+         border-color: #ef4444;
       }
 
       .result-badge.result-pending {
-         background: rgba(251, 191, 36, 0.1);
+         background: rgba(245, 158, 11, 0.15);
          color: #f59e0b;
-         border: 2px solid #f59e0b;
+         border-color: #f59e0b;
+      }
+
+      .result-badge i {
+         font-size: 14px;
       }
 
       .final-probability {
-         font-size: 13px;
-         color: #6c757d;
+         font-size: 12px;
+         color: rgba(255, 255, 255, 0.5);
          font-weight: 500;
       }
 
       .no-markets-message {
          padding: 40px 20px;
          text-align: center;
-         color: #6c757d;
+         color: rgba(255, 255, 255, 0.6);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+         .outcome-row.outcome-ended {
+            padding: 12px 16px;
+         }
+
+         .outcome-name-ended {
+            font-size: 14px;
+         }
+
+         .outcome-percent-ended {
+            font-size: 14px;
+         }
+
+         .result-badge {
+            font-size: 12px;
+            padding: 5px 10px;
+         }
       }
    </style>
 
