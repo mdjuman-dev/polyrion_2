@@ -47,6 +47,15 @@ class User extends Authenticatable
         'binance_wallet_address',
         'metamask_wallet_address',
         'withdrawal_password',
+        'id_verification_type',
+        'id_license_number',
+        'id_passport_number',
+        'id_full_name',
+        'id_date_of_birth',
+        'id_front_photo',
+        'id_back_photo',
+        'id_biodata_photo',
+        'id_verification_status',
     ];
 
     /**
@@ -73,6 +82,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'withdrawal_password' => 'hashed',
+            'id_date_of_birth' => 'date',
         ];
     }
 
@@ -119,6 +129,11 @@ class User extends Authenticatable
     public function userWallets()
     {
         return $this->hasMany(UserWallet::class);
+    }
+
+    public function kycVerification()
+    {
+        return $this->hasOne(UserKycVerification::class);
     }
 
     public function savedEvents()

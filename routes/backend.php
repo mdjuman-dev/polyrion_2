@@ -12,6 +12,11 @@ use App\Http\Controllers\Backend\RolePermissionController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\AdminController;
 use App\Http\Controllers\Backend\PaymentSettingsController;
+use App\Http\Controllers\Backend\PageController;
+use App\Http\Controllers\Backend\FaqController;
+use App\Http\Controllers\Backend\ContactController;
+use App\Http\Controllers\Backend\SocialMediaController;
+use Illuminate\Http\Request;
 
 // Admin Login routes
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -89,6 +94,47 @@ Route::prefix('/admin')->name('admin.')->group(function () {
          Route::post('/settings', 'update')->name('settings.update');
       });
 
+      // Page Management Routes
+      Route::prefix('pages')->name('pages.')->middleware('permission:manage pages,admin')->group(function () {
+         Route::get('/privacy-policy/edit', function() {
+            return app(PageController::class)->edit('privacy_policy');
+         })->name('privacy-policy.edit');
+         Route::post('/privacy-policy/update', function(Request $request) {
+            return app(PageController::class)->update($request, 'privacy_policy');
+         })->name('privacy-policy.update');
+         Route::get('/terms-of-use/edit', function() {
+            return app(PageController::class)->edit('terms_of_use');
+         })->name('terms-of-use.edit');
+         Route::post('/terms-of-use/update', function(Request $request) {
+            return app(PageController::class)->update($request, 'terms_of_use');
+         })->name('terms-of-use.update');
+      });
+
+      // FAQ Management Routes
+      Route::resource('faqs', FaqController::class)->names([
+         'index' => 'faqs.index',
+         'create' => 'faqs.create',
+         'store' => 'faqs.store',
+         'edit' => 'faqs.edit',
+         'update' => 'faqs.update',
+         'destroy' => 'faqs.destroy',
+      ])->middleware('permission:manage faqs,admin');
+
+      // Contact Management Routes
+      Route::prefix('contact')->name('contact.')->middleware('permission:manage contact,admin')->group(function () {
+         Route::get('/', [ContactController::class, 'index'])->name('index');
+         Route::get('/{id}', [ContactController::class, 'show'])->name('show');
+         Route::delete('/{id}', [ContactController::class, 'destroy'])->name('destroy');
+         Route::get('/settings/edit', [ContactController::class, 'settings'])->name('settings');
+         Route::post('/settings/update', [ContactController::class, 'updateSettings'])->name('settings.update');
+      });
+
+      // Social Media Management Routes
+      Route::controller(SocialMediaController::class)->prefix('social-media')->name('social-media.')->middleware('permission:manage social media,admin')->group(function () {
+         Route::get('/', 'index')->name('index');
+         Route::post('/update', 'update')->name('update');
+      });
+
       // Binance Pay Management Routes
       Route::controller(BinancePayController::class)->middleware('permission:approve deposits,admin')->group(function () {
          Route::post('/deposit/{depositId}/process', 'manualProcess')->name('deposit.manual.process');
@@ -109,6 +155,16 @@ Route::prefix('/admin')->name('admin.')->group(function () {
          Route::get('/{id}/approve', 'approve')->middleware('permission:approve withdrawals,admin')->name('approve');
          Route::get('/{id}/reject', 'reject')->middleware('permission:reject withdrawals,admin')->name('reject');
          Route::get('/{id}/processing', 'processing')->middleware('permission:process withdrawals,admin')->name('processing');
+      });
+
+      // KYC Verification Management Routes
+      Route::controller(\App\Http\Controllers\Backend\KycVerificationController::class)->prefix('kyc')->name('kyc.')->middleware('permission:view users,admin')->group(function () {
+         Route::get('/', 'index')->name('index');
+         Route::get('/{id}', 'show')->name('show');
+         Route::get('/{id}/edit', 'edit')->middleware('permission:edit users,admin')->name('edit');
+         Route::put('/{id}', 'update')->middleware('permission:edit users,admin')->name('update');
+         Route::get('/{id}/approve', 'approve')->middleware('permission:edit users,admin')->name('approve');
+         Route::get('/{id}/reject', 'reject')->middleware('permission:edit users,admin')->name('reject');
       });
 
       // Admin User Management Routes

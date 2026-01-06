@@ -103,6 +103,22 @@
                                              <span>Email Templates</span>
                                           </a>
                                        </li>
+                                       <li class="nav-item">
+                                          <a class="nav-link" href="{{ route('admin.pages.privacy-policy.edit') }}">
+                                             <div class="nav-icon">
+                                                <i data-feather="shield"></i>
+                                             </div>
+                                             <span>Privacy Policy</span>
+                                          </a>
+                                       </li>
+                                       <li class="nav-item">
+                                          <a class="nav-link" href="{{ route('admin.pages.terms-of-use.edit') }}">
+                                             <div class="nav-icon">
+                                                <i data-feather="file-text"></i>
+                                             </div>
+                                             <span>Terms of Use</span>
+                                          </a>
+                                       </li>
                                     </ul>
                                  </div>
                               </div>

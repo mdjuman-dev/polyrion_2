@@ -228,14 +228,14 @@ if ($logo) {
 
                                     <div class="header-menu-divider"></div>
 
-                                    <a href="#">
+                                    <a href="{{ route('terms-of-use') }}">
                                         <div
                                             class="header-menu-item d-flex align-items-center justify-content-between ">
 
                                             <span class="header-menu-label">Terms and Conditions</span>
                                         </div>
                                     </a>
-                                    <a href="#">
+                                    <a href="{{ route('privacy-policy') }}">
                                         <div
                                             class="header-menu-item d-flex align-items-center justify-content-between ">
                                             <span class="header-menu-label">Privacy Policy</span>
@@ -474,7 +474,7 @@ if ($logo) {
         </div>
         <div class="more-menu-divider"></div>
         <div class="more-menu-links">
-            <a href="#">Terms of Use</a>
+            <a href="{{ route('terms-of-use') }}">Terms of Use</a>
         </div>
         <div class="more-menu-social" style="justify-content: start;">
             <button class="theme-toggle-mobile" id="themeToggleMobile" aria-label="Toggle theme">
@@ -535,35 +535,38 @@ if ($logo) {
                 <div class="footer-left">
                     <p class="footer-copyright">Adventure One QSS Inc. © 2025</p>
                     <div class="footer-links">
-                        <a href="#" class="footer-link">Privacy</a>
+                        <a href="{{ route('privacy-policy') }}" class="footer-link">Privacy Policy</a>
                         <span class="footer-separator">•</span>
-                        <a href="#" class="footer-link">Terms of Use</a>
+                        <a href="{{ route('terms-of-use') }}" class="footer-link">Terms of Use</a>
                         <span class="footer-separator">•</span>
-                        <a href="#" class="footer-link">Learn</a>
+                        <a href="{{ route('faq') }}" class="footer-link">FAQ</a>
                         <span class="footer-separator">•</span>
-                        <a href="#" class="footer-link">Careers</a>
-                        <span class="footer-separator">•</span>
-                        <a href="#" class="footer-link">Press</a>
+                        <a href="{{ route('contact') }}" class="footer-link">Contact</a>
                     </div>
                 </div>
                 <div class="footer-right">
-                    <div class="footer-social">
-                        <a href="#" class="footer-social-link" aria-label="Email">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="X (Twitter)">
-                            <i class="fa-brands fa-x"></i>
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="Discord">
-                            <i class="fab fa-discord"></i>
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="TikTok">
-                            <i class="fab fa-tiktok"></i>
-                        </a>
-                    </div>
+                    @if($socialMediaLinks && $socialMediaLinks->count() > 0)
+                        <div class="footer-social">
+                            @foreach($socialMediaLinks as $link)
+                                @php
+                                    $iconClass = match($link->platform) {
+                                        'facebook' => 'fab fa-facebook',
+                                        'twitter' => 'fa-brands fa-x',
+                                        'instagram' => 'fab fa-instagram',
+                                        'telegram' => 'fab fa-telegram',
+                                        'whatsapp' => 'fab fa-whatsapp',
+                                        'youtube' => 'fab fa-youtube',
+                                        'linkedin' => 'fab fa-linkedin',
+                                        default => 'fas fa-link',
+                                    };
+                                    $ariaLabel = ucfirst($link->platform === 'twitter' ? 'X (Twitter)' : $link->platform);
+                                @endphp
+                                <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="{{ $ariaLabel }}">
+                                    <i class="{{ $iconClass }}"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -1123,8 +1126,8 @@ if ($logo) {
                         limitPrice = 0,
                         @auth
                     @php
-   $userWallet = $authUser?->wallet;
-   $userBalance = $userWallet ? $userWallet->balance : 0;
+                        $userWallet = $authUser?->wallet;
+                        $userBalance = $userWallet ? $userWallet->balance : 0;
                     @endphp
                     userBalance = {{ $userBalance }};
                 @else

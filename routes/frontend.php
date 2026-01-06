@@ -8,6 +8,9 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\WalletController;
 use App\Http\Controllers\Frontend\TradeController;
+use App\Http\Controllers\Frontend\PageController;
+use App\Http\Controllers\Frontend\FaqController;
+use App\Http\Controllers\Frontend\ContactController;
 use App\Http\Controllers\Backend\BinancePayController;
 
 // Google Login
@@ -85,3 +88,17 @@ Route::controller(\App\Http\Controllers\Frontend\MarketController::class)->prefi
     Route::get('/{marketId}/trade-preview', 'getTradePreview')->name('trade-preview');
     Route::get('/{marketId}/prices', 'getMarketPrices')->name('prices');
 });
+
+// Public Pages
+Route::controller(PageController::class)->group(function () {
+    Route::get('/privacy-policy', 'privacyPolicy')->name('privacy-policy');
+    Route::get('/terms-of-use', 'termsOfUse')->name('terms-of-use');
+});
+
+// FAQ
+Route::get('/faq', [FaqController::class, 'index'])->name('faq');
+
+// Contact/Support
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::get('/support', [ContactController::class, 'index'])->name('support');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');

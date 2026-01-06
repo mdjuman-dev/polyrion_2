@@ -61,12 +61,47 @@
                 </li>
                 @endif
 
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('view users', 'admin')))
+                <li class="{{ request()->routeIs('admin.kyc.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.kyc.index') }}">
+                        <i data-feather="id-card"></i>
+                        <span>KYC Verifications</span>
+                    </a>
+                </li>
+                @endif
+
                 @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage global settings', 'admin')))
                 <li class="{{ request()->routeIs('admin.setting') ? 'active' : '' }}">
                     <a href="{{ route('admin.setting') }}">
                         <i data-feather="settings"></i>
                         <span>Settings</span>
                     </a>
+                </li>
+                @endif
+
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage pages', 'admin')))
+                <li class="treeview {{ request()->routeIs('admin.pages.*') ? 'menu-open active' : '' }}">
+                    <a href="#">
+                        <i data-feather="file-text"></i>
+                        <span>Pages</span>
+                        <span class="pull-right-container">
+                            <i class="fa fa-angle-left pull-right"></i>
+                        </span>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li class="{{ request()->routeIs('admin.pages.privacy-policy.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.pages.privacy-policy.edit') }}">
+                                <i data-feather="shield"></i>
+                                <span>Privacy Policy</span>
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('admin.pages.terms-of-use.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.pages.terms-of-use.edit') }}">
+                                <i data-feather="file-text"></i>
+                                <span>Terms of Use</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 @endif
 
@@ -102,6 +137,33 @@
                     <a href="{{ route('admin.admins.index') }}">
                         <i data-feather="user-check"></i>
                         <span>Admin Users</span>
+                    </a>
+                </li>
+                @endif
+
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage faqs', 'admin')))
+                <li class="{{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.faqs.index') }}">
+                        <i data-feather="help-circle"></i>
+                        <span>FAQs</span>
+                    </a>
+                </li>
+                @endif
+
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage contact', 'admin')))
+                <li class="{{ request()->routeIs('admin.contact.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.contact.index') }}">
+                        <i data-feather="mail"></i>
+                        <span>Contact Messages</span>
+                    </a>
+                </li>
+                @endif
+
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage social media', 'admin')))
+                <li class="{{ request()->routeIs('admin.social-media.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.social-media.index') }}">
+                        <i data-feather="share-2"></i>
+                        <span>Social Media</span>
                     </a>
                 </li>
                 @endif

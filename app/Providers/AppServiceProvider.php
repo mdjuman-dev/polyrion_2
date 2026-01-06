@@ -7,6 +7,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use App\Models\GlobalSetting;
+use App\Models\SocialMediaLink;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
          $authUser = safeAuthUser('web');
 
          try {
+            $socialMediaLinks = SocialMediaLink::active()->get();
             $view->with([
                'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
                'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
                'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
                'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
                'authUser' => $authUser, // Safe user variable
+               'socialMediaLinks' => $socialMediaLinks,
             ]);
          } catch (\Illuminate\Database\QueryException $e) {
             // If database connection fails, use default values
@@ -58,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
                'fbPixelId' => null,
                'tawkWidgetCode' => null,
                'authUser' => $authUser, // Still include user if we got it before
+               'socialMediaLinks' => collect([]),
             ]);
          } catch (\Exception $e) {
             // Catch any other exceptions
@@ -73,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
                'fbPixelId' => null,
                'tawkWidgetCode' => null,
                'authUser' => $authUser, // Still include user if we got it before
+               'socialMediaLinks' => collect([]),
             ]);
          }
       });
