@@ -10,33 +10,33 @@
                 <!-- Left Column - Portfolio -->
                 <div class="col-lg-6 col-md-12 mb-4">
                     <div class="portfolio-panel"
-                        style="background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.25rem; position: relative;">
+                        style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative;">
                         <!-- Header -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-ban" style="color: #9ca3af; font-size: 0.875rem;"></i>
+                                <i class="fas fa-ban" style="color: var(--text-secondary); font-size: 0.875rem;"></i>
                                 <span
-                                    style="font-size: 0.875rem; font-weight: 500; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Portfolio</span>
+                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Portfolio</span>
                             </div>
                             <!-- Balance Badge -->
                             <div
                                 style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
                                 <i class="fas fa-stack" style="color: #10b981; font-size: 0.75rem;"></i>
                                 <span
-                                    style="font-size: 0.8rem; font-weight: 600; color: #ffffff;">${{ number_format($balance, 2) }}</span>
+                                    style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">${{ number_format($balance, 2) }}</span>
                             </div>
                         </div>
 
                         <!-- Current Value -->
                         <div style="margin-bottom: 0.5rem;">
-                            <div style="font-size: 1.75rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                            <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
                                 ${{ number_format($stats['positions_value'], 2) }}
                             </div>
                         </div>
 
                         <!-- Timeframe -->
-                        <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 1.5rem;">Today</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Today</div>
 
                         <!-- Action Buttons -->
                         <div style="display: flex; gap: 0.75rem;">
@@ -48,9 +48,9 @@
                                 <span>Deposit</span>
                             </button>
                             <button onclick="handleWithdrawalClick()"
-                                style="flex: 1; background: rgba(255, 255, 255, 0.05); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
-                                onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'"
-                                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                                style="flex: 1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                                onmouseover="this.style.background='var(--hover)'; this.style.borderColor='var(--primary-color, #ffb11a)'"
+                                onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'">
                                 <i class="fas fa-arrow-up"></i>
                                 <span>Withdraw</span>
                             </button>
@@ -61,48 +61,48 @@
                 <!-- Right Column - Profit/Loss  -->
                 <div class="col-lg-6 col-md-12 mb-4">
                     <div class="profit-loss-panel"
-                        style="background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.25rem; position: relative;">
+                        style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative;">
                         <!-- Header -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <i class="fas fa-arrow-up" style="color: #10b981; font-size: 0.875rem;"></i>
                                 <span
-                                    style="font-size: 0.875rem; font-weight: 500; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Profit/Loss</span>
+                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Profit/Loss</span>
                             </div>
                             <!-- Time Filters -->
                             <div style="display: flex; gap: 0.4rem;">
                                 <button type="button" class="pl-time-filter" data-pl-period="1D"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1D</button>
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1D</button>
                                 <button type="button" class="pl-time-filter" data-pl-period="1W"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1W</button>
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1W</button>
                                 <button type="button" class="pl-time-filter active" data-pl-period="1M"
-                                    style="padding: 0.35rem 0.6rem; background: rgba(59, 130, 246, 0.2); color: #ffffff; border: none; border-radius: 4px; font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1M</button>
+                                    style="padding: 0.35rem 0.6rem; background: rgba(59, 130, 246, 0.2); color: var(--text-primary); border: none; border-radius: 4px; font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1M</button>
                                 <button type="button" class="pl-time-filter" data-pl-period="ALL"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: #9ca3af; border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">ALL</button>
+                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">ALL</button>
                             </div>
                         </div>
 
                         <!-- Current Value -->
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <div style="font-size: 1.75rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                            <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
                                 <span id="profitLossAmount">${{ number_format($stats['total_profit_loss'] ?? 0, 2) }}</span>
                             </div>
-                            <i class="fas fa-info-circle" style="color: #9ca3af; font-size: 0.875rem; cursor: pointer;"
+                            <i class="fas fa-info-circle" style="color: var(--text-secondary); font-size: 0.875rem; cursor: pointer;"
                                 title="Profit/Loss for the selected time period"></i>
                         </div>
 
                         <!-- Timeframe -->
-                        <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem;" id="profitLossTimeframe">Past
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;" id="profitLossTimeframe">Past
                             Month</div>
 
                         <!-- Polyrion Logo -->
                         <div
-                            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
                             <div
                                 style="width: 24px; height: 24px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; color: #ffffff;">
                                 PM</div>
-                            <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 500;">Polyrion</span>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Polyrion</span>
                         </div>
 
                         <!-- Chart Placeholder -->
@@ -475,7 +475,7 @@
                                             data-profit-pct="{{ $profitLossPct }}" data-bet="{{ $trade->amount }}"
                                             data-avg-price="{{ $avgPrice }}"
                                             data-current-price="{{ $currentPrice }}"
-                                            style="background: var(--card-bg); border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem; margin-bottom: 0; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;">
+                                            style="background: var(--card-bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 1rem; margin-bottom: 0; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;">
                                             <!-- Left Icon -->
                                             <div style="flex-shrink: 0;">
                                                 <div
@@ -508,21 +508,21 @@
 
                                                 <!-- Trade # and First Line -->
                                                 <div
-                                                    style="font-weight: 700; font-size: 0.95rem; color: #ffffff; margin-bottom: 0.25rem; line-height: 1.3;">
+                                                    style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.25rem; line-height: 1.3;">
                                                     Trade #{{ $tradeNumber }} - {{ $firstPart }}
                                                 </div>
 
                                                 @if ($secondPart)
                                                     <!-- Second Line -->
                                                     <div
-                                                        style="font-weight: 700; font-size: 0.95rem; color: #ffffff; margin-bottom: 0.25rem; line-height: 1.3;">
+                                                        style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.25rem; line-height: 1.3;">
                                                         {{ $secondPart }}
                                                     </div>
                                                 @endif
 
                                                 <!-- Date, Time and Option -->
                                                 <div
-                                                    style="font-size: 0.8rem; color: #9ca3af; margin-top: 0.25rem; line-height: 1.4;">
+                                                    style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
                                                     {{ $tradeDate->format('M d, Y h:i A') }} •
                                                     {{ strtoupper($trade->option) }}
                                                 </div>
@@ -1263,6 +1263,660 @@
                                     </div>
                                 </form>
                             </div>
+
+                            <div class="settings-card"
+                                style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-top: 2rem;">
+                                <h3 class="card-title"
+                                    style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem;">
+                                    ID Verification
+                                </h3>
+
+                                @if ($kycVerification)
+                                    <!-- Submitted KYC Details View - Table Format -->
+                                    <div class="kyc-details-container">
+                                        <!-- Desktop Table View -->
+                                        <div class="kyc-table-wrapper desktop-view">
+                                            <table class="kyc-details-table" style="width: 100%; border-collapse: collapse;">
+                                                <tbody>
+                                                    <tr style="border-bottom: 1px solid var(--border);">
+                                                        <td style="padding: 1rem; width: 200px; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                            ID Type
+                                                        </td>
+                                                        <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                            {{ $kycVerification->id_type }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr style="border-bottom: 1px solid var(--border);">
+                                                        <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                            Status
+                                                        </td>
+                                                        <td style="padding: 1rem;">
+                                                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; background: {{ $kycVerification->status === 'approved' ? 'rgba(16, 185, 129, 0.2)' : ($kycVerification->status === 'rejected' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)') }}; color: {{ $kycVerification->status === 'approved' ? '#10b981' : ($kycVerification->status === 'rejected' ? '#ef4444' : '#f59e0b') }}; font-weight: 600; font-size: 0.9rem;">
+                                                                {{ ucfirst($kycVerification->status) }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    
+                                                    @if ($kycVerification->id_type === 'NID')
+                                                        @if ($kycVerification->nid_front_photo || $kycVerification->nid_back_photo)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Photos
+                                                                </td>
+                                                                <td style="padding: 1rem;">
+                                                                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-wrap: wrap;">
+                                                                        @if ($kycVerification->nid_front_photo)
+                                                                            <div style="flex: 1; min-width: 150px;">
+                                                                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Front Photo</p>
+                                                                                <img src="{{ asset('storage/' . $kycVerification->nid_front_photo) }}" alt="NID Front" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                            </div>
+                                                                        @endif
+                                                                        @if ($kycVerification->nid_back_photo)
+                                                                            <div style="flex: 1; min-width: 150px;">
+                                                                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Back Photo</p>
+                                                                                <img src="{{ asset('storage/' . $kycVerification->nid_back_photo) }}" alt="NID Back" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @elseif($kycVerification->id_type === 'Driving License')
+                                                        @if ($kycVerification->full_name)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Full Name
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->full_name }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->license_number)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    License Number
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->license_number }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->dob)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Date of Birth
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->dob->format('d M, Y') }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->license_front_photo)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Front Page Photo
+                                                                </td>
+                                                                <td style="padding: 1rem;">
+                                                                    <img src="{{ asset('storage/' . $kycVerification->license_front_photo) }}" alt="License Front" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @elseif($kycVerification->id_type === 'Passport')
+                                                        @if ($kycVerification->full_name)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Full Name
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->full_name }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->passport_number)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Passport Number
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->passport_number }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->passport_expiry_date)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Expiry Date
+                                                                </td>
+                                                                <td style="padding: 1rem; color: var(--text-primary); font-weight: 500;">
+                                                                    {{ $kycVerification->passport_expiry_date->format('d M, Y') }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @if ($kycVerification->passport_biodata_photo || $kycVerification->passport_cover_photo)
+                                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                                <td style="padding: 1rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; vertical-align: top;">
+                                                                    Photos
+                                                                </td>
+                                                                <td style="padding: 1rem;">
+                                                                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-wrap: wrap;">
+                                                                        @if ($kycVerification->passport_biodata_photo)
+                                                                            <div style="flex: 1; min-width: 150px;">
+                                                                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Biodata Page Photo</p>
+                                                                                <img src="{{ asset('storage/' . $kycVerification->passport_biodata_photo) }}" alt="Passport Biodata" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                            </div>
+                                                                        @endif
+                                                                        @if ($kycVerification->passport_cover_photo)
+                                                                            <div style="flex: 1; min-width: 150px;">
+                                                                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Cover Page Photo</p>
+                                                                                <img src="{{ asset('storage/' . $kycVerification->passport_cover_photo) }}" alt="Passport Cover" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @endif
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <!-- Mobile Card View -->
+                                        <div class="kyc-cards-container mobile-view" style="display: none;">
+                                            <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">ID Type</div>
+                                                <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->id_type }}</div>
+                                            </div>
+                                            <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Status</div>
+                                                <div>
+                                                    <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; background: {{ $kycVerification->status === 'approved' ? 'rgba(16, 185, 129, 0.2)' : ($kycVerification->status === 'rejected' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)') }}; color: {{ $kycVerification->status === 'approved' ? '#10b981' : ($kycVerification->status === 'rejected' ? '#ef4444' : '#f59e0b') }}; font-weight: 600; font-size: 0.9rem;">
+                                                        {{ ucfirst($kycVerification->status) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            @if ($kycVerification->id_type === 'NID')
+                                                @if ($kycVerification->nid_front_photo || $kycVerification->nid_back_photo)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">Photos</div>
+                                                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                                            @if ($kycVerification->nid_front_photo)
+                                                                <div>
+                                                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Front Photo</p>
+                                                                    <img src="{{ asset('storage/' . $kycVerification->nid_front_photo) }}" alt="NID Front" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                </div>
+                                                            @endif
+                                                            @if ($kycVerification->nid_back_photo)
+                                                                <div>
+                                                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Back Photo</p>
+                                                                    <img src="{{ asset('storage/' . $kycVerification->nid_back_photo) }}" alt="NID Back" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @elseif($kycVerification->id_type === 'Driving License')
+                                                @if ($kycVerification->full_name)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Full Name</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->full_name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->license_number)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">License Number</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->license_number }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->dob)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Date of Birth</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->dob->format('d M, Y') }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->license_front_photo)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">Front Page Photo</div>
+                                                        <img src="{{ asset('storage/' . $kycVerification->license_front_photo) }}" alt="License Front" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                    </div>
+                                                @endif
+                                            @elseif($kycVerification->id_type === 'Passport')
+                                                @if ($kycVerification->full_name)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Full Name</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->full_name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->passport_number)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Passport Number</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->passport_number }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->passport_expiry_date)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">Expiry Date</div>
+                                                        <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 500;">{{ $kycVerification->passport_expiry_date->format('d M, Y') }}</div>
+                                                    </div>
+                                                @endif
+                                                @if ($kycVerification->passport_biodata_photo || $kycVerification->passport_cover_photo)
+                                                    <div class="kyc-card-item" style="padding: 1rem; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
+                                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">Photos</div>
+                                                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                                            @if ($kycVerification->passport_biodata_photo)
+                                                                <div>
+                                                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Biodata Page Photo</p>
+                                                                    <img src="{{ asset('storage/' . $kycVerification->passport_biodata_photo) }}" alt="Passport Biodata" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                </div>
+                                                            @endif
+                                                            @if ($kycVerification->passport_cover_photo)
+                                                                <div>
+                                                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Cover Page Photo</p>
+                                                                    <img src="{{ asset('storage/' . $kycVerification->passport_cover_photo) }}" alt="Passport Cover" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <style>
+                                        /* KYC Details Table Responsive Styles */
+                                        .kyc-table-wrapper.desktop-view {
+                                            display: block;
+                                        }
+
+                                        .kyc-cards-container.mobile-view {
+                                            display: none;
+                                        }
+
+                                        .kyc-details-table {
+                                            background: var(--card-bg);
+                                        }
+
+                                        .kyc-details-table tr:hover {
+                                            background: var(--secondary);
+                                        }
+
+                                        /* Mobile Responsive - Show Cards, Hide Table */
+                                        @media (max-width: 768px) {
+                                            .kyc-table-wrapper.desktop-view {
+                                                display: none !important;
+                                            }
+
+                                            .kyc-cards-container.mobile-view {
+                                                display: block !important;
+                                            }
+                                        }
+
+                                        @media (min-width: 769px) {
+                                            .kyc-table-wrapper.desktop-view {
+                                                display: block !important;
+                                            }
+
+                                            .kyc-cards-container.mobile-view {
+                                                display: none !important;
+                                            }
+                                        }
+                                    </style>
+                                @else
+                                    <!-- KYC Submission Form -->
+                                    <form id="idVerificationForm" method="POST"
+                                        action="{{ route('profile.id-verification') }}" enctype="multipart/form-data">
+                                        @csrf
+
+                                        <div class="form-field" style="margin-bottom: 1.5rem;">
+                                            <label for="id_verification_type" class="form-label"
+                                                style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                ID Type <span style="color: #ef4444;">*</span>
+                                            </label>
+                                            <select class="form-control" id="id_verification_type"
+                                                name="id_verification_type" required
+                                                {{ $kycVerification ? 'disabled' : '' }}
+                                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <option value="">Select ID Type</option>
+                                                <option value="nid"
+                                                    {{ $kycVerification && $kycVerification->id_type === 'NID' ? 'selected' : '' }}>
+                                                    NID</option>
+                                                <option value="driving_license"
+                                                    {{ $kycVerification && $kycVerification->id_type === 'Driving License' ? 'selected' : '' }}>
+                                                    Driving License</option>
+                                                <option value="passport"
+                                                    {{ $kycVerification && $kycVerification->id_type === 'Passport' ? 'selected' : '' }}>
+                                                    Passport</option>
+                                            </select>
+                                            @if ($kycVerification)
+                                                <p
+                                                    style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                                    Status: <span
+                                                        style="font-weight: 600; color: {{ $kycVerification->status === 'approved' ? '#10b981' : ($kycVerification->status === 'rejected' ? '#ef4444' : '#f59e0b') }};">{{ ucfirst($kycVerification->status) }}</span>
+                                                </p>
+                                            @endif
+                                            <div id="error_id_verification_type"
+                                                style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                            </div>
+                                        </div>
+
+                                        <!-- NID Fields -->
+                                        <div id="nid_fields" style="display: none;">
+                                            @if ($kycVerification && $kycVerification->id_type === 'NID' && $kycVerification->nid_front_photo)
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <div
+                                                        style="display: flex; flex-direction: row; gap: 1rem; flex-wrap: wrap;">
+                                                        <div style="flex: 1; min-width: 150px;">
+                                                            <label class="form-label"
+                                                                style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                                Front Photo
+                                                            </label>
+                                                            <img src="{{ asset('storage/' . $kycVerification->nid_front_photo) }}"
+                                                                alt="NID Front"
+                                                                style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain;">
+                                                        </div>
+                                                        @if ($kycVerification->nid_back_photo)
+                                                            <div style="flex: 1; min-width: 150px;">
+                                                                <label class="form-label"
+                                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                                    Back Photo
+                                                                </label>
+                                                                <img src="{{ asset('storage/' . $kycVerification->nid_back_photo) }}"
+                                                                    alt="NID Back"
+                                                                    style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain;">
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label for="nid_front_photo" class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Front Photo <span style="color: #ef4444;">*</span>
+                                                    </label>
+                                                    <input type="file" class="form-control" id="nid_front_photo"
+                                                        name="nid_front_photo" accept="image/jpeg,image/png"
+                                                        onchange="previewImage(this, 'nid_front_preview')"
+                                                        {{ $kycVerification ? 'disabled' : '' }}
+                                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                    <div id="nid_front_preview" style="margin-top: 0.5rem;"></div>
+                                                    <div id="error_nid_front_photo"
+                                                        style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label for="nid_back_photo" class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Back Photo <span style="color: #ef4444;">*</span>
+                                                    </label>
+                                                    <input type="file" class="form-control" id="nid_back_photo"
+                                                        name="nid_back_photo" accept="image/jpeg,image/png"
+                                                        onchange="previewImage(this, 'nid_back_preview')"
+                                                        {{ $kycVerification ? 'disabled' : '' }}
+                                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                    <div id="nid_back_preview" style="margin-top: 0.5rem;"></div>
+                                                    <div id="error_nid_back_photo"
+                                                        style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Driving License Fields -->
+                                        <div id="driving_license_fields" style="display: none;">
+
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_full_name_dl" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    Full Name <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="id_full_name_dl"
+                                                    name="id_full_name" placeholder="Enter full name"
+                                                    value="{{ $kycVerification ? $kycVerification->full_name : '' }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <div id="error_id_full_name"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_license_number" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    License Number <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="id_license_number"
+                                                    name="id_license_number" placeholder="Enter license number"
+                                                    value="{{ $kycVerification && $kycVerification->id_type === 'Driving License' ? $kycVerification->license_number : '' }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <div id="error_id_license_number"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_date_of_birth_dl" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    Date of Birth <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="date" class="form-control" id="id_date_of_birth_dl"
+                                                    name="id_date_of_birth"
+                                                    value="{{ $kycVerification && $kycVerification->dob ? $kycVerification->dob->format('Y-m-d') : '' }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <div id="error_id_date_of_birth"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+                                            @if ($kycVerification && $kycVerification->id_type === 'Driving License' && $kycVerification->license_front_photo)
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Front Page Photo
+                                                    </label>
+                                                    <img src="{{ asset('storage/' . $kycVerification->license_front_photo) }}"
+                                                        alt="License Front"
+                                                        style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain;">
+                                                </div>
+                                            @else
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label for="dl_front_photo" class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Front Page Photo <span style="color: #ef4444;">*</span>
+                                                    </label>
+                                                    <input type="file" class="form-control" id="dl_front_photo"
+                                                        name="dl_front_photo" accept="image/jpeg,image/png"
+                                                        onchange="previewImage(this, 'dl_front_preview')"
+                                                        {{ $kycVerification ? 'disabled' : '' }}
+                                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                    <div id="dl_front_preview" style="margin-top: 0.5rem;"></div>
+                                                    <div id="error_dl_front_photo"
+                                                        style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Passport Fields -->
+                                        <div id="passport_fields" style="display: none;">
+
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_full_name_pp" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    Full Name <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="id_full_name_pp"
+                                                    name="id_full_name" placeholder="Enter full name"
+                                                    value="{{ $kycVerification ? $kycVerification->full_name : '' }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <div id="error_id_full_name_pp"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_passport_number" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    Passport Number <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="id_passport_number"
+                                                    name="id_passport_number" placeholder="Enter passport number"
+                                                    value="{{ $kycVerification && $kycVerification->id_type === 'Passport' ? $kycVerification->passport_number : '' }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <div id="error_id_passport_number"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+                                            <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                <label for="id_passport_expiry_date" class="form-label"
+                                                    style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                    Expiry Date <span style="color: #ef4444;">*</span>
+                                                </label>
+                                                <input type="date" class="form-control" id="id_passport_expiry_date"
+                                                    name="id_passport_expiry_date"
+                                                    value="{{ $kycVerification && $kycVerification->passport_expiry_date ? $kycVerification->passport_expiry_date->format('Y-m-d') : '' }}"
+                                                    min="{{ now()->addMonth()->format('Y-m-d') }}"
+                                                    {{ $kycVerification ? 'readonly' : '' }}
+                                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                <small
+                                                    style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; display: block;">
+                                                    Expiry date must be at least 1 month from today
+                                                </small>
+                                                <div id="error_id_passport_expiry_date"
+                                                    style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                </div>
+                                            </div>
+                                            @if (
+                                                $kycVerification &&
+                                                    $kycVerification->id_type === 'Passport' &&
+                                                    ($kycVerification->passport_biodata_photo || $kycVerification->passport_cover_photo))
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <p
+                                                        style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                                                        Photos</p>
+                                                    <div
+                                                        style="display: flex; flex-direction: row; gap: 1rem; flex-wrap: wrap;">
+                                                        @if ($kycVerification->passport_biodata_photo)
+                                                            <div style="flex: 1; min-width: 150px;">
+                                                                <p
+                                                                    style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                                                    Biodata Page Photo</p>
+                                                                <img src="{{ asset('storage/' . $kycVerification->passport_biodata_photo) }}"
+                                                                    alt="Passport Biodata"
+                                                                    style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain;">
+                                                            </div>
+                                                        @endif
+                                                        @if ($kycVerification->passport_cover_photo)
+                                                            <div style="flex: 1; min-width: 150px;">
+                                                                <p
+                                                                    style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                                                    Cover Page Photo</p>
+                                                                <img src="{{ asset('storage/' . $kycVerification->passport_cover_photo) }}"
+                                                                    alt="Passport Cover"
+                                                                    style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); object-fit: contain;">
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label for="passport_biodata_photo" class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Biodata Page Photo <span style="color: #ef4444;">*</span>
+                                                    </label>
+                                                    <input type="file" class="form-control"
+                                                        id="passport_biodata_photo" name="passport_biodata_photo"
+                                                        accept="image/jpeg,image/png"
+                                                        onchange="previewImage(this, 'passport_biodata_preview')"
+                                                        {{ $kycVerification ? 'disabled' : '' }}
+                                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                    <div id="passport_biodata_preview" style="margin-top: 0.5rem;"></div>
+                                                    <div id="error_passport_biodata_photo"
+                                                        style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-field" style="margin-bottom: 1.5rem;">
+                                                    <label for="passport_cover_photo" class="form-label"
+                                                        style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                                        Cover Page Photo <span style="color: #ef4444;">*</span>
+                                                    </label>
+                                                    <input type="file" class="form-control" id="passport_cover_photo"
+                                                        name="passport_cover_photo" accept="image/jpeg,image/png"
+                                                        onchange="previewImage(this, 'passport_cover_preview')"
+                                                        {{ $kycVerification ? 'disabled' : '' }}
+                                                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); {{ $kycVerification ? 'opacity: 0.6; cursor: not-allowed;' : '' }}">
+                                                    <div id="passport_cover_preview" style="margin-top: 0.5rem;"></div>
+                                                    <div id="error_passport_cover_photo"
+                                                        style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <div id="idVerificationMessage"
+                                            style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;">
+                                        </div>
+
+                                        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                                            <button type="submit" id="submitIdVerificationBtn" class="btn-save-changes"
+                                                style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #ffb11a 0%, #ff9500 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(255, 177, 26, 0.3);"
+                                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 177, 26, 0.4)'; this.style.background='linear-gradient(135deg, #ff9500 0%, #ffb11a 100%)'"
+                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 177, 26, 0.3)'; this.style.background='linear-gradient(135deg, #ffb11a 0%, #ff9500 100%)'">
+                                                <i class="fas fa-check-circle"></i> Submit Verification
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
+
+                                <script>
+                                    function toggleIdFields() {
+                                        try {
+                                            const idType = document.getElementById('id_verification_type');
+                                            if (!idType) {
+                                                return;
+                                            }
+
+                                            const selectedType = idType.value;
+                                            const nidFields = document.getElementById('nid_fields');
+                                            const dlFields = document.getElementById('driving_license_fields');
+                                            const passportFields = document.getElementById('passport_fields');
+
+                                            // Hide all fields first
+                                            if (nidFields) nidFields.style.display = 'none';
+                                            if (dlFields) dlFields.style.display = 'none';
+                                            if (passportFields) passportFields.style.display = 'none';
+
+                                            // Show relevant fields based on selection
+                                            if (selectedType === 'nid' && nidFields) {
+                                                nidFields.style.display = 'block';
+                                            } else if (selectedType === 'driving_license' && dlFields) {
+                                                dlFields.style.display = 'block';
+                                            } else if (selectedType === 'passport' && passportFields) {
+                                                passportFields.style.display = 'block';
+                                            }
+                                        } catch (e) {
+                                            console.error('Error in toggleIdFields:', e);
+                                        }
+                                    }
+
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        const idTypeSelect = document.getElementById('id_verification_type');
+                                        if (idTypeSelect) {
+                                            if (!idTypeSelect.disabled) {
+                                                idTypeSelect.addEventListener('change', toggleIdFields);
+                                            }
+                                            if (idTypeSelect.value) {
+                                                toggleIdFields();
+                                            }
+                                        }
+
+                                        @if ($kycVerification)
+                                            toggleIdFields();
+                                        @endif
+                                    });
+                                </script>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1367,7 +2021,7 @@
     </div>
 
     <!-- Add Wallet Modal -->
-    <div id="addWalletModal" class="withdrawal-modal-popup" style="z-index: 8001; max-width: 450px;">
+    <div id="addWalletModal" class="withdrawal-modal-popup" style="z-index: 9001; max-width: 450px;">
         @livewire('add-wallet-modal')
     </div>
 
@@ -1585,6 +2239,11 @@
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
             overflow-y: auto;
+        }
+
+        /* Add Wallet Modal - Higher z-index to appear above withdrawal modal */
+        #addWalletModal {
+            z-index: 9001 !important;
         }
 
         /* Responsive */
@@ -2275,6 +2934,20 @@
                     $modal.addClass('active');
                     $overlay.addClass('active');
                     $('body').css('overflow', 'hidden');
+
+                    // Refresh wallets when modal opens
+                    setTimeout(() => {
+                        const withdrawalModal = document.querySelector('#withdrawalModal');
+                        if (withdrawalModal) {
+                            const wireId = withdrawalModal.getAttribute('wire:id');
+                            if (wireId) {
+                                const withdrawalComponent = Livewire.find(wireId);
+                                if (withdrawalComponent) {
+                                    withdrawalComponent.call('refreshWallets');
+                                }
+                            }
+                        }
+                    }, 100);
                 };
 
                 window.closeWithdrawalModal = function() {
@@ -2289,14 +2962,24 @@
                     const $modal = $('#addWalletModal');
                     const $overlay = $('#withdrawalModalOverlay');
                     $modal.addClass('active');
-                    $overlay.css('z-index', '8000');
+                    $overlay.addClass('active');
+                    $overlay.css('z-index', '9000');
+                    $('body').css('overflow', 'hidden');
                 };
 
                 window.closeAddWalletModal = function() {
                     const $modal = $('#addWalletModal');
                     const $overlay = $('#withdrawalModalOverlay');
                     $modal.removeClass('active');
-                    $overlay.css('z-index', '7000');
+                    // Only reset overlay z-index if withdrawal modal is not active
+                    if (!$('#withdrawalModal').hasClass('active')) {
+                        $overlay.removeClass('active');
+                        $overlay.css('z-index', '7000');
+                        $('body').css('overflow', '');
+                    } else {
+                        // Keep overlay active but reset z-index for withdrawal modal
+                        $overlay.css('z-index', '7000');
+                    }
                 };
 
                 window.openWalletListModal = function() {
@@ -2305,6 +2988,20 @@
                     $modal.addClass('active');
                     $overlay.addClass('active');
                     $('body').css('overflow', 'hidden');
+
+                    // Refresh wallets when modal opens
+                    setTimeout(() => {
+                        const walletListModal = document.querySelector('#walletListModal');
+                        if (walletListModal) {
+                            const wireId = walletListModal.getAttribute('wire:id');
+                            if (wireId) {
+                                const walletListComponent = Livewire.find(wireId);
+                                if (walletListComponent) {
+                                    walletListComponent.call('loadWallets');
+                                }
+                            }
+                        }
+                    }, 100);
                 };
 
                 window.closeWalletListModal = function() {
@@ -2350,10 +3047,16 @@
                     });
 
                     Livewire.on('refresh-withdrawal-wallets', () => {
-                        const withdrawalComponent = Livewire.find(document.querySelector(
-                            '#withdrawalModal').getAttribute('wire:id'));
-                        if (withdrawalComponent) {
-                            withdrawalComponent.call('refreshWallets');
+                        // Try to find and refresh the withdrawal component
+                        const withdrawalModal = document.querySelector('#withdrawalModal');
+                        if (withdrawalModal) {
+                            const wireId = withdrawalModal.getAttribute('wire:id');
+                            if (wireId) {
+                                const withdrawalComponent = Livewire.find(wireId);
+                                if (withdrawalComponent) {
+                                    withdrawalComponent.call('refreshWallets');
+                                }
+                            }
                         }
                     });
 
@@ -2785,5 +3488,155 @@
                 });
             });
         </script>
-    @endpush
-@endsection
+        <script>
+            window.previewImage = function(input, previewId) {
+                const preview = document.getElementById(previewId);
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = '<img src="' + e.target.result +
+                            '" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.5rem; object-fit: contain;">';
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            $(document).ready(function() {
+
+                $('#idVerificationForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const btn = $('#submitIdVerificationBtn');
+                    if (btn.prop('disabled')) {
+                        return false;
+                    }
+
+                    const formData = new FormData(this);
+                    const originalText = btn.html();
+                    const messageDiv = $('#idVerificationMessage');
+
+                    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+                    messageDiv.hide().removeClass('alert-success alert-error');
+                    $('.error-text').hide();
+
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                btn.prop('disabled', false).html(originalText);
+                                $('.error-text').hide();
+
+                                const message = response.message ||
+                                    'ID verification submitted successfully!';
+
+                                // Show toast notification - prioritize showSuccess function, then toastr, then Swal
+                                if (typeof showSuccess !== 'undefined') {
+                                    showSuccess(message, 'Success');
+                                } else if (typeof toastr !== 'undefined') {
+                                    toastr.success(message, 'Success');
+                                } else if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success',
+                                        text: message,
+                                        confirmButtonColor: '#ffb11a',
+                                        confirmButtonText: 'OK',
+                                        allowOutsideClick: false,
+                                        toast: true,
+                                        position: 'top-end',
+                                        showConfirmButton: false,
+                                        timer: 3000,
+                                        timerProgressBar: true
+                                    });
+                                } else {
+                                    messageDiv.removeClass('alert-error').addClass('alert-success')
+                                        .css({
+                                            'background': '#d4edda',
+                                            'color': '#155724',
+                                            'border': '1px solid #c3e6cb'
+                                        })
+                                        .text(message)
+                                        .show();
+                                }
+
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 2500);
+                            } else {
+                                messageDiv.removeClass('alert-success').addClass('alert-error')
+                                    .css({
+                                        'background': '#f8d7da',
+                                        'color': '#721c24',
+                                        'border': '1px solid #f5c6cb'
+                                    })
+                                    .text(response.message ||
+                                        'Submission failed. Please try again.')
+                                    .show();
+                                btn.prop('disabled', false).html(originalText);
+                            }
+                        },
+                        error: function(xhr) {
+                            const response = xhr.responseJSON;
+                            if (response && response.errors) {
+                                $.each(response.errors, function(key, value) {
+                                    // Map field names to error div IDs
+                                    let errorFieldId = '#error_' + key.replace(/\./g, '_');
+
+                                    // Handle special field name mappings
+                                    if (key === 'id_passport_expiry_date') {
+                                        errorFieldId = '#error_id_passport_expiry_date';
+                                    } else if (key === 'passport_cover_photo') {
+                                        errorFieldId = '#error_passport_cover_photo';
+                                    }
+
+                                    const errorDiv = $(errorFieldId);
+                                    if (errorDiv.length) {
+                                        errorDiv.text(value[0]).show();
+                                    }
+                                });
+                            }
+
+                            const errorMsg = response?.message ||
+                                'An error occurred. Please try again.';
+
+                            // Show toast notification for errors
+                            if (typeof toastr !== 'undefined') {
+                                toastr.error(errorMsg, 'Error', {
+                                    timeOut: 5000,
+                                    progressBar: true,
+                                    positionClass: 'toast-top-right'
+                                });
+                            } else if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: errorMsg,
+                                    confirmButtonColor: '#ef4444',
+                                    confirmButtonText: 'OK',
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 5000,
+                                    timerProgressBar: true
+                                });
+                            } else {
+                                messageDiv.removeClass('alert-success').addClass('alert-error')
+                                    .css({
+                                        'background': '#f8d7da',
+                                        'color': '#721c24',
+                                        'border': '1px solid #f5c6cb'
+                                    })
+                                    .text(errorMsg)
+                                    .show();
+                            }
+
+                            btn.prop('disabled', false).html(originalText);
+                        }
+                    });
+                });
+            });
+        @endpush
+    @endsection

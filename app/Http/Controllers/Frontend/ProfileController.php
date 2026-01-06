@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use App\Models\PasswordChangeOtp;
+use App\Models\UserKycVerification;
 use App\Notifications\PasswordChangeOtpNotification;
 
 class ProfileController extends Controller
@@ -117,8 +118,9 @@ class ProfileController extends Controller
       $hasWithdrawalPassword = !empty($user->withdrawal_password);
       $binanceWallet = $user->binance_wallet_address;
       $metamaskWallet = $user->metamask_wallet_address;
+      $kycVerification = $user->kycVerification;
 
-      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet'));
+      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet', 'kycVerification'));
    }
 
    function settings()
@@ -218,6 +220,131 @@ class ProfileController extends Controller
          'success' => true,
          'message' => 'Profile updated successfully!'
       ]);
+   }
+
+   function submitIdVerification(Request $request)
+   {
+      $user = Auth::user();
+
+      if ($user->kycVerification) {
+         return response()->json([
+            'success' => false,
+            'message' => 'KYC verification already submitted. You can only submit once.'
+         ], 400);
+      }
+
+      $idType = $request->id_verification_type;
+      $idTypeMap = [
+         'nid' => 'NID',
+         'driving_license' => 'Driving License',
+         'passport' => 'Passport'
+      ];
+
+      $rules = [
+         'id_verification_type' => ['required', 'string', 'in:nid,driving_license,passport'],
+      ];
+
+      if ($idType === 'nid') {
+         $rules['nid_front_photo'] = ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+         $rules['nid_back_photo'] = ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+      } elseif ($idType === 'driving_license') {
+         $rules['id_license_number'] = ['required', 'string', 'max:255'];
+         $rules['id_full_name'] = ['required', 'string', 'max:255'];
+         $rules['id_date_of_birth'] = ['required', 'date'];
+         $rules['dl_front_photo'] = ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+      } elseif ($idType === 'passport') {
+         $rules['id_passport_number'] = ['required', 'string', 'max:255'];
+         $rules['id_full_name'] = ['required', 'string', 'max:255'];
+         $rules['id_passport_expiry_date'] = [
+            'required', 
+            'date',
+            'after:' . now()->addMonth()->format('Y-m-d')
+         ];
+         $rules['passport_biodata_photo'] = ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+         $rules['passport_cover_photo'] = ['required', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+      }
+
+      try {
+         $validated = $request->validate($rules);
+      } catch (\Illuminate\Validation\ValidationException $e) {
+         return response()->json([
+            'success' => false,
+            'message' => 'Validation failed. Please check your input.',
+            'errors' => $e->errors()
+         ], 422);
+      }
+
+      try {
+         $idVerificationPath = storage_path('app/public/id_verifications');
+         if (!File::exists($idVerificationPath)) {
+            File::makeDirectory($idVerificationPath, 0755, true);
+         }
+
+         $data = [
+            'user_id' => $user->id,
+            'id_type' => $idTypeMap[$idType],
+            'status' => 'pending',
+         ];
+
+         if ($idType === 'nid') {
+            if ($request->hasFile('nid_front_photo')) {
+               $frontPhoto = $request->file('nid_front_photo');
+               $frontName = time() . '_' . uniqid() . '_front.' . $frontPhoto->getClientOriginalExtension();
+               $frontPath = $frontPhoto->storeAs('id_verifications', $frontName, 'public');
+               $data['nid_front_photo'] = $frontPath;
+            }
+            if ($request->hasFile('nid_back_photo')) {
+               $backPhoto = $request->file('nid_back_photo');
+               $backName = time() . '_' . uniqid() . '_back.' . $backPhoto->getClientOriginalExtension();
+               $backPath = $backPhoto->storeAs('id_verifications', $backName, 'public');
+               $data['nid_back_photo'] = $backPath;
+            }
+         } elseif ($idType === 'driving_license') {
+            $data['license_number'] = $validated['id_license_number'];
+            $data['full_name'] = $validated['id_full_name'];
+            $data['dob'] = $validated['id_date_of_birth'];
+            if ($request->hasFile('dl_front_photo')) {
+               $frontPhoto = $request->file('dl_front_photo');
+               $frontName = time() . '_' . uniqid() . '_dl_front.' . $frontPhoto->getClientOriginalExtension();
+               $frontPath = $frontPhoto->storeAs('id_verifications', $frontName, 'public');
+               $data['license_front_photo'] = $frontPath;
+            }
+         } elseif ($idType === 'passport') {
+            $data['passport_number'] = $validated['id_passport_number'];
+            $data['full_name'] = $validated['id_full_name'];
+            $data['passport_expiry_date'] = $validated['id_passport_expiry_date'];
+            if ($request->hasFile('passport_biodata_photo')) {
+               $biodataPhoto = $request->file('passport_biodata_photo');
+               $biodataName = time() . '_' . uniqid() . '_passport_biodata.' . $biodataPhoto->getClientOriginalExtension();
+               $biodataPath = $biodataPhoto->storeAs('id_verifications', $biodataName, 'public');
+               $data['passport_biodata_photo'] = $biodataPath;
+            }
+            if ($request->hasFile('passport_cover_photo')) {
+               $coverPhoto = $request->file('passport_cover_photo');
+               $coverName = time() . '_' . uniqid() . '_passport_cover.' . $coverPhoto->getClientOriginalExtension();
+               $coverPath = $coverPhoto->storeAs('id_verifications', $coverName, 'public');
+               $data['passport_cover_photo'] = $coverPath;
+            }
+         }
+
+         \App\Models\UserKycVerification::create($data);
+
+         return response()->json([
+            'success' => true,
+            'message' => 'ID verification submitted successfully! It will be reviewed by admin.'
+         ]);
+      } catch (\Exception $e) {
+         \Log::error('ID verification submission error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+         ]);
+
+         return response()->json([
+            'success' => false,
+            'message' => 'Error submitting ID verification: ' . $e->getMessage()
+         ], 500);
+      }
    }
 
    function sendPasswordChangeOtp(Request $request)

@@ -3,6 +3,7 @@
 use App\Models\UserWallet;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
+use Livewire\Attributes\On;
 
 new class extends Component {
     public $user_wallets = [];
@@ -20,6 +21,13 @@ new class extends Component {
             ->orderBy('created_at', 'desc')
             ->get()
             ->toArray();
+    }
+
+    #[On('wallet-added')]
+    #[On('refresh-withdrawal-wallets')]
+    public function handleWalletRefresh()
+    {
+        $this->loadWallets();
     }
 }; ?>
 

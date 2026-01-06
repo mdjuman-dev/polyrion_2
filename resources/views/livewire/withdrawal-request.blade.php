@@ -6,6 +6,7 @@ use App\Models\UserWallet;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Validate;
+use Livewire\Attributes\On;
 
 new class extends Component {
    #[Validate('required|numeric|min:1')]
@@ -49,6 +50,12 @@ new class extends Component {
       if (count($this->user_wallets) > 0 && !$this->selected_wallet_id) {
          $this->selected_wallet_id = $this->user_wallets[0]['id'];
       }
+   }
+
+   #[On('refresh-withdrawal-wallets')]
+   public function handleWalletRefresh()
+   {
+      $this->refreshWallets();
    }
 
    public function submit()

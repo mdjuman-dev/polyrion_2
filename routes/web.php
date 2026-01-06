@@ -8,6 +8,7 @@ use App\Http\Controllers\Backend\MetaMaskController;
 use App\Http\Controllers\Frontend\ProfileController;
 
 Route::get('/profile', [ProfileController::class, 'profile'])->middleware(['auth', 'verified'])->name('profile');
+Route::post('/profile/id-verification', [ProfileController::class, 'submitIdVerification'])->middleware(['auth', 'verified'])->name('profile.id-verification');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
