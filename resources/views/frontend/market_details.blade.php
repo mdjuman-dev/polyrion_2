@@ -304,6 +304,70 @@
             </div>
 
             <livewire:market-details.markets :event="$event" />
+
+            {{-- Rules/Event Description Section --}}
+            @if($event->description)
+            <div class="rules-section" style="
+               margin-top: 2rem;
+               background: transparent;
+               border: none;
+               padding: 0;
+            ">
+               <div class="rules-header" style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 1rem;
+                  padding-bottom: 0.75rem;
+                  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+               ">
+                  <h3 style="
+                     font-size: 1.125rem;
+                     font-weight: 600;
+                     color: var(--text-primary);
+                     margin: 0;
+                  ">Rules</h3>
+                  <button class="toggle-rules-btn" onclick="toggleRules()" style="
+                     background: rgba(255, 255, 255, 0.05);
+                     border: 1px solid rgba(255, 255, 255, 0.15);
+                     color: var(--text-secondary);
+                     padding: 0.4rem 0.8rem;
+                     border-radius: 6px;
+                     cursor: pointer;
+                     font-size: 0.875rem;
+                     transition: all 0.2s;
+                     display: flex;
+                     align-items: center;
+                     gap: 0.5rem;
+                  " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                     <span class="rules-toggle-text">Show less</span>
+                     <i class="fas fa-chevron-up" style="font-size: 0.75rem;"></i>
+                  </button>
+               </div>
+               
+               <div class="rules-content" id="rulesContent" style="
+                  color: rgba(255, 255, 255, 0.8);
+                  line-height: 1.8;
+                  font-size: 0.95rem;
+                  padding-bottom: 1rem;
+               ">
+                  <div style="white-space: pre-wrap; word-wrap: break-word;">{{ $event->description }}</div>
+                  
+                  @if($event->created_at)
+                  <div style="
+                     margin-top: 1.5rem;
+                     padding-top: 1rem;
+                     border-top: 1px solid rgba(255, 255, 255, 0.1);
+                     font-size: 0.875rem;
+                     color: rgba(255, 255, 255, 0.6);
+                  ">
+                     <strong style="color: rgba(255, 255, 255, 0.8);">Created At:</strong> {{ $event->created_at->format('M d, Y, g:i A') }} {{ $event->created_at->timezoneName }}
+                  </div>
+                  @endif
+               </div>
+            </div>
+            @endif
+
             <div class="tab-container">
                <div class="tab-nav">
                   <livewire:market-details.comments-count :event="$event" />
@@ -1180,6 +1244,30 @@
                setTimeout(initCountdown, 100);
             });
          })();
+      </script>
+   @endpush
+
+   @push('script')
+      <script>
+         // Rules section toggle
+         function toggleRules() {
+            const content = document.getElementById('rulesContent');
+            const btn = document.querySelector('.toggle-rules-btn');
+            const text = btn.querySelector('.rules-toggle-text');
+            const icon = btn.querySelector('i');
+            
+            if (content.style.display === 'none') {
+               content.style.display = 'block';
+               text.textContent = 'Show less';
+               icon.classList.remove('fa-chevron-down');
+               icon.classList.add('fa-chevron-up');
+            } else {
+               content.style.display = 'none';
+               text.textContent = 'Show more';
+               icon.classList.remove('fa-chevron-up');
+               icon.classList.add('fa-chevron-down');
+            }
+         }
       </script>
    @endpush
 @endsection

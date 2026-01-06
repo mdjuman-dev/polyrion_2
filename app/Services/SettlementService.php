@@ -25,12 +25,23 @@ class SettlementService
 
             $market = Market::find($marketId);
 
-            if (!$market || !$market->outcome_result) {
-                Log::warning("Market settlement skipped: Market not found or outcome_result not set", [
+            if (!$market) {
+                Log::warning("Market settlement skipped: Market not found", [
                     'market_id' => $marketId
                 ]);
                 DB::rollBack();
                 return false;
+            }
+
+            // Mark market as closed if close_time has passed
+            if ($market->close_time && now() >= $market->close_time && !$market->is_closed) {
+                $market->is_closed = true;
+                $market->closed = true;
+                $market->save();
+                Log::info("Market auto-closed due to expired close_time", [
+                    'market_id' => $marketId,
+                    'close_time' => $market->close_time
+                ]);
             }
 
             // Get outcome result - check multiple fields and normalize
@@ -43,20 +54,42 @@ class SettlementService
                 $outcomeResult = strtolower($market->final_result);
             }
 
+            // Auto-determine result from lastTradePrice if market is closed but no result set
+            if ((!$outcomeResult || !in_array($outcomeResult, ['yes', 'no'])) && $market->isClosed()) {
+                $autoOutcome = $market->determineOutcomeFromLastTradePrice();
+                if ($autoOutcome) {
+                    $outcomeResult = strtolower($autoOutcome);
+                    $market->final_outcome = $autoOutcome;
+                    $market->outcome_result = $outcomeResult;
+                    $market->final_result = $outcomeResult;
+                    $market->result_set_at = $market->result_set_at ?? now();
+                    $market->save();
+                    Log::info("Market result auto-determined from lastTradePrice", [
+                        'market_id' => $marketId,
+                        'outcome' => $autoOutcome,
+                        'last_trade_price' => $market->last_trade_price
+                    ]);
+                }
+            }
+
             if (!$outcomeResult || !in_array($outcomeResult, ['yes', 'no'])) {
                 Log::warning("Market settlement skipped: No valid outcome result", [
                     'market_id' => $marketId,
                     'outcome_result' => $market->outcome_result,
                     'final_outcome' => $market->final_outcome,
                     'final_result' => $market->final_result,
+                    'is_closed' => $market->is_closed,
+                    'close_time' => $market->close_time,
                 ]);
                 DB::rollBack();
                 return false;
             }
 
             // Fetch all pending trades for this market (handle both PENDING and pending)
+            // Use lockForUpdate to prevent duplicate settlement
             $trades = Trade::where('market_id', $marketId)
                 ->whereIn('status', ['PENDING', 'pending'])
+                ->lockForUpdate()
                 ->get();
 
             if ($trades->isEmpty()) {
@@ -114,70 +147,89 @@ class SettlementService
                     // Trade WON - calculate payout
                     $payout = $shares * 1.00; // Full payout at $1.00 per share/token
                     
+                    // Update user's balance first (atomic operation)
+                    $user = User::find($trade->user_id);
+                    if (!$user) {
+                        Log::error("Trade settlement failed: User not found", [
+                            'trade_id' => $trade->id,
+                            'user_id' => $trade->user_id
+                        ]);
+                        continue;
+                    }
+
+                    $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+                    if (!$wallet) {
+                        try {
+                            $wallet = Wallet::create([
+                                'user_id' => $user->id,
+                                'balance' => 0,
+                                'currency' => 'USDT',
+                                'status' => 'active'
+                            ]);
+                        } catch (\Illuminate\Database\QueryException $e) {
+                            if ($e->getCode() == 23000) {
+                                $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+                            } else {
+                                throw $e;
+                            }
+                        }
+                    }
+
+                    $balanceBefore = $wallet->balance;
+                    $wallet->balance += $payout;
+                    $wallet->save();
+
                     // Update trade status (support both formats)
-                    $trade->status = 'WON'; // Use uppercase for consistency
+                    $trade->status = 'WON';
                     $trade->payout = $payout;
-                    $trade->payout_amount = $payout; // Legacy field
+                    $trade->payout_amount = $payout;
                     $trade->settled_at = now();
                     $trade->save();
 
-                    // Update user's balance
-                    $user = User::find($trade->user_id);
-                    if ($user) {
-                        $wallet = Wallet::firstOrCreate(
-                            ['user_id' => $user->id],
-                            ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
-                        );
-
-                        $balanceBefore = $wallet->balance;
-                        $wallet->balance += $payout;
-                        $wallet->save();
-
-                        // Create wallet transaction for payout
-                        try {
-                            WalletTransaction::create([
-                                'user_id' => $user->id,
-                                'wallet_id' => $wallet->id,
-                                'type' => 'trade_payout',
-                                'amount' => $payout,
-                                'balance_before' => $balanceBefore,
-                                'balance_after' => $wallet->balance,
-                                'reference_type' => \App\Models\Trade::class,
-                                'reference_id' => $trade->id,
-                                'description' => "Trade payout: {$trade->outcome} on market: {$market->question}",
-                                'metadata' => [
-                                    'trade_id' => $trade->id,
-                                    'market_id' => $market->id,
-                                    'outcome' => $trade->outcome,
-                                    'payout' => $payout,
-                                    'shares' => $shares,
-                                    'profit' => $payout - ($trade->amount_invested ?? $trade->amount ?? 0),
-                                ]
-                            ]);
-                        } catch (\Exception $e) {
-                            Log::error('Failed to create wallet transaction for trade payout', [
-                                'trade_id' => $trade->id,
-                                'error' => $e->getMessage(),
-                            ]);
-                            // Don't fail settlement if transaction creation fails
-                        }
-
-                        Log::info("Trade settled as WON - balance updated", [
-                            'trade_id' => $trade->id,
+                    // Create wallet transaction for payout
+                    try {
+                        WalletTransaction::create([
                             'user_id' => $user->id,
-                            'payout' => $payout,
-                            'shares' => $shares,
+                            'wallet_id' => $wallet->id,
+                            'type' => 'trade_payout',
+                            'amount' => $payout,
                             'balance_before' => $balanceBefore,
-                            'balance_after' => $wallet->balance
+                            'balance_after' => $wallet->balance,
+                            'reference_type' => \App\Models\Trade::class,
+                            'reference_id' => $trade->id,
+                            'description' => "Trade payout: {$trade->outcome} on market: {$market->question}",
+                            'metadata' => [
+                                'trade_id' => $trade->id,
+                                'market_id' => $market->id,
+                                'outcome' => $trade->outcome,
+                                'payout' => $payout,
+                                'shares' => $shares,
+                                'profit' => $payout - ($trade->amount_invested ?? $trade->amount ?? 0),
+                            ]
                         ]);
-
-                        $winCount++;
+                    } catch (\Exception $e) {
+                        Log::error('Failed to create wallet transaction for trade payout', [
+                            'trade_id' => $trade->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        throw $e;
                     }
+
+                    Log::info("Trade settled as WON - balance updated", [
+                        'trade_id' => $trade->id,
+                        'user_id' => $user->id,
+                        'payout' => $payout,
+                        'shares' => $shares,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $wallet->balance
+                    ]);
+
+                    $winCount++;
                 } else {
                     // Trade LOST
-                    $trade->status = 'LOST'; // Use uppercase for consistency
+                    $trade->status = 'LOST';
                     $trade->payout = 0;
-                    $trade->payout_amount = 0; // Legacy field
+                    $trade->payout_amount = 0;
                     $trade->settled_at = now();
                     $trade->save();
 
@@ -227,18 +279,22 @@ class SettlementService
      */
     public function settleClosedMarkets(): array
     {
-        // Find markets that are closed, not settled, and have a result
-        $markets = Market::where(function($query) {
-                $query->where('is_closed', true)
-                      ->orWhere('closed', true);
-            })
-            ->where('settled', false)
+        // Find markets that are closed (by flag or expired close_time) and not settled
+        // Include markets without results - we'll try to auto-determine them
+        $markets = Market::where('settled', false)
             ->where(function($query) {
-                $query->whereNotNull('outcome_result')
-                      ->orWhereNotNull('final_outcome')
-                      ->orWhereNotNull('final_result');
+                $query->where('is_closed', true)
+                      ->orWhere('closed', true)
+                      ->orWhere(function($q) {
+                          $q->whereNotNull('close_time')
+                            ->where('close_time', '<=', now());
+                      });
             })
             ->get();
+
+        Log::info("Settlement scheduler: Found markets to process", [
+            'count' => $markets->count()
+        ]);
 
         $results = [
             'total' => $markets->count(),

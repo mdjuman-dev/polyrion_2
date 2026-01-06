@@ -302,7 +302,16 @@
                                                     <td style="padding: 1rem; color: var(--text-primary);">
                                                         <div
                                                             style="font-weight: 500; font-size: 0.95rem; max-width: 450px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;">
-                                                            {{ $position['market']->question ?? 'N/A' }}
+                                                            @if($position['market'] && $position['market']->event)
+                                                                <a href="{{ route('market.details', $position['market']->event->slug ?? $position['market']->event->id) }}" 
+                                                                   style="color: var(--text-primary); text-decoration: none; transition: color 0.2s;"
+                                                                   onmouseover="this.style.color='var(--primary-color, #3b82f6)'" 
+                                                                   onmouseout="this.style.color='var(--text-primary)'">
+                                                                    {{ $position['market']->question ?? 'N/A' }}
+                                                                </a>
+                                                            @else
+                                                                {{ $position['market']->question ?? 'N/A' }}
+                                                            @endif
                                                         </div>
                                                         @if ($position && $position['close_time'])
                                                             <div
@@ -509,7 +518,17 @@
                                                 <!-- Trade # and First Line -->
                                                 <div
                                                     style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.25rem; line-height: 1.3;">
-                                                    Trade #{{ $tradeNumber }} - {{ $firstPart }}
+                                                    Trade #{{ $tradeNumber }} - 
+                                                    @if($position['market'] && $position['market']->event)
+                                                        <a href="{{ route('market.details', $position['market']->event->slug ?? $position['market']->event->id) }}" 
+                                                           style="color: var(--text-primary); text-decoration: none; transition: color 0.2s;"
+                                                           onmouseover="this.style.color='var(--primary-color, #3b82f6)'" 
+                                                           onmouseout="this.style.color='var(--text-primary)'">
+                                                            {{ $firstPart }}
+                                                        </a>
+                                                    @else
+                                                        {{ $firstPart }}
+                                                    @endif
                                                 </div>
 
                                                 @if ($secondPart)
@@ -621,27 +640,49 @@
                                         @if ($activity['type'] === 'trade')
                                             @php
                                                 $trade = $activity['data'];
-                                                $amount = $trade->amount_invested ?? ($trade->amount ?? 0);
+                                                // Use amount_invested (primary) or fallback to amount
+                                                $amountInvested = $trade->amount_invested ?? ($trade->amount ?? 0);
                                                 $profitLoss = 0;
                                                 $profitLossLabel = '';
 
                                                 $tradeStatusUpper = strtoupper($trade->status ?? 'PENDING');
+                                                
                                                 if ($tradeStatusUpper === 'WON' || $tradeStatusUpper === 'WIN') {
-                                                    $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
-                                                    $profitLoss = $payout - $amount;
+                                                    // WON: payout = token_amount * 1.00, profit = payout - amount_invested
+                                                    $tokenAmount = $trade->token_amount ?? ($trade->shares ?? 0);
+                                                    
+                                                    // If token_amount not set, calculate from payout
+                                                    if (!$tokenAmount || $tokenAmount <= 0) {
+                                                        $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
+                                                        if ($payout > 0) {
+                                                            $tokenAmount = $payout; // payout = token_amount * 1.00
+                                                        } else {
+                                                            // Fallback: calculate from amount and price
+                                                            $priceAtBuy = $trade->price_at_buy ?? ($trade->price ?? 0.0001);
+                                                            $tokenAmount = $priceAtBuy > 0 ? $amountInvested / $priceAtBuy : 0;
+                                                        }
+                                                    }
+                                                    
+                                                    // Calculate payout: token_amount * $1.00
+                                                    $payout = $tokenAmount * 1.00;
+                                                    
+                                                    // Profit = payout - amount_invested
+                                                    $profitLoss = $payout - $amountInvested;
                                                     $profitLossLabel = 'Profit';
-                                                } elseif (
-                                                    $tradeStatusUpper === 'LOST' ||
-                                                    $tradeStatusUpper === 'LOSS'
-                                                ) {
-                                                    $profitLoss = -$amount;
+                                                    
+                                                } elseif ($tradeStatusUpper === 'LOST' || $tradeStatusUpper === 'LOSS') {
+                                                    // LOST: no payout, loss = -amount_invested
+                                                    $profitLoss = -$amountInvested;
                                                     $profitLossLabel = 'Loss';
+                                                    
                                                 } elseif ($tradeStatusUpper === 'CLOSED' && $trade->payout) {
-                                                    // Closed position
-                                                    $profitLoss = $trade->payout - $amount;
+                                                    // Closed position with payout
+                                                    $payout = $trade->payout ?? ($trade->payout_amount ?? 0);
+                                                    $profitLoss = $payout - $amountInvested;
                                                     $profitLossLabel = $profitLoss >= 0 ? 'Profit' : 'Loss';
+                                                    
                                                 } else {
-                                                    // Pending - calculate based on current market price if available
+                                                    // PENDING - calculate based on current market price
                                                     if ($trade->market) {
                                                         $market = $trade->market;
                                                         $outcomePrices = is_string(
@@ -654,20 +695,31 @@
                                                             : $market->outcome_prices ??
                                                                 ($market->outcomePrices ?? [0.5, 0.5]);
 
-                                                        $avgPrice = $trade->price_at_buy ?? ($trade->price ?? 0.5);
+                                                        // Get price at buy
+                                                        $priceAtBuy = $trade->price_at_buy ?? ($trade->price ?? 0.5);
+                                                        
+                                                        // Get token amount
+                                                        $tokenAmount = $trade->token_amount ?? ($trade->shares ?? 0);
+                                                        if (!$tokenAmount || $tokenAmount <= 0) {
+                                                            $tokenAmount = $priceAtBuy > 0 ? $amountInvested / $priceAtBuy : 0;
+                                                        }
+                                                        
+                                                        // Get current price based on outcome
                                                         $outcome = strtoupper(
                                                             $trade->outcome ?? ($trade->side ?? 'YES'),
                                                         );
                                                         $currentPrice =
                                                             $outcome === 'YES' && isset($outcomePrices[1])
-                                                                ? $outcomePrices[1]
+                                                                ? (float) $outcomePrices[1]
                                                                 : ($outcome === 'NO' && isset($outcomePrices[0])
-                                                                    ? $outcomePrices[0]
-                                                                    : $avgPrice);
+                                                                    ? (float) $outcomePrices[0]
+                                                                    : $priceAtBuy);
 
-                                                        $shares = $avgPrice > 0 ? $amount / $avgPrice : $amount;
-                                                        $currentValue = $shares * $currentPrice;
-                                                        $profitLoss = $currentValue - $amount;
+                                                        // Current value = token_amount * current_price
+                                                        $currentValue = $tokenAmount * $currentPrice;
+                                                        
+                                                        // Profit/Loss = current_value - amount_invested
+                                                        $profitLoss = $currentValue - $amountInvested;
                                                         $profitLossLabel = $profitLoss >= 0 ? 'Profit' : 'Loss';
                                                     } else {
                                                         $profitLoss = 0;
@@ -678,7 +730,7 @@
                                             <div class="activity-item"
                                                 style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;"
                                                 data-activity-type="trade" data-activity-id="{{ $trade->id }}"
-                                                data-amount="{{ $amount }}">
+                                                data-amount="{{ $amountInvested }}">
                                                 <div style="flex: 1;">
                                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                                                         <div
@@ -690,8 +742,13 @@
                                                                 style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">
                                                                 Trade #{{ $trade->id }}
                                                                 @if ($trade->market && $trade->market->event)
-                                                                    -
-                                                                    {{ \Illuminate\Support\Str::limit($trade->market->event->title, 40) }}
+                                                                    - 
+                                                                    <a href="{{ route('market.details', $trade->market->event->slug ?? $trade->market->event->id) }}" 
+                                                                       style="color: var(--text-primary); text-decoration: none; transition: color 0.2s;"
+                                                                       onmouseover="this.style.color='var(--primary-color, #3b82f6)'" 
+                                                                       onmouseout="this.style.color='var(--text-primary)'">
+                                                                        {{ \Illuminate\Support\Str::limit($trade->market->event->title, 40) }}
+                                                                    </a>
                                                                 @endif
                                                             </div>
                                                             <div style="font-size: 0.85rem; color: var(--text-secondary);">
