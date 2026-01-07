@@ -194,42 +194,73 @@ new class extends Component {
 @push('scripts')
 <script>
     document.addEventListener('livewire:init', () => {
-        // Handle Success Reload
+        // Handle Deposit Success
         Livewire.on('deposit-submitted', (event) => {
             const data = Array.isArray(event) ? event[0] : event;
             
-            if (typeof closeDepositModal === 'function') closeDepositModal();
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Request Submitted',
-                text: data.message,
-                confirmButtonColor: '#ffb11a',
-                confirmButtonText: 'OK',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.reload(); // Confirm chaple reload hobe
-                }
-            });
+            // Use showSuccess function if available, otherwise use Swal
+            if (typeof showSuccess !== 'undefined') {
+                showSuccess(
+                    data.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.',
+                    'Deposit Submitted'
+                );
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deposit Submitted',
+                    text: data.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.',
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#ffb11a',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.success(data.message || 'Deposit request submitted successfully!', 'Deposit Submitted');
+            }
+
+            // Reload after a delay to update balance
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         });
 
-        // Handle MetaMask Instructions
+        // Handle MetaMask Deposit
         Livewire.on('deposit-metamask', (event) => {
             const data = Array.isArray(event) ? event[0] : event;
-            Swal.fire({
-                title: 'MetaMask Info',
-                text: `Send ${data.amount} ${data.currency} to our wallet.`,
-                icon: 'info'
-            }).then(() => {
-                window.location.reload();
-            });
+            
+            if (typeof showInfo !== 'undefined') {
+                showInfo(
+                    `Please send ${data.amount} ${data.currency} to our MetaMask wallet. Your transaction will be verified automatically.`,
+                    'MetaMask Deposit'
+                );
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'MetaMask Deposit',
+                    text: `Please send ${data.amount} ${data.currency} to our MetaMask wallet. Your transaction will be verified automatically.`,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    toast: true,
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.info(`Please send ${data.amount} ${data.currency} to our MetaMask wallet.`, 'MetaMask Deposit');
+            }
         });
         
-        // Handle Binance Redirect
+        // Handle Binance Pay Redirect
         Livewire.on('deposit-binance', (event) => {
             const data = Array.isArray(event) ? event[0] : event;
-            if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            }
         });
     });
 </script>

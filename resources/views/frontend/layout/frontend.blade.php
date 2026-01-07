@@ -2261,27 +2261,34 @@ if ($logo) {
                             closeDepositModal();
 
                             // Show success message and verify transaction
-                            Swal.fire({
-                                title: 'Transaction Sent!',
-                                html: `
-                                    <div style="text-align: left; color: var(--text-primary, #333);">
-                                        <p style="color: var(--text-primary, #333); margin-bottom: 10px;">
-                                            <strong>Transaction Hash:</strong>
-                                        </p>
-                                        <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444);">
-                                            ${txHash}
+                            if (typeof showSuccess !== 'undefined') {
+                                showSuccess(
+                                    `Transaction sent! Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}. Please wait for confirmation...`,
+                                    'Transaction Sent'
+                                );
+                            } else if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Transaction Sent!',
+                                    html: `
+                                        <div style="text-align: left; color: var(--text-primary, #333);">
+                                            <p style="color: var(--text-primary, #333); margin-bottom: 10px;">
+                                                <strong>Transaction Hash:</strong>
+                                            </p>
+                                            <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444);">
+                                                ${txHash}
+                                            </div>
+                                            <p style="margin-top: 15px; color: var(--text-primary, #333);">
+                                                Your transaction has been sent. Please wait for confirmation...
+                                            </p>
                                         </div>
-                                        <p style="margin-top: 15px; color: var(--text-primary, #333);">
-                                            Your transaction has been sent. Please wait for confirmation...
-                                        </p>
-                                    </div>
-                                `,
-                                icon: 'success',
-                                showConfirmButton: true,
-                                confirmButtonText: 'OK',
-                                confirmButtonColor: '#3085d6',
-                                allowOutsideClick: false
-                            });
+                                    `,
+                                    icon: 'success',
+                                    showConfirmButton: true,
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#3085d6',
+                                    allowOutsideClick: false
+                                });
+                            }
 
                             // Automatically verify transaction
                             verifyMetaMaskTransaction(txHash, response.deposit_id, network, $btn,
