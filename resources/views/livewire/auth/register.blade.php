@@ -2,6 +2,12 @@
     <div class="flex flex-col gap-6">
         <div class="auth-title-section">
             <h1>{{ __('Create an account') }}</h1>
+            @if(session('referral'))
+                <div class="auth-alert alert-success" style="margin-top: 1rem;">
+                    <i class="fas fa-gift"></i> You were referred by <strong>{{ session('referral')['name'] }}</strong>! 
+                    You'll both earn rewards when you make your first deposit.
+                </div>
+            @endif
         </div>
 
         <!-- Session Status -->

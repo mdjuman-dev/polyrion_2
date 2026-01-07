@@ -108,14 +108,14 @@
                 <div class="header-content d-lg-flex d-none">
                     <a href="{{ route('home') }}" class="logo">
                         @php
-$logoExists = false;
-if ($logo) {
-   if (str_starts_with($logo, 'http')) {
-      $logoExists = true;
-   } else {
-      $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
-   }
-}
+                            $logoExists = false;
+                            if ($logo) {
+                            if (str_starts_with($logo, 'http')) {
+                                $logoExists = true;
+                            } else {
+                                $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+                            }
+                            }
                         @endphp
                         @if ($logo && $logoExists)
                             <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"
@@ -132,16 +132,12 @@ if ($logo) {
                     <div class="header-actions d-flex align-items-center justify-content-end">
                         @if (auth()->check())
                             @php
-   $wallet = $authUser?->wallet;
-   $portfolio = $wallet->portfolio ?? 0;
-   $cash = $wallet->balance ?? 0;
+                                $wallet = $authUser?->wallet;
+                                $portfolio = $wallet->portfolio ?? 0;
+                                $cash = $wallet->balance ?? 0;
                             @endphp
 
                             <div class="wallet-summary">
-                                <div class="wallet-item">
-                                    <span class="wallet-label">Portfolio</span>
-                                    <span class="wallet-value">${{ number_format($portfolio, 2) }}</span>
-                                </div>
                                 <div class="wallet-item">
                                     <span class="wallet-label">Cash</span>
                                     <span class="wallet-value">${{ number_format($cash, 2) }}</span>

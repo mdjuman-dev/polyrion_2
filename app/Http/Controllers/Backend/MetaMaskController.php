@@ -739,6 +739,20 @@ class MetaMaskController extends Controller
             ]);
         }
 
+        // Distribute referral commissions
+        try {
+            $referralService = new \App\Services\ReferralService();
+            $referralService->distributeCommission($user, (float) $deposit->amount);
+        } catch (\Exception $e) {
+            // Log error but don't fail the deposit
+            Log::error('Failed to distribute referral commission', [
+                'deposit_id' => $deposit->id,
+                'user_id' => $user->id,
+                'amount' => $deposit->amount,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         Log::info('MetaMask deposit processed', [
             'deposit_id' => $deposit->id,
             'user_id' => $user->id,

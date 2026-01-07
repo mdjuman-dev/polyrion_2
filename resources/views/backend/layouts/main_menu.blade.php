@@ -71,11 +71,28 @@
                 @endif
 
                 @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage global settings', 'admin')))
-                <li class="{{ request()->routeIs('admin.setting') ? 'active' : '' }}">
-                    <a href="{{ route('admin.setting') }}">
+                <li class="treeview {{ request()->routeIs('admin.setting') || request()->routeIs('admin.referral-settings.*') ? 'menu-open active' : '' }}">
+                    <a href="#">
                         <i data-feather="settings"></i>
                         <span>Settings</span>
+                        <span class="pull-right-container">
+                            <i class="fa fa-angle-left pull-right"></i>
+                        </span>
                     </a>
+                    <ul class="treeview-menu">
+                        <li class="{{ request()->routeIs('admin.setting') ? 'active' : '' }}">
+                            <a href="{{ route('admin.setting') }}">
+                                <i data-feather="settings"></i>
+                                <span>Global Settings</span>
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('admin.referral-settings.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.referral-settings.index') }}">
+                                <i data-feather="users"></i>
+                                <span>Referral Settings</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 @endif
 

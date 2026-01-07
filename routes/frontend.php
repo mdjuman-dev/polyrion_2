@@ -102,3 +102,6 @@ Route::get('/faq', [FaqController::class, 'index'])->name('faq');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::get('/support', [ContactController::class, 'index'])->name('support');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+// Referral Routes
+Route::get('/ref/{username}', [\App\Http\Controllers\Frontend\ReferralController::class, 'referralLink'])->name('referral.link');

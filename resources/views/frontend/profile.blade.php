@@ -125,6 +125,7 @@
                             <button type="button" class="content-tab" data-tab="activity">Activity</button>
                             <button type="button" class="content-tab" data-tab="deposits">Deposits</button>
                             <button type="button" class="content-tab" data-tab="withdrawals">Withdrawal</button>
+                            <button type="button" class="content-tab" data-tab="referral">Referral</button>
                             <button type="button" class="content-tab" data-tab="settings">Profile</button>
                         </div>
 
@@ -1208,6 +1209,129 @@
 
                                 </div>
                             @endif
+                        </div>
+
+                        <!-- Referral Tab Content -->
+                        <div class="tab-content-wrapper d-none" id="referral-tab">
+                            <div style="padding: 2rem; background: var(--card-bg); border-radius: 12px;">
+                                <h3 style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-users" style="color: #ffb11a;"></i>
+                                    Referral Program
+                                </h3>
+
+                                <!-- Referral Link Section -->
+                                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                                    <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                                        Your Referral Link
+                                    </label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="text" id="referralLinkInput" readonly 
+                                            value="{{ $referralLink }}"
+                                            style="flex: 1; padding: 0.75rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.875rem; font-family: monospace;">
+                                        <button type="button" id="copyReferralLinkBtn" 
+                                            onclick="copyReferralLink()"
+                                            style="padding: 0.75rem; background: #ffb11a; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; width: 45px; height: 45px;"
+                                            onmouseover="if(this.style.background !== 'rgb(16, 185, 129)') this.style.background='#e6a017'"
+                                            onmouseout="if(this.style.background !== 'rgb(16, 185, 129)') this.style.background='#ffb11a'"
+                                            title="Copy referral link">
+                                            <i class="fas fa-copy" id="copyIcon"></i>
+                                        </button>
+                                    </div>
+                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                        Share this link with friends and earn commissions when they deposit!
+                                    </p>
+                                </div>
+
+                                <!-- Referral Stats -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Total Referrals
+                                        </div>
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                                            {{ $referralStats['total_referrals'] ?? 0 }}
+                                        </div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Total Commissions
+                                        </div>
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: #10b981;">
+                                            ${{ number_format($referralStats['total_commissions'] ?? 0, 2) }}
+                                        </div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Level 1 Commissions
+                                        </div>
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                                            ${{ number_format($referralStats['level_1_commissions'] ?? 0, 2) }}
+                                        </div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Level 2 Commissions
+                                        </div>
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                                            ${{ number_format($referralStats['level_2_commissions'] ?? 0, 2) }}
+                                        </div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Level 3 Commissions
+                                        </div>
+                                        <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                                            ${{ number_format($referralStats['level_3_commissions'] ?? 0, 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Recent Commissions -->
+                                @if(!empty($referralStats['recent_commissions']))
+                                <div>
+                                    <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem;">
+                                        Recent Commissions
+                                    </h4>
+                                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <thead>
+                                                <tr style="background: var(--card-bg); border-bottom: 1px solid var(--border);">
+                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Date</th>
+                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Source</th>
+                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Level</th>
+                                                    <th style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($referralStats['recent_commissions'] as $commission)
+                                                <tr style="border-bottom: 1px solid var(--border);">
+                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                        {{ \Carbon\Carbon::parse($commission['created_at'])->format('M d, Y') }}
+                                                    </td>
+                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                        {{ $commission['source_user'] }}
+                                                    </td>
+                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                        <span style="background: rgba(255, 177, 26, 0.15); color: #ffb11a; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                                                            Level {{ $commission['level'] }}
+                                                        </span>
+                                                    </td>
+                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: #10b981; font-weight: 600; text-align: right;">
+                                                        +${{ number_format($commission['amount'], 2) }}
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                @else
+                                <div style="text-align: center; padding: 2rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;">
+                                    <i class="fas fa-inbox" style="font-size: 2rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                                    <p style="color: var(--text-secondary);">No commissions yet. Start referring friends to earn!</p>
+                                </div>
+                                @endif
+                            </div>
                         </div>
 
                         <!-- Settings Tab Content -->
@@ -3695,5 +3819,89 @@
                     });
                 });
             });
+
+            // Copy Referral Link Function
+            function copyReferralLink() {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const input = document.getElementById('referralLinkInput');
+                const referralLink = input.value;
+                const copyBtn = document.getElementById('copyReferralLinkBtn');
+                const copyIcon = document.getElementById('copyIcon');
+
+                // Function to update icon state
+                function updateIconState(success) {
+                    if (success) {
+                        // Change to success state
+                        copyIcon.classList.remove('fa-copy');
+                        copyIcon.classList.add('fa-check');
+                        copyBtn.style.background = '#10b981';
+                        copyBtn.style.color = '#fff';
+                        copyBtn.title = 'Copied!';
+                        
+                        // Show success notification
+                        if (typeof showSuccess !== 'undefined') {
+                            showSuccess('Referral link copied to clipboard!', 'Copied');
+                        } else if (typeof toastr !== 'undefined') {
+                            toastr.success('Referral link copied to clipboard!', 'Copied');
+                        }
+
+                        // Reset icon after 2 seconds
+                        setTimeout(function() {
+                            copyIcon.classList.remove('fa-check');
+                            copyIcon.classList.add('fa-copy');
+                            copyBtn.style.background = '#ffb11a';
+                            copyBtn.style.color = '#000';
+                            copyBtn.title = 'Copy referral link';
+                        }, 2000);
+                    } else {
+                        // Show error
+                        if (typeof showError !== 'undefined') {
+                            showError('Failed to copy link. Please copy manually.', 'Error');
+                        } else if (typeof toastr !== 'undefined') {
+                            toastr.error('Failed to copy link. Please copy manually.', 'Error');
+                        } else {
+                            alert('Failed to copy. Please copy manually.');
+                        }
+                    }
+                }
+
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(referralLink).then(function() {
+                        updateIconState(true);
+                    }).catch(function(err) {
+                        console.error('Clipboard API failed:', err);
+                        // Fallback to execCommand
+                        tryFallbackCopy();
+                    });
+                } else {
+                    // Use fallback method
+                    tryFallbackCopy();
+                }
+
+                // Fallback copy method using execCommand
+                function tryFallbackCopy() {
+                    try {
+                        // Select the input text
+                        input.focus();
+                        input.select();
+                        input.setSelectionRange(0, 99999); // For mobile devices
+                        
+                        // Copy using execCommand
+                        const successful = document.execCommand('copy');
+                        
+                        if (successful) {
+                            updateIconState(true);
+                        } else {
+                            updateIconState(false);
+                        }
+                    } catch (err) {
+                        console.error('Copy failed:', err);
+                        updateIconState(false);
+                    }
+                }
+            }
         @endpush
     @endsection
