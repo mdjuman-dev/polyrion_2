@@ -3249,26 +3249,37 @@
                                 closeWithdrawalModal();
                             }
 
+                            // Use showSuccess function if available
                             if (typeof showSuccess !== 'undefined') {
-                                showSuccess(data.message ||
-                                    'Withdrawal request submitted successfully.', 'Success');
-                            } else if (typeof toastr !== 'undefined') {
-                                toastr.success(data.message ||
-                                    'Withdrawal request submitted successfully.', 'Success');
+                                showSuccess(
+                                    data.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.',
+                                    'Withdrawal Submitted'
+                                );
                             } else if (typeof Swal !== 'undefined') {
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Request Submitted',
-                                    text: data.message ||
-                                        'Withdrawal request submitted successfully.',
+                                    title: 'Withdrawal Submitted',
+                                    text: data.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.',
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 4000,
+                                    timerProgressBar: true,
+                                    toast: true,
                                     confirmButtonColor: '#ffb11a',
-                                    confirmButtonText: 'OK',
-                                    allowOutsideClick: false
                                 });
+                            } else if (typeof toastr !== 'undefined') {
+                                toastr.success(
+                                    data.message || 'Withdrawal request submitted successfully!',
+                                    'Withdrawal Submitted'
+                                );
                             } else {
-                                alert(data.message ||
-                                    'Withdrawal request submitted successfully.');
+                                alert(data.message || 'Withdrawal request submitted successfully!');
                             }
+
+                            // Reload after a delay to update balance
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
                         }, 100);
                     });
                 });
