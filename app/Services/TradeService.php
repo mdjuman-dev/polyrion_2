@@ -214,6 +214,17 @@ class TradeService
 
          DB::commit();
 
+         // Dispatch job to process trade-based referral commission (async)
+         try {
+            \App\Jobs\ProcessTradeCommission::dispatch($trade);
+         } catch (\Exception $e) {
+            // Log error but don't fail the trade creation
+            Log::error('Failed to dispatch ProcessTradeCommission job', [
+               'trade_id' => $trade->id,
+               'error' => $e->getMessage(),
+            ]);
+         }
+
          Log::info('Trade created successfully', [
             'trade_id' => $trade->id,
             'user_id' => $user->id,

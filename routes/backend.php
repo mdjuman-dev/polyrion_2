@@ -88,6 +88,12 @@ Route::prefix('/admin')->name('admin.')->group(function () {
          Route::post('/setting/update', 'settingUpdate')->name('setting.update');
       });
 
+      // Referral Settings Routes
+      Route::controller(\App\Http\Controllers\Backend\ReferralSettingsController::class)->prefix('referral-settings')->name('referral-settings.')->middleware('permission:manage global settings,admin')->group(function () {
+         Route::get('/', 'index')->name('index');
+         Route::post('/update', 'update')->name('update');
+      });
+
       // Payment Settings Routes
       Route::controller(PaymentSettingsController::class)->prefix('payment')->name('payment.')->middleware('permission:manage payment settings,admin')->group(function () {
          Route::get('/settings', 'index')->name('settings');

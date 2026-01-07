@@ -56,6 +56,8 @@ class User extends Authenticatable
         'id_back_photo',
         'id_biodata_photo',
         'id_verification_status',
+        'referrer_id',
+        'balance',
     ];
 
     /**
@@ -83,6 +85,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'withdrawal_password' => 'hashed',
             'id_date_of_birth' => 'date',
+            'balance' => 'decimal:8',
         ];
     }
 
@@ -156,5 +159,37 @@ class User extends Authenticatable
     public function pendingTrades()
     {
         return $this->hasMany(Trade::class)->where('status', 'pending');
+    }
+
+    /**
+     * Get the user who referred this user (upline)
+     */
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referrer_id');
+    }
+
+    /**
+     * Get all users referred by this user (downline - direct referrals)
+     */
+    public function referrals()
+    {
+        return $this->hasMany(User::class, 'referrer_id');
+    }
+
+    /**
+     * Get all referral commissions received by this user
+     */
+    public function referralLogs()
+    {
+        return $this->hasMany(ReferralLog::class, 'user_id');
+    }
+
+    /**
+     * Get referral logs where this user was the source (depositor)
+     */
+    public function sourceReferralLogs()
+    {
+        return $this->hasMany(ReferralLog::class, 'source_user_id');
     }
 }

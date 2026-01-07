@@ -102,6 +102,20 @@ class CreateNewUser implements CreatesNewUsers
             $userData['number'] = $emailOrNumber;
         }
 
+        // Handle referral code from session (set by referral link)
+        if (session()->has('referrer_id')) {
+            $referrerId = session()->get('referrer_id');
+            $referrer = User::find($referrerId);
+            
+            // Only set referrer if valid and not self-referral
+            if ($referrer && $referrer->id) {
+                $userData['referrer_id'] = $referrer->id;
+            }
+            
+            // Clear the session after use
+            session()->forget('referrer_id');
+        }
+
         return User::create($userData);
     }
 

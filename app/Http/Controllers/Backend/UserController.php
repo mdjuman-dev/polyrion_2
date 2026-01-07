@@ -296,6 +296,20 @@ class UserController extends Controller
                 ],
             ]);
 
+            // Distribute referral commissions
+            try {
+                $referralService = new \App\Services\ReferralService();
+                $referralService->distributeCommission($user, $amount);
+            } catch (\Exception $e) {
+                // Log error but don't fail the deposit
+                Log::error('Failed to distribute referral commission for test deposit', [
+                    'deposit_id' => $deposit->id,
+                    'user_id' => $user->id,
+                    'amount' => $amount,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             DB::commit();
 
             Log::info('Test deposit added', [

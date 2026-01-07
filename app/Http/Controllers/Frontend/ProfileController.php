@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\PasswordChangeOtp;
 use App\Models\UserKycVerification;
 use App\Notifications\PasswordChangeOtpNotification;
+use App\Services\ReferralService;
 
 class ProfileController extends Controller
 {
@@ -120,7 +121,14 @@ class ProfileController extends Controller
       $metamaskWallet = $user->metamask_wallet_address;
       $kycVerification = $user->kycVerification;
 
-      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet', 'kycVerification'));
+      // Get referral stats
+      $referralService = new ReferralService();
+      $referralStats = $referralService->getUserReferralStats($user);
+      
+      // Generate referral link
+      $referralLink = route('referral.link', ['username' => $user->username]);
+
+      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet', 'kycVerification', 'referralStats', 'referralLink'));
    }
 
    function settings()
