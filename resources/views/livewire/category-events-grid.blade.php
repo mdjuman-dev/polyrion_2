@@ -1,20 +1,4 @@
 <div wire:poll.5s="refreshEvents" data-component="category-events-grid">
-    <!-- Search Bar -->
-    <div class="secondary-filters mb-4">
-        <div class="filter-top-bar d-lg-flex d-block">
-            <div class="row align-items-center">
-                <div class="secondary-search-bar">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search events..."
-                        class="secondary-search-input" id="categorySearchInput">
-                </div>
-            </div>
-            <a href="{{ route('saved.events') }}" class="bookmark-icon-btn" title="Saved Events">
-                <i class="fas fa-bookmark"></i>
-            </a>
-        </div>
-    </div>
-
     <!-- Markets Grid -->
     @if ($events->count() > 0)
         <div class="markets-grid mt-3 mt-lg-0">
@@ -29,11 +13,22 @@
         </div>
 
         @if ($hasMore)
-            <div x-intersect.threshold.10="$wire.loadMore()" class="text-center">
+            <div x-intersect.threshold.10="$wire.loadMore()" 
+                 x-intersect:enter="$wire.loadMore()"
+                 class="text-center" 
+                 style="padding: 20px; min-height: 60px;">
                 <div wire:loading wire:target="loadMore" class="d-flex align-items-center justify-content-center gap-2">
                     <span class="loader"></span>
+                    <span style="color: var(--text-secondary); font-size: 14px;">Loading more events...</span>
                 </div>
             </div>
+        @else
+            @if($events->count() > 0)
+                <div class="text-center py-4" style="color: var(--text-secondary); font-size: 14px;">
+                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+                    All events loaded
+                </div>
+            @endif
         @endif
     @else
         <div class="text-center py-5">

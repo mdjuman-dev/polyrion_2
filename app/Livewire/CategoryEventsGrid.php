@@ -8,12 +8,18 @@ use Livewire\Component;
 class CategoryEventsGrid extends Component
 {
     public $category;
+    public $subcategory = 'all';
     public $search = '';
     public $perPage = 20;
 
-    public function mount($category)
+    protected $queryString = [
+        'subcategory' => ['except' => 'all'],
+    ];
+
+    public function mount($category, $subcategory = 'all')
     {
         $this->category = $category;
+        $this->subcategory = $subcategory ?: request()->get('subcategory', 'all');
     }
 
     public function loadMore()
@@ -21,6 +27,11 @@ class CategoryEventsGrid extends Component
         if ($this->perPage < 1000) {
             $this->perPage += 20;
         }
+    }
+
+    public function updatedSubcategory()
+    {
+        $this->perPage = 20;
     }
 
     public function updatingSearch()
@@ -52,6 +63,22 @@ class CategoryEventsGrid extends Component
             $query->byCategory($categoryName);
         }
 
+        // Filter by sub-category
+        if ($this->subcategory && $this->subcategory !== 'all') {
+            $subCategoryKeywords = $this->getSubCategoryKeywords($this->subcategory, $this->category);
+            $query->where(function ($q) use ($subCategoryKeywords) {
+                foreach ($subCategoryKeywords as $keyword) {
+                    $q->orWhere('title', 'LIKE', '%' . $keyword . '%');
+                }
+            });
+
+            $query->whereHas('markets', function ($q) use ($subCategoryKeywords) {
+                foreach ($subCategoryKeywords as $keyword) {
+                    $q->orWhere('question', 'LIKE', '%' . $keyword . '%');
+                }
+            });
+        }
+
         // Search functionality
         if (!empty($this->search)) {
             $query->where(function ($q) {
@@ -77,6 +104,39 @@ class CategoryEventsGrid extends Component
             'hasMore' => $hasMore,
             'category' => $this->category
         ]);
+    }
+
+    private function getSubCategoryKeywords($subcategory, $category)
+    {
+        $patterns = [
+            'Geopolitics' => [
+                'ukraine' => ['ukraine', 'russian', 'russia', 'putin', 'zelensky'],
+                'venezuela' => ['venezuela', 'maduro', 'guaidó'],
+                'iran' => ['iran', 'khamenei', 'iranian', 'tehran'],
+                'gaza' => ['gaza', 'palestine', 'palestinian'],
+                'israel' => ['israel', 'israeli', 'netanyahu'],
+                'sudan' => ['sudan', 'sudanese'],
+                'china' => ['china', 'chinese', 'beijing', 'xi jinping'],
+                'thailand-cambodia' => ['thailand', 'cambodia', 'thai', 'cambodian'],
+                'middle-east' => ['middle east', 'syria', 'iraq', 'yemen', 'lebanon'],
+                'us-strikes' => ['us strikes', 'us strike', 'american strike'],
+                'taiwan' => ['taiwan', 'taiwanese'],
+                'north-korea' => ['north korea', 'north korean', 'kim jong'],
+            ],
+            'Tech' => [
+                'ai' => ['artificial intelligence', 'ai', 'machine learning', 'ml'],
+                'apple' => ['apple', 'iphone', 'ipad', 'macbook'],
+                'google' => ['google', 'alphabet', 'android'],
+                'microsoft' => ['microsoft', 'windows', 'azure'],
+                'meta' => ['meta', 'facebook', 'instagram', 'whatsapp'],
+                'tesla' => ['tesla', 'elon musk', 'model s', 'model 3'],
+                'amazon' => ['amazon', 'aws', 'alexa'],
+                'netflix' => ['netflix', 'streaming'],
+            ],
+        ];
+
+        $categoryPatterns = $patterns[$category] ?? [];
+        return $categoryPatterns[strtolower($subcategory)] ?? [strtolower($subcategory)];
     }
 }
 

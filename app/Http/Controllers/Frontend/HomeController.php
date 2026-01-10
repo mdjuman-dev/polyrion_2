@@ -368,9 +368,164 @@ class HomeController extends Controller
       return view('frontend.new');
    }
 
-   function eventsByCategory($category)
+   function eventsByCategory($category, Request $request)
    {
-      return view('frontend.events_by_category', compact('category'));
+      // Get all events for this category to extract dynamic sub-categories
+      $categoryName = ucfirst(strtolower($category));
+      $allCategoryEvents = Event::where('category', $categoryName)
+         ->where('active', true)
+         ->where('closed', false)
+         ->with('markets')
+         ->get();
+
+      // Extract dynamic sub-categories from event titles and market questions
+      $dynamicSubCategories = $this->extractSubCategoriesFromEvents($allCategoryEvents, $categoryName);
+
+      // Get popular sub-categories (top 10 by event count)
+      $popularSubCategories = collect($dynamicSubCategories)
+         ->sortByDesc('count')
+         ->take(10)
+         ->values()
+         ->all();
+
+      // Get selected sub-category from query parameters
+      $selectedSubCategory = $request->get('subcategory', 'all');
+
+      return view('frontend.events_by_category', compact(
+         'category',
+         'popularSubCategories',
+         'selectedSubCategory'
+      ));
+   }
+
+   /**
+    * Extract sub-categories dynamically from event titles and market questions
+    */
+   private function extractSubCategoriesFromEvents($events, $categoryName)
+   {
+      $subCategories = [];
+      
+      // Define sub-category patterns based on category
+      $patterns = $this->getSubCategoryPatterns($categoryName);
+
+      foreach ($events as $event) {
+         $title = strtolower($event->title);
+         $markets = $event->markets;
+
+         foreach ($patterns as $subCategoryName => $keywords) {
+            foreach ($keywords as $keyword) {
+               if (strpos($title, $keyword) !== false) {
+                  if (!isset($subCategories[$subCategoryName])) {
+                     $subCategories[$subCategoryName] = [
+                        'name' => $subCategoryName,
+                        'count' => 0,
+                        'slug' => strtolower(str_replace(' ', '-', $subCategoryName)),
+                     ];
+                  }
+                  if (!isset($subCategories[$subCategoryName]['counted_events'][$event->id])) {
+                     $subCategories[$subCategoryName]['count']++;
+                     $subCategories[$subCategoryName]['counted_events'][$event->id] = true;
+                  }
+                  break;
+               }
+            }
+
+            // Also check market questions
+            foreach ($markets as $market) {
+               $question = strtolower($market->question ?? '');
+               foreach ($keywords as $keyword) {
+                  if (strpos($question, $keyword) !== false) {
+                     if (!isset($subCategories[$subCategoryName])) {
+                        $subCategories[$subCategoryName] = [
+                           'name' => $subCategoryName,
+                           'count' => 0,
+                           'slug' => strtolower(str_replace(' ', '-', $subCategoryName)),
+                        ];
+                     }
+                     if (!isset($subCategories[$subCategoryName]['counted_events'][$event->id])) {
+                        $subCategories[$subCategoryName]['count']++;
+                        $subCategories[$subCategoryName]['counted_events'][$event->id] = true;
+                     }
+                     break;
+                  }
+               }
+            }
+         }
+      }
+
+      // Clean up counted_events from result
+      foreach ($subCategories as &$subCategory) {
+         unset($subCategory['counted_events']);
+      }
+
+      return $subCategories;
+   }
+
+   /**
+    * Get sub-category patterns based on category
+    */
+   private function getSubCategoryPatterns($categoryName)
+   {
+      $patterns = [
+         'Geopolitics' => [
+            'Ukraine' => ['ukraine', 'russian', 'russia', 'putin', 'zelensky'],
+            'Venezuela' => ['venezuela', 'maduro', 'guaidó'],
+            'Iran' => ['iran', 'khamenei', 'iranian', 'tehran'],
+            'Gaza' => ['gaza', 'palestine', 'palestinian'],
+            'Israel' => ['israel', 'israeli', 'netanyahu'],
+            'Sudan' => ['sudan', 'sudanese'],
+            'China' => ['china', 'chinese', 'beijing', 'xi jinping'],
+            'Thailand-Cambodia' => ['thailand', 'cambodia', 'thai', 'cambodian'],
+            'Middle East' => ['middle east', 'syria', 'iraq', 'yemen', 'lebanon'],
+            'US Strikes' => ['us strikes', 'us strike', 'american strike'],
+            'Taiwan' => ['taiwan', 'taiwanese'],
+            'North Korea' => ['north korea', 'north korean', 'kim jong'],
+         ],
+         'Tech' => [
+            'AI' => ['artificial intelligence', 'ai', 'machine learning', 'ml'],
+            'Apple' => ['apple', 'iphone', 'ipad', 'macbook'],
+            'Google' => ['google', 'alphabet', 'android'],
+            'Microsoft' => ['microsoft', 'windows', 'azure'],
+            'Meta' => ['meta', 'facebook', 'instagram', 'whatsapp'],
+            'Tesla' => ['tesla', 'elon musk', 'model s', 'model 3'],
+            'Amazon' => ['amazon', 'aws', 'alexa'],
+            'Netflix' => ['netflix', 'streaming'],
+         ],
+         'Earnings' => [
+            'Q1' => ['q1', 'first quarter'],
+            'Q2' => ['q2', 'second quarter'],
+            'Q3' => ['q3', 'third quarter'],
+            'Q4' => ['q4', 'fourth quarter'],
+            'Annual' => ['annual', 'yearly'],
+         ],
+         'World' => [
+            'Europe' => ['europe', 'european', 'eu', 'european union'],
+            'Asia' => ['asia', 'asian'],
+            'Africa' => ['africa', 'african'],
+            'Americas' => ['america', 'american', 'latin america'],
+            'Oceania' => ['oceania', 'australia', 'new zealand'],
+         ],
+         'Culture' => [
+            'Movies' => ['movie', 'film', 'oscar', 'cinema'],
+            'Music' => ['music', 'album', 'song', 'grammy'],
+            'Sports' => ['sport', 'athlete', 'championship'],
+            'Entertainment' => ['entertainment', 'celebrity', 'tv show'],
+         ],
+         'Economy' => [
+            'Inflation' => ['inflation', 'cpi', 'consumer price'],
+            'GDP' => ['gdp', 'gross domestic product'],
+            'Unemployment' => ['unemployment', 'jobless', 'employment'],
+            'Interest Rates' => ['interest rate', 'fed rate', 'central bank'],
+         ],
+         'Climate & Science' => [
+            'Climate Change' => ['climate change', 'global warming', 'carbon'],
+            'Space' => ['space', 'nasa', 'rocket', 'satellite'],
+            'Health' => ['health', 'medical', 'disease', 'vaccine'],
+            'Environment' => ['environment', 'pollution', 'renewable'],
+         ],
+      ];
+
+      return $patterns[$categoryName] ?? [];
    }
 
    function getMarketPriceData($slug)

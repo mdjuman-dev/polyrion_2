@@ -113,6 +113,7 @@ class MarketsGrid extends Component
 
    public function loadMore()
    {
+      // Prevent loading if already at max or if there are no more events
       if ($this->perPage < 1000) {
          $this->perPage += 20;
       }

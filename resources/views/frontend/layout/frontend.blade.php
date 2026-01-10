@@ -262,16 +262,16 @@
                         <div class="col-5 text-start">
                             <a href="{{ route('home') }}" class="logo text-start">
                                 @php
-$logoExistsMobile = false;
-if ($logo) {
-   if (str_starts_with($logo, 'http')) {
-      $logoExistsMobile = true;
-   } else {
-      $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
-         'public',
-      )->exists($logo);
-   }
-}
+                                    $logoExistsMobile = false;
+                                    if ($logo) {
+                                    if (str_starts_with($logo, 'http')) {
+                                        $logoExistsMobile = true;
+                                    } else {
+                                        $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
+                                            'public',
+                                        )->exists($logo);
+                                    }
+                                    }
                                 @endphp
                                 @if ($logo && $logoExistsMobile)
                                     <img src="{{ str_starts_with($logo, 'http') ? $logo : asset('storage/' . $logo) }}"

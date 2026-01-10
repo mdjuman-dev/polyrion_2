@@ -27,6 +27,22 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/trending', 'trending')->name('trending');
     Route::get('/breaking', 'breaking')->name('breaking');
     Route::get('/new', 'newEvents')->name('new');
+    // Redirect /category/sports to /sports
+    Route::get('/category/sports', function() {
+        return redirect()->route('sports.index', request()->query());
+    })->name('category.sports.redirect');
+    // Redirect /category/politics to /politics
+    Route::get('/category/politics', function() {
+        return redirect()->route('politics.index', request()->query());
+    })->name('category.politics.redirect');
+    // Redirect /category/crypto to /crypto
+    Route::get('/category/crypto', function() {
+        return redirect()->route('crypto.index', request()->query());
+    })->name('category.crypto.redirect');
+    // Redirect /category/finance to /finance
+    Route::get('/category/finance', function() {
+        return redirect()->route('finance.index', request()->query());
+    })->name('category.finance.redirect');
     Route::get('/category/{category}', 'eventsByCategory')->name('events.by.category');
     Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
     Route::get('/api/market/{slug}/price-data', 'getMarketPriceData')->name('api.market.price.data');
@@ -105,3 +121,23 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 
 // Referral Routes
 Route::get('/ref/{username}', [\App\Http\Controllers\Frontend\ReferralController::class, 'referralLink'])->name('referral.link');
+
+// Sports Routes
+Route::controller(\App\Http\Controllers\Frontend\SportsController::class)->group(function () {
+    Route::get('/sports', 'index')->name('sports.index');
+});
+
+// Politics Routes
+Route::controller(\App\Http\Controllers\Frontend\PoliticsController::class)->group(function () {
+    Route::get('/politics', 'index')->name('politics.index');
+});
+
+// Crypto Routes
+Route::controller(\App\Http\Controllers\Frontend\CryptoController::class)->group(function () {
+    Route::get('/crypto', 'index')->name('crypto.index');
+});
+
+// Finance Routes
+Route::controller(\App\Http\Controllers\Frontend\FinanceController::class)->group(function () {
+    Route::get('/finance', 'index')->name('finance.index');
+});

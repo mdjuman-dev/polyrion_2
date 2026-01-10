@@ -209,8 +209,8 @@ new class extends Component {
                     'Deposit Submitted'
                 );
             } else if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
+            Swal.fire({
+                icon: 'success',
                     title: 'Deposit Submitted',
                     text: data.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.',
                     position: 'top-end',
@@ -218,7 +218,7 @@ new class extends Component {
                     timer: 4000,
                     timerProgressBar: true,
                     toast: true,
-                    confirmButtonColor: '#ffb11a',
+                confirmButtonColor: '#ffb11a',
                 });
             } else if (typeof toastr !== 'undefined') {
                 toastr.success(data.message || 'Deposit request submitted successfully!', 'Deposit Submitted');
@@ -240,7 +240,7 @@ new class extends Component {
                     'MetaMask Deposit'
                 );
             } else if (typeof Swal !== 'undefined') {
-                Swal.fire({
+            Swal.fire({
                     icon: 'info',
                     title: 'MetaMask Deposit',
                     text: `Please send ${data.amount} ${data.currency} to our MetaMask wallet. Your transaction will be verified automatically.`,
