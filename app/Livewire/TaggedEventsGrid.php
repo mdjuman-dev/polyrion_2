@@ -62,15 +62,15 @@ class TaggedEventsGrid extends Component
             'end_date', 'created_at'
         ])
         ->where('active', true)
-        ->where('closed', false)
-        ->where(function ($q) {
-            $q->whereNull('end_date')
-              ->orWhere('end_date', '>', now());
-        })
-        ->whereHas('tags', function ($q) use ($tag) {
-            $q->where('tags.id', $tag->id);
-        })
-        ->with(['markets' => function ($q) {
+            ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
+            ->whereHas('tags', function ($q) use ($tag) {
+                $q->where('tags.id', $tag->id);
+            })
+            ->with(['markets' => function ($q) {
             // Only active markets with all required fields
             $q->select([
                 'id', 'event_id', 'question', 'slug', 'groupItem_title',
@@ -80,13 +80,13 @@ class TaggedEventsGrid extends Component
                 'final_result', 'outcome_result', 'final_outcome', 'created_at'
             ])
             ->where('active', true)
-            ->where('closed', false)
-            ->where(function ($query) {
-                $query->whereNull('close_time')
-                      ->orWhere('close_time', '>', now());
+                  ->where('closed', false)
+                  ->where(function ($query) {
+                      $query->whereNull('close_time')
+                            ->orWhere('close_time', '>', now());
             })
             ->limit(10); // Limit markets per event
-        }])
+            }])
             ->whereHas('markets', function ($q) {
                 // Only events with at least one active market
                 $q->where('active', true)

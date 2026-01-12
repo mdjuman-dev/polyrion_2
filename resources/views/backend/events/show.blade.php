@@ -78,7 +78,9 @@
                             <div class="markets-legend">
                                 @foreach ($topMarkets as $index => $market)
                                     @php
-                                        $outcomePrices = json_decode($market->outcome_prices, true) ?? ['0.5', '0.5'];
+                                        $outcomePrices = is_string($market->outcome_prices ?? null) 
+                                            ? json_decode($market->outcome_prices, true) 
+                                            : ($market->outcome_prices ?? ['0.5', '0.5']);
                                         $yesPrice = isset($outcomePrices[1]) ? (float) $outcomePrices[1] : 0.5;
                                         $chance = round($yesPrice * 100);
                                         $colors = ['#4caf50', '#2196f3', '#000000', '#ff9800', '#9c27b0'];
@@ -101,10 +103,9 @@
                                     <div class="markets-list-modern">
                                         @foreach ($markets as $index => $market)
                                             @php
-                                                $outcomePrices = json_decode($market->outcome_prices, true) ?? [
-                                                    '0.5',
-                                                    '0.5',
-                                                ];
+                                                $outcomePrices = is_string($market->outcome_prices ?? null) 
+                                                    ? json_decode($market->outcome_prices, true) 
+                                                    : ($market->outcome_prices ?? ['0.5', '0.5']);
                                                 $noPrice = isset($outcomePrices[0]) ? (float) $outcomePrices[0] : 0.5;
                                                 $yesPrice = isset($outcomePrices[1]) ? (float) $outcomePrices[1] : 0.5;
                                                 $chance = round($yesPrice * 100);

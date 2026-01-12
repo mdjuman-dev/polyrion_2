@@ -33,7 +33,7 @@ class SportsController extends Controller
                 ->with(['markets' => function($q) {
                     $q->select(['id', 'event_id', 'question']);
                 }])
-                ->get();
+            ->get();
             return $this->extractCategoriesFromEvents($events);
         });
 

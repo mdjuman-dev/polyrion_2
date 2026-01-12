@@ -64,8 +64,8 @@ class CategoryEventsGrid extends Component
               ->where('closed', false)
               ->limit(10); // Limit markets per event (increased for better display)
         }])
-        ->where('active', true)
-        ->where('closed', false);
+            ->where('active', true)
+            ->where('closed', false);
 
         // Hide events where end_date has passed
         $query->where(function ($q) {

@@ -117,7 +117,7 @@ class FinanceController extends Controller
                 'daily' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subDay())->count(),
                 'weekly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subWeek())->count(),
                 'monthly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subMonth())->count(),
-            ];
+        ];
         });
     }
 
@@ -143,30 +143,30 @@ class FinanceController extends Controller
         // Cache counts for 1 minute to avoid duplicate queries
         $cacheKey = 'finance_category_counts';
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $categories) {
-            $counts = [];
+        $counts = [];
 
-            foreach ($categories as $categoryName => $keywords) {
+        foreach ($categories as $categoryName => $keywords) {
                 $query = (clone $baseQuery)->where(function ($q) use ($keywords) {
-                    foreach ($keywords as $keyword) {
+                foreach ($keywords as $keyword) {
                         $q->orWhere('title', 'LIKE', '%' . $keyword . '%');
                     }
                 })->orWhereHas('markets', function ($mq) use ($keywords) {
                     $mq->where(function ($q) use ($keywords) {
                         foreach ($keywords as $keyword) {
                             $q->orWhere('question', 'LIKE', '%' . $keyword . '%');
-                        }
+                            }
                     });
                 });
 
-                $counts[] = [
-                    'name' => $categoryName,
-                    'slug' => strtolower(str_replace(' ', '-', $categoryName)),
+            $counts[] = [
+                'name' => $categoryName,
+                'slug' => strtolower(str_replace(' ', '-', $categoryName)),
                     'count' => $query->count(),
-                    'icon' => $this->getCategoryIcon($categoryName),
-                ];
-            }
+                'icon' => $this->getCategoryIcon($categoryName),
+            ];
+        }
 
-            return $counts;
+        return $counts;
         });
     }
 

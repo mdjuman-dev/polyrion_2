@@ -445,13 +445,42 @@
       if ($.fn.DataTable.isDataTable('#withdrawalsTable')) {
          $('#withdrawalsTable').DataTable().destroy();
       }
+      
+      // Ensure table exists and has correct structure
+      const table = $('#withdrawalsTable');
+      if (table.length === 0) {
+         console.error('Table #withdrawalsTable not found');
+         return;
+      }
+      
+      // Count columns to ensure consistency
+      const headerCols = table.find('thead th').length;
+      const firstRowCols = table.find('tbody tr:first td').length;
+      
+      if (headerCols !== firstRowCols && firstRowCols > 0) {
+         console.warn('Column count mismatch detected. Headers: ' + headerCols + ', First row: ' + firstRowCols);
+      }
+      
       $('#withdrawalsTable').DataTable({
          responsive: true,
          pageLength: 25,
          lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-         order: [[5, 'desc']], // Sort by date column
+         order: [[5, 'desc']], // Sort by date column (6th column, 0-indexed)
          columnDefs: [
-            { orderable: false, targets: [0, 7] }, // Disable sorting on ID and Actions columns
+            { orderable: false, targets: [0, 7] }, // Disable sorting on ID (0) and Actions (7) columns
+            { responsivePriority: 1, targets: [1, 2, 3] }, // User, Amount, Method - high priority
+            { responsivePriority: 2, targets: [4, 5] }, // Status, Date - medium priority
+            { responsivePriority: 3, targets: [0, 6, 7] }, // ID, Approved By, Actions - low priority
+         ],
+         columns: [
+            { name: 'id' },
+            { name: 'user' },
+            { name: 'amount' },
+            { name: 'method' },
+            { name: 'status' },
+            { name: 'date' },
+            { name: 'approved_by' },
+            { name: 'actions' }
          ],
          language: {
             search: "Search:",
@@ -466,7 +495,15 @@
                previous: "Previous"
             }
          },
-         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+         drawCallback: function(settings) {
+            // Ensure column count is correct after each draw
+            const api = this.api();
+            const columns = api.columns().count();
+            if (columns !== 8) {
+               console.warn('DataTables column count mismatch: Expected 8, got ' + columns);
+            }
+         }
       });
       
       // Approve button

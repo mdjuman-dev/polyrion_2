@@ -86,7 +86,7 @@ class UserController extends Controller
             }
         ])
         ->select(['id', 'name', 'email', 'username', 'number', 'profile_image', 'created_at'])
-        ->findOrFail($id);
+            ->findOrFail($id);
 
         // User Statistics - optimize with base query
         $tradesQuery = $user->trades();

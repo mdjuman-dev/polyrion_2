@@ -201,7 +201,9 @@
                $winningOutcome = $market->getFinalOutcome(); // Returns 'YES', 'NO', or null
 
                // Get final prices at market close
-               $prices = json_decode($market->outcome_prices, true) ?? [0.5, 0.5];
+               $prices = is_string($market->outcome_prices ?? null) 
+                   ? json_decode($market->outcome_prices, true) 
+                   : ($market->outcome_prices ?? [0.5, 0.5]);
                $finalYesPrice = isset($prices[1]) ? (float) $prices[1] : 0.5;
                $finalNoPrice = isset($prices[0]) ? (float) $prices[0] : 0.5;
 

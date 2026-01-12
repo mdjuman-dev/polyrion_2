@@ -101,14 +101,6 @@
                     </a>
                 </li>
                 @endif
-                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage payment settings', 'admin')))
-                <li class="{{ request()->routeIs('admin.setting') || request()->routeIs('admin.payment.*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.setting') }}">
-                        <iconify-icon icon="mdi:credit-card-multiple" class="sidebar-icon"></iconify-icon>
-                        <span>Payment Settings</span>
-                    </a>
-                </li>
-                @endif
                 @endif
 
                 <!-- Content & Pages Section -->
@@ -166,14 +158,6 @@
                     <a href="{{ route('admin.roles.index') }}">
                         <iconify-icon icon="mdi:shield-account" class="sidebar-icon"></iconify-icon>
                         <span>Roles</span>
-                    </a>
-                </li>
-                @endif
-                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('view permissions', 'admin')))
-                <li class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.permissions.index') }}">
-                        <iconify-icon icon="mdi:key-variant" class="sidebar-icon"></iconify-icon>
-                        <span>Permissions</span>
                     </a>
                 </li>
                 @endif

@@ -79,7 +79,9 @@
       <div class="outcome-buttons">
          @php
             $market = $event->markets->first();
-            $prices = json_decode($market->outcome_prices ?? '[]', true);
+            $prices = is_string($market->outcome_prices ?? null) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? []);
             // Polymarket format - prices[0] = NO, prices[1] = YES
             // Prices from Polymarket API are stored as decimals (0-1 range)
             $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;

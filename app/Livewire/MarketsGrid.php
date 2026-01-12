@@ -150,8 +150,8 @@ class MarketsGrid extends Component
                   'final_outcome', 'created_at'
                ])
                ->where('active', true)
-               ->where('closed', false)
-               ->where(function ($query) {
+                  ->where('closed', false)
+                  ->where(function ($query) {
                   $query->whereNull('close_time')
                      ->orWhere('close_time', '>', now());
                })

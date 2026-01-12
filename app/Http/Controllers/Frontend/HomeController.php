@@ -389,9 +389,9 @@ class HomeController extends Controller
       // Cache subcategories for 5 minutes to avoid duplicate queries
       $cacheKey = 'category_subcategories_' . strtolower($categoryName);
       $dynamicSubCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($categoryName) {
-         $allCategoryEvents = Event::where('category', $categoryName)
-            ->where('active', true)
-            ->where('closed', false)
+      $allCategoryEvents = Event::where('category', $categoryName)
+         ->where('active', true)
+         ->where('closed', false)
             ->where(function ($q) {
                $q->whereNull('end_date')
                  ->orWhere('end_date', '>', now());
@@ -400,8 +400,8 @@ class HomeController extends Controller
             ->with(['markets' => function($q) {
                $q->select(['id', 'event_id', 'question']);
             }])
-            ->get();
-         
+         ->get();
+
          return $this->extractSubCategoriesFromEvents($allCategoryEvents, $categoryName);
       });
 

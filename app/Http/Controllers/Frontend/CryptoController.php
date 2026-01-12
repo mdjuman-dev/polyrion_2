@@ -146,12 +146,12 @@ class CryptoController extends Controller
                 'monthly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subMonth())->count(),
                 'pre-market' => (clone $baseQuery)->where(function ($q) use ($now) {
                     $q->whereNull('start_date')->orWhere('start_date', '>', $now);
-                })->count(),
+            })->count(),
                 'etf' => (clone $baseQuery)->where(function ($q) {
                     $q->where('title', 'LIKE', '%etf%')
                       ->orWhere('title', 'LIKE', '%exchange traded fund%');
-                })->count(),
-            ];
+            })->count(),
+        ];
         });
     }
 
@@ -172,30 +172,30 @@ class CryptoController extends Controller
         // Cache counts for 1 minute to avoid duplicate queries
         $cacheKey = 'crypto_asset_counts';
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $assets) {
-            $counts = [];
+        $counts = [];
 
-            foreach ($assets as $assetName => $keywords) {
+        foreach ($assets as $assetName => $keywords) {
                 $query = (clone $baseQuery)->where(function ($q) use ($keywords) {
-                    foreach ($keywords as $keyword) {
+                foreach ($keywords as $keyword) {
                         $q->orWhere('title', 'LIKE', '%' . $keyword . '%');
                     }
                 })->orWhereHas('markets', function ($mq) use ($keywords) {
                     $mq->where(function ($q) use ($keywords) {
                         foreach ($keywords as $keyword) {
                             $q->orWhere('question', 'LIKE', '%' . $keyword . '%');
-                        }
+                            }
                     });
                 });
 
-                $counts[] = [
-                    'name' => $assetName,
-                    'slug' => strtolower($assetName),
+            $counts[] = [
+                'name' => $assetName,
+                'slug' => strtolower($assetName),
                     'count' => $query->count(),
-                    'icon' => $this->getAssetIcon($assetName),
-                ];
-            }
+                'icon' => $this->getAssetIcon($assetName),
+            ];
+        }
 
-            return $counts;
+        return $counts;
         });
     }
 
