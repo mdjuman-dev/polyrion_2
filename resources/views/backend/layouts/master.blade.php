@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/skin_color.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/custom.css') }}">
-    <link rel="stylesheet" href="{{ asset('backend/assets/css/custom.css') }}">
+    <link rel="stylesheet" href="{{ asset('backend/assets/css/admin-theme.css') }}">
     <style>
         /* Fix Feather icon sizes globally */
         svg[data-feather] {
@@ -288,78 +288,8 @@
                             </a>
                         </li>
 
-                        <!-- Notifications -->
-                        <li class="dropdown notifications-menu">
-                            <a href="index.html#" class="waves-effect waves-light dropdown-toggle btn-primary-light"
-                                data-bs-toggle="dropdown" title="Notifications">
-                                <i data-feather="bell"></i>
-                            </a>
-                            <ul class="dropdown-menu animated bounceIn">
-
-                                <li class="header">
-                                    <div class="p-20">
-                                        <div class="flexbox">
-                                            <div>
-                                                <h4 class="mb-0 mt-0">Notifications</h4>
-                                            </div>
-                                            <div>
-                                                <a href="index.html#" class="text-danger">Clear All</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
-
-                                <li>
-                                    <!-- inner menu: contains the actual data -->
-                                    <ul class="menu sm-scrol">
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-users text-info"></i> Curabitur id eros quis nunc
-                                                suscipit blandit.
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-warning text-warning"></i> Duis malesuada justo eu
-                                                sapien elementum, in semper diam posuere.
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-users text-danger"></i> Donec at nisi sit amet tortor
-                                                commodo porttitor pretium a erat.
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-shopping-cart text-success"></i> In gravida mauris et
-                                                nisi
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-user text-danger"></i> Praesent eu lacus in libero
-                                                dictum fermentum.
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-user text-primary"></i> Nunc fringilla lorem
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="index.html#">
-                                                <i class="fa fa-user text-success"></i> Nullam euismod dolor ut quam
-                                                interdum, at scelerisque ipsum imperdiet.
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="footer">
-                                    <a href="index.html#">View all</a>
-                                </li>
-                            </ul>
-                        </li>
+                       
+                            
 
                         <!-- User Account-->
                         <li class="dropdown user user-menu">
@@ -736,7 +666,7 @@
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
     
     <!-- Iconify Icons CDN - Load after jQuery -->
-    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@iconify/iconify@3.1.1/dist/iconify.min.js"></script>
 
     <script>
         // Configure Toastr
@@ -1031,11 +961,22 @@
     <script>
         // Initialize Iconify Icons for Sidebar
         (function() {
-            function initIconifyIcons() {
+            function initializeIconifyIcons() {
                 // Check if Iconify is loaded
-                if (typeof Iconify !== 'undefined' || (window.Iconify && window.Iconify.getIcon)) {
-                    // Iconify is loaded, ensure all icons are visible and styled
-                    const icons = document.querySelectorAll('iconify-icon.sidebar-icon');
+                if (typeof Iconify !== 'undefined' && typeof Iconify.scan === 'function') {
+                    console.log('Iconify is loaded, scanning for icons...');
+                    
+                    // Scan and render all iconify-icon elements
+                    try {
+                        Iconify.scan();
+                    } catch (e) {
+                        console.error('Error scanning icons:', e);
+                    }
+                    
+                    // Ensure all icons are visible and styled
+                    const icons = document.querySelectorAll('iconify-icon, iconify-icon.sidebar-icon');
+                    console.log('Found icons:', icons.length);
+                    
                     icons.forEach(function(icon) {
                         icon.style.display = 'inline-block';
                         icon.style.visibility = 'visible';
@@ -1047,23 +988,32 @@
                         icon.style.color = 'rgba(255, 255, 255, 0.85)';
                     });
                     
-                    // Force render if Iconify API is available
-                    if (window.Iconify && typeof window.Iconify.scan === 'function') {
-                        window.Iconify.scan();
-                    }
+                    console.log('Iconify icons initialized:', icons.length);
                     return true;
                 }
                 return false;
             }
             
-            // Try immediately if DOM is ready
+            // Wait for Iconify to load
+            function waitForIconify() {
+                if (typeof Iconify !== 'undefined' && typeof Iconify.scan === 'function') {
+                    initializeIconifyIcons();
+                    return true;
+                }
+                return false;
+            }
+            
+            // Initialize when DOM is ready
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
                     let attempts = 0;
                     const checkIconify = setInterval(function() {
                         attempts++;
-                        if (initIconifyIcons() || attempts > 30) {
+                        if (waitForIconify() || attempts > 100) {
                             clearInterval(checkIconify);
+                            if (attempts > 100) {
+                                console.warn('Iconify failed to load after 10 seconds');
+                            }
                         }
                     }, 100);
                 });
@@ -1072,8 +1022,11 @@
                 let attempts = 0;
                 const checkIconify = setInterval(function() {
                     attempts++;
-                    if (initIconifyIcons() || attempts > 30) {
+                    if (waitForIconify() || attempts > 100) {
                         clearInterval(checkIconify);
+                        if (attempts > 100) {
+                            console.warn('Iconify failed to load after 10 seconds');
+                        }
                     }
                 }, 100);
             }
@@ -1081,8 +1034,10 @@
             // Also try on window load
             window.addEventListener('load', function() {
                 setTimeout(function() {
-                    initIconifyIcons();
-                }, 200);
+                    if (waitForIconify()) {
+                        initializeIconifyIcons();
+                    }
+                }, 500);
             });
         })();
 

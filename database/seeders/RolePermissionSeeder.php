@@ -68,6 +68,10 @@ class RolePermissionSeeder extends Seeder
                 'manage settings',
                 'manage global settings',
                 'manage payment settings',
+                'manage pages',
+                'manage faqs',
+                'manage contact',
+                'manage social media',
                 
                 // Roles & Permissions
                 'manage roles',
@@ -78,7 +82,6 @@ class RolePermissionSeeder extends Seeder
                 'manage permissions',
                 'view permissions',
                 'create permissions',
-                'edit permissions',
                 'delete permissions',
             ];
 

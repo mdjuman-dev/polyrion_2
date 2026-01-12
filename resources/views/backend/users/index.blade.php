@@ -10,8 +10,7 @@
                     <div class="col-12">
                         <div class="box"
                             style="border-radius: 15px; overflow: hidden; border: none; box-shadow: 0 0 30px rgba(0,0,0,0.08);">
-                            <div class="box-header with-border"
-                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px 30px; border: none;">
+                            <div class="box-header with-border primary-gradient" style="padding: 25px 30px; border: none;">
                                 <h3 class="box-title" style="color: #fff; font-weight: 600; font-size: 24px; margin: 0;">
                                     <i class="fa fa-users me-2"></i> All Users
                                 </h3>
@@ -46,8 +45,7 @@
                                         </div>
                                         <div class="col-md-4 text-md-end">
                                             <div class="total-users-badge">
-                                                <span class="badge"
-                                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 16px; padding: 12px 20px; border-radius: 10px; font-weight: 500;">
+                                                <span class="badge badge-primary" style="font-size: 16px; padding: 12px 20px;">
                                                     <i class="fa fa-users me-2"></i>
                                                     Total: {{ $users->total() }} users
                                                 </span>
@@ -61,21 +59,13 @@
                                     <div class="row">
                                         @foreach ($users as $user)
                                             <div class="col-xl-3 col-lg-4 col-md-6 col-12 mb-25">
-                                                <form action="{{ route('admin.users.login-as', $user->id) }}" method="POST"
-                                                    class="user-card-form " style="margin: 0;">
-                                                    @csrf
-                                                    <div class="box box-body user-card modern-card "
-                                                        style="border-radius: 20px; border: 1px solid #e5e7eb; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative; overflow: hidden; background: #fff; padding: 0;">
+                                                <div class="box box-body user-card modern-card"
+                                                    style="border-radius: 20px; border: 1px solid #e5e7eb; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; background: #fff; padding: 0;">
 
-                                                        <!-- Gradient Header -->
-                                                        <div class="card-gradient"
-                                                            style="position: relative; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); z-index: 0; border-radius: 20px 20px 0 0;">
-                                                        </div>
-
-                                                        <!-- Login Click Area -->
-                                                        <div class="card-click-area"
-                                                            style="position: absolute; top: 0; left: 0; right: 0; bottom: 80px; z-index: 1; cursor: pointer;">
-                                                        </div>
+                                                    <!-- Gradient Header -->
+                                                    <div class="card-gradient primary-gradient"
+                                                        style="position: relative; height: 100px; z-index: 0; border-radius: 20px 20px 0 0;">
+                                                    </div>
 
                                                         <!-- User Header -->
                                                         <div class="text-center"
@@ -87,8 +77,8 @@
                                                                         alt="{{ $user->name }}" class="rounded-circle"
                                                                         style="width: 100px; height: 100px; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.15); background: #fff;">
                                                                 @else
-                                                                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center mx-auto"
-                                                                        style="width: 100px; height: 100px; font-size: 40px; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.15); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-weight: 600;">
+                                                                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center mx-auto primary-gradient"
+                                                                        style="width: 100px; height: 100px; font-size: 40px; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-weight: 600;">
                                                                         {{ $user->initials() }}
                                                                     </div>
                                                                 @endif
@@ -188,26 +178,26 @@
                                                             </p>
                                                         </div>
 
-                                                        <!-- Login Button (Prominent) -->
-                                                        <div class="px-3 mb-3" style="position: relative; z-index: 2;">
-                                                            <button type="submit" class="btn btn-block login-btn"
-                                                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-weight: 600; font-size: 14px; padding: 13px; border: none; border-radius: 12px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); width: 100%;"
-                                                                title="Click anywhere on card or this button to login as {{ $user->name }}">
-                                                                <i class="fa fa-sign-in-alt me-2"></i> Login As User
-                                                            </button>
-                                                        </div>
-
-                                                        <!-- Action Buttons -->
-                                                        <div class="px-3 pb-3" style="position: relative; z-index: 3;">
-                                                            <a href="{{ route('admin.users.show', $user->id) }}"
-                                                                class="btn btn-block action-btn"
-                                                                style="background: #f3f4f6; color: #374151; font-weight: 600; padding: 12px; border: none; border-radius: 10px; transition: all 0.3s; text-align: center;"
-                                                                title="View Details" onclick="event.stopPropagation();">
-                                                                <i class="fa fa-eye me-2"></i> View Details
-                                                            </a>
-                                                        </div>
+                                                    <!-- Action Buttons - Side by Side -->
+                                                    <div class="px-3 pb-3" style="position: relative; z-index: 2;">
+                                                        <form action="{{ route('admin.users.login-as', $user->id) }}" method="POST" class="d-inline" style="width: 100%;">
+                                                            @csrf
+                                                            <div class="d-flex gap-2">
+                                                                <button type="submit" class="btn login-btn btn-primary-gradient flex-fill"
+                                                                    style="font-size: 14px; padding: 13px;"
+                                                                    title="Login as {{ $user->name }}">
+                                                                    <i class="fa fa-sign-in-alt me-2"></i> Login As User
+                                                                </button>
+                                                                <a href="{{ route('admin.users.show', $user->id) }}"
+                                                                    class="btn action-btn flex-fill"
+                                                                    style="background: #f3f4f6; color: #374151; font-weight: 600; padding: 13px; border: none; border-radius: 12px; transition: all 0.3s; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;"
+                                                                    title="View Details">
+                                                                    <i class="fa fa-eye me-2"></i> View Details
+                                                                </a>
+                                                            </div>
+                                                        </form>
                                                     </div>
-                                                </form>
+                                                </div>
                                             </div>
                                         @endforeach
                                     </div>
@@ -222,8 +212,8 @@
                                                 found</h4>
                                             @if (request('search'))
                                                 <p class="text-muted mb-4">Try adjusting your search criteria</p>
-                                                <a href="{{ route('admin.users.index') }}" class="btn"
-                                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; border: none;">
+                                                <a href="{{ route('admin.users.index') }}" class="btn btn-primary-gradient"
+                                                    style="padding: 12px 30px;">
                                                     <i class="fa fa-arrow-left me-2"></i> View All Users
                                                 </a>
                                             @endif
@@ -247,158 +237,325 @@
     </div>
 
     <style>
+        /* Premium Background */
+        .content-wrapper {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            min-height: 100vh;
+        }
+
+        /* Premium Card Styles */
         .modern-card {
             position: relative;
             display: flex;
             flex-direction: column;
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+            cursor: default;
+        }
+
+        .modern-card:nth-child(1) { animation-delay: 0.1s; }
+        .modern-card:nth-child(2) { animation-delay: 0.2s; }
+        .modern-card:nth-child(3) { animation-delay: 0.3s; }
+        .modern-card:nth-child(4) { animation-delay: 0.4s; }
+        .modern-card:nth-child(5) { animation-delay: 0.5s; }
+        .modern-card:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modern-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.25) !important;
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(102, 126, 234, 0.3) !important;
             border-color: #667eea !important;
         }
 
         .modern-card:hover .card-gradient {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+            transform: scale(1.05);
         }
 
         .card-gradient {
-            transition: all 0.4s ease;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .card-click-area {
-            cursor: pointer;
+        .card-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
 
-        .card-click-area:hover {
-            background: rgba(102, 126, 234, 0.05);
+        .modern-card:hover .card-gradient::before {
+            left: 100%;
         }
+
 
         .user-avatar img,
         .user-avatar div {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .modern-card:hover .user-avatar img,
         .modern-card:hover .user-avatar div {
-            transform: scale(1.1) rotate(2deg);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            transform: scale(1.15) rotate(3deg);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
         }
 
         .stat-card {
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .modern-card:hover .stat-card {
-            transform: scale(1.03);
+            transform: scale(1.05) translateY(-2px);
+        }
+
+        .modern-card:hover .stat-card::before {
+            opacity: 1;
+        }
+
+        .login-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .login-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5) !important;
+        }
+
+        .login-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .action-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .action-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+
+        .action-btn:hover::after {
+            width: 200px;
+            height: 200px;
         }
 
         .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            background: #e5e7eb !important;
         }
 
-        .flex-1 {
-            flex: 1;
-        }
-
-        .gap-2 {
-            gap: 8px;
-        }
-
-        .modern-search .form-control:focus,
-        .modern-search .input-group-text {
-            box-shadow: none;
+        /* Premium Search */
+        .modern-search {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .modern-search .form-control:focus {
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .modern-search .input-group-text {
+            transition: all 0.3s;
+        }
+
+        .modern-search:focus-within .input-group-text {
+            background: #667eea !important;
+            color: #fff !important;
+        }
+
+        /* Premium Badge */
+        .total-users-badge {
+            animation: pulseScale 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseScale {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Status Dot */
         .status-dot {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
         }
 
         @keyframes pulse {
-
-            0%,
+            0% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
             100% {
                 opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
             }
         }
 
-        /* Pagination styling */
+        /* Premium Pagination */
         .pagination-wrapper .pagination {
             margin: 0;
             display: flex;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
+            padding: 20px 0;
         }
 
         .pagination-wrapper .page-link {
-            border-radius: 10px;
+            border-radius: 12px;
             border: 2px solid #e9ecef;
             color: #667eea;
             font-weight: 600;
-            padding: 10px 16px;
-            transition: all 0.3s;
+            padding: 12px 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pagination-wrapper .page-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: left 0.3s;
+            z-index: -1;
+        }
+
+        .pagination-wrapper .page-link:hover::before {
+            left: 0;
         }
 
         .pagination-wrapper .page-link:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             border-color: #667eea;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
         }
 
         .pagination-wrapper .page-item.active .page-link {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-color: #667eea;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
+        /* Empty State */
+        .empty-state {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .modern-card {
                 margin-bottom: 20px;
             }
+            
+            .modern-card:hover {
+                transform: translateY(-5px) scale(1.01);
+            }
+        }
+
+        /* Premium Box Header */
+        .box-header {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .box-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { right: -50%; }
+            100% { right: 150%; }
         }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Make card clickable - click anywhere on card to login
-            document.querySelectorAll('.card-click-area').forEach(function(area) {
-                area.addEventListener('click', function(e) {
-                    const form = this.closest('.user-card-form');
-                    if (form) {
-                        form.submit();
-                    }
-                });
-            });
-
-            // Also make the entire card clickable (except action buttons)
-            document.querySelectorAll('.modern-card').forEach(function(card) {
-                card.addEventListener('click', function(e) {
-                    // Don't trigger if clicking on action buttons or login button
-                    if (!e.target.closest('.action-btn') &&
-                        !e.target.closest('button[type="submit"].login-btn') &&
-                        !e.target.closest('a[href*="show"]')) {
-                        const form = this.closest('.user-card-form');
-                        if (form) {
-                            form.submit();
-                        }
-                    }
-                });
-            });
+            // Cards are no longer clickable - only buttons work
+            // This ensures only the "Login As User" button triggers login
         });
     </script>
 @endsection

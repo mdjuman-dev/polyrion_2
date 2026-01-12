@@ -187,39 +187,6 @@ class RolePermissionController extends Controller
             ->with('success', 'Permission created successfully!');
     }
 
-    /**
-     * Show the form for editing the specified permission.
-     */
-    public function editPermission($id)
-    {
-        $permission = Permission::where('guard_name', 'admin')->findOrFail($id);
-        return view('backend.roles_permissions.edit_permission', compact('permission'));
-    }
-
-    /**
-     * Update the specified permission.
-     */
-    public function updatePermission(Request $request, $id)
-    {
-        $permission = Permission::where('guard_name', 'admin')->findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:permissions,name,' . $id . ',id,guard_name,admin',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $permission->update([
-            'name' => $request->name,
-        ]);
-
-        return redirect()->route('admin.permissions.index')
-            ->with('success', 'Permission updated successfully!');
-    }
 
     /**
      * Remove the specified permission.

@@ -134,7 +134,7 @@
                <div class="box">
                   <div class="box-body">
                      <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
+                        <table id="withdrawalsTable" class="table table-bordered table-hover" style="width:100%">
                            <thead>
                               <tr>
                                  <th>ID</th>
@@ -263,11 +263,6 @@
                         </table>
                      </div>
 
-                     @if ($withdrawals->hasPages())
-                     <div class="mt-3">
-                        {{ $withdrawals->links() }}
-                     </div>
-                     @endif
                   </div>
                </div>
             </div>
@@ -275,6 +270,115 @@
       </section>
    </div>
 </div>
+
+@push('styles')
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+<style>
+    /* DataTables Custom Styling */
+    .dataTables_wrapper {
+        padding: 0;
+    }
+    
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 20px;
+    }
+    
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .dataTables_wrapper .dataTables_length select:focus,
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        color: #374151 !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border-color: #667eea;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .dataTables_wrapper table.dataTable thead th {
+        border-bottom: 2px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .dataTables_wrapper table.dataTable tbody tr:hover {
+        background-color: #f9fafb;
+    }
+    
+    .dataTables_wrapper table.dataTable.no-footer {
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* Remove sorting indicators from first and last columns */
+    .dataTables_wrapper table.dataTable thead th:first-child.sorting::before,
+    .dataTables_wrapper table.dataTable thead th:first-child.sorting::after,
+    .dataTables_wrapper table.dataTable thead th:last-child.sorting::before,
+    .dataTables_wrapper table.dataTable thead th:last-child.sorting::after {
+        display: none !important;
+    }
+    
+    /* Remove red border/box from first and last columns */
+    .dataTables_wrapper table.dataTable tbody td:first-child,
+    .dataTables_wrapper table.dataTable thead th:first-child {
+        border-left: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    
+    .dataTables_wrapper table.dataTable tbody td:last-child,
+    .dataTables_wrapper table.dataTable thead th:last-child {
+        border-right: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+</style>
+@endpush
 
 <!-- Approve Modal -->
 <div class="modal fade" id="approveModal" tabindex="-1">
@@ -328,9 +432,43 @@
    </div>
 </div>
 
-@push('script')
+@push('scripts')
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
 <script>
    $(document).ready(function() {
+      // Initialize DataTables for Withdrawals Table
+      if ($.fn.DataTable.isDataTable('#withdrawalsTable')) {
+         $('#withdrawalsTable').DataTable().destroy();
+      }
+      $('#withdrawalsTable').DataTable({
+         responsive: true,
+         pageLength: 25,
+         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+         order: [[5, 'desc']], // Sort by date column
+         columnDefs: [
+            { orderable: false, targets: [0, 7] }, // Disable sorting on ID and Actions columns
+         ],
+         language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            paginate: {
+               first: "First",
+               last: "Last",
+               next: "Next",
+               previous: "Previous"
+            }
+         },
+         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+      });
+      
       // Approve button
       $(document).on('click', '.approve-btn', function() {
          const id = $(this).data('id');

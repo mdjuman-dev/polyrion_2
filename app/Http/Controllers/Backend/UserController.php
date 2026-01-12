@@ -12,6 +12,7 @@ use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
@@ -81,6 +82,79 @@ class UserController extends Controller
         $recentTrades = $user->trades()->with('market.event')->latest()->take(10)->get();
         $recentDeposits = $user->deposits()->latest()->take(5)->get();
         $recentWithdrawals = $user->withdrawals()->latest()->take(5)->get();
+        
+        // All User Activities (for activity log)
+        $allActivities = collect();
+        
+        // Add trades as activities
+        $trades = $user->trades()->with('market.event')->latest()->get();
+        foreach ($trades as $trade) {
+            $allActivities->push([
+                'type' => 'trade',
+                'title' => 'Trade Placed',
+                'description' => $trade->market && $trade->market->event 
+                    ? 'Traded on: ' . \Illuminate\Support\Str::limit($trade->market->event->title, 50)
+                    : 'Trade #' . $trade->id,
+                'amount' => $trade->amount_invested ?? $trade->amount ?? 0,
+                'status' => $trade->status,
+                'date' => $trade->created_at,
+                'icon' => 'exchange-alt',
+                'color' => 'primary'
+            ]);
+        }
+        
+        // Add deposits as activities
+        $deposits = $user->deposits()->latest()->get();
+        foreach ($deposits as $deposit) {
+            $allActivities->push([
+                'type' => 'deposit',
+                'title' => 'Deposit',
+                'description' => 'Deposit #' . $deposit->id,
+                'amount' => $deposit->amount ?? 0,
+                'status' => $deposit->status,
+                'date' => $deposit->created_at,
+                'icon' => 'arrow-down',
+                'color' => 'success'
+            ]);
+        }
+        
+        // Add withdrawals as activities
+        $withdrawals = $user->withdrawals()->latest()->get();
+        foreach ($withdrawals as $withdrawal) {
+            $allActivities->push([
+                'type' => 'withdrawal',
+                'title' => 'Withdrawal',
+                'description' => 'Withdrawal #' . $withdrawal->id,
+                'amount' => $withdrawal->amount ?? 0,
+                'status' => $withdrawal->status,
+                'date' => $withdrawal->created_at,
+                'icon' => 'arrow-up',
+                'color' => 'warning'
+            ]);
+        }
+        
+        // Add wallet transactions as activities
+        if ($user->wallet) {
+            $walletTransactions = WalletTransaction::where('wallet_id', $user->wallet->id)
+                ->orWhere('user_id', $user->id)
+                ->latest()
+                ->get();
+            foreach ($walletTransactions as $transaction) {
+                $allActivities->push([
+                    'type' => 'wallet_transaction',
+                    'title' => ucfirst(str_replace('_', ' ', $transaction->type ?? 'Transaction')),
+                    'description' => 'Wallet Transaction #' . $transaction->id . ' - ' . ($transaction->description ?? 'Transaction'),
+                    'amount' => $transaction->amount ?? 0,
+                    'status' => 'completed',
+                    'date' => $transaction->created_at,
+                    'icon' => 'wallet',
+                    'color' => 'info'
+                ]);
+            }
+        }
+        
+        // Sort all activities by date (newest first)
+        $allActivities = $allActivities->sortByDesc('date')->values();
 
         $stats = [
             'total_trades' => $totalTrades,
@@ -95,7 +169,7 @@ class UserController extends Controller
             'locked_balance' => $lockedBalance,
         ];
 
-        return view('backend.users.show', compact('user', 'stats', 'recentTrades', 'recentDeposits', 'recentWithdrawals'));
+        return view('backend.users.show', compact('user', 'stats', 'recentTrades', 'recentDeposits', 'recentWithdrawals', 'allActivities'));
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database connection failed in UserController@show: ' . $e->getMessage());
             return redirect()->route('admin.users.index')
@@ -220,6 +294,57 @@ class UserController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in UserController@destroy: ' . $e->getMessage());
             return redirect()->back()->with('error', 'An error occurred. Please try again later.');
+        }
+    }
+
+    /**
+     * Update user wallet password
+     */
+    public function updateWalletPassword(Request $request, $id)
+    {
+        $request->validate([
+            'withdrawal_password' => 'required|string|min:6|max:255',
+        ]);
+
+        try {
+            $user = User::findOrFail($id);
+            
+            // Update withdrawal password - bypass model casting to avoid double hashing
+            // Since User model has 'withdrawal_password' => 'hashed' casting, we need to update directly via DB
+            // to prevent automatic hashing by the model
+            $hashedPassword = Hash::make($request->withdrawal_password);
+            
+            // Update directly in database to bypass model casting
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update([
+                    'withdrawal_password' => $hashedPassword,
+                    'updated_at' => now()
+                ]);
+
+            Log::info('Wallet password updated successfully', [
+                'user_id' => $user->id,
+                'updated_by_admin' => Auth::guard('admin')->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Wallet password updated successfully'
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error updating wallet password: ' . $e->getMessage(), [
+                'user_id' => $id,
+                'error' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update wallet password. Please try again.'
+            ], 500);
         }
     }
 

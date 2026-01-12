@@ -119,6 +119,22 @@
                                              <span>Terms of Use</span>
                                           </a>
                                        </li>
+                                       <li class="nav-item">
+                                          <a class="nav-link" data-bs-toggle="pill" href="#binance-pay" role="tab">
+                                             <div class="nav-icon">
+                                                <i data-feather="dollar-sign"></i>
+                                             </div>
+                                             <span>Binance Pay</span>
+                                          </a>
+                                       </li>
+                                       <li class="nav-item">
+                                          <a class="nav-link" data-bs-toggle="pill" href="#metamask" role="tab">
+                                             <div class="nav-icon">
+                                                <i data-feather="hexagon"></i>
+                                             </div>
+                                             <span>MetaMask</span>
+                                          </a>
+                                       </li>
                                     </ul>
                                  </div>
                               </div>
@@ -1883,6 +1899,24 @@
                icon.classList.add('fa-eye-slash');
             } else {
                input.type = 'password';
+               icon.classList.remove('fa-eye-slash');
+               icon.classList.add('fa-eye');
+            }
+         }
+      }
+
+      // Toggle Password Visibility for Payment Settings
+      function togglePassword(fieldId) {
+         const field = document.getElementById(fieldId);
+         const icon = document.getElementById(fieldId + '_icon');
+
+         if (field && icon) {
+            if (field.type === 'password') {
+               field.type = 'text';
+               icon.classList.remove('fa-eye');
+               icon.classList.add('fa-eye-slash');
+            } else {
+               field.type = 'password';
                icon.classList.remove('fa-eye-slash');
                icon.classList.add('fa-eye');
             }

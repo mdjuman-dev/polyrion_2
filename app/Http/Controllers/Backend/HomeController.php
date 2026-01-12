@@ -19,8 +19,12 @@ class HomeController extends Controller
         $this->middleware('permission:view dashboard,admin');
     }
 
-    function dashboard()
+    function dashboard(Request $request)
     {
+        // Get date range from request (default: 30 days)
+        $days = (int) $request->get('days', 30);
+        $days = in_array($days, [7, 30, 60, 90]) ? $days : 30;
+        
         // Total Statistics
         $totalUsers = User::count();
         $totalEvents = Event::count();
@@ -59,6 +63,12 @@ class HomeController extends Controller
             ->take(5)
             ->get();
         
+        // Chart Data for selected days
+        $chartData = $this->getChartData($days);
+        
+        // Mini chart data for each card (last 7 days for sparklines)
+        $miniChartData = $this->getMiniChartData();
+        
         // Statistics for cards
         $stats = [
             'total_users' => $totalUsers,
@@ -83,8 +93,153 @@ class HomeController extends Controller
             'recentEvents',
             'recentTrades',
             'recentWithdrawals',
-            'topMarkets'
+            'topMarkets',
+            'chartData',
+            'miniChartData',
+            'days'
         ));
+    }
+
+    /**
+     * Get mini chart data for card sparklines (last 7 days)
+     */
+    private function getMiniChartData()
+    {
+        $startDate = now()->subDays(7)->startOfDay();
+        $endDate = now()->endOfDay();
+        
+        $labels = [];
+        $usersData = [];
+        $eventsData = [];
+        $marketsData = [];
+        $tradesData = [];
+        $volumeData = [];
+        $payoutsData = [];
+        $walletData = [];
+        $withdrawalsData = [];
+        
+        $currentDate = clone $startDate;
+        while ($currentDate <= $endDate) {
+            $periodStart = clone $currentDate;
+            $periodEnd = (clone $currentDate)->endOfDay();
+            
+            $labels[] = $periodStart->format('M d');
+            
+            // Users
+            $usersData[] = User::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            // Events
+            $eventsData[] = Event::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            // Markets
+            $marketsData[] = Market::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            // Trades
+            $tradesData[] = Trade::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            // Volume
+            $volume = Trade::whereBetween('created_at', [$periodStart, $periodEnd])
+                ->sum(DB::raw('COALESCE(amount_invested, amount, 0)'));
+            $volumeData[] = round($volume, 2);
+            
+            // Payouts
+            $payouts = Trade::whereBetween('created_at', [$periodStart, $periodEnd])
+                ->whereIn('status', ['won', 'WON'])
+                ->sum(DB::raw('COALESCE(payout, payout_amount, 0)'));
+            $payoutsData[] = round($payouts, 2);
+            
+            // Wallet balance (cumulative)
+            $walletData[] = round(Wallet::where('created_at', '<=', $periodEnd)->sum('balance'), 2);
+            
+            // Withdrawals
+            $withdrawalsData[] = Withdrawal::whereBetween('created_at', [$periodStart, $periodEnd])
+                ->where('status', 'pending')
+                ->count();
+            
+            $currentDate->addDay();
+        }
+        
+        return [
+            'labels' => $labels,
+            'users' => $usersData,
+            'events' => $eventsData,
+            'markets' => $marketsData,
+            'trades' => $tradesData,
+            'volume' => $volumeData,
+            'payouts' => $payoutsData,
+            'wallet' => $walletData,
+            'withdrawals' => $withdrawalsData,
+        ];
+    }
+
+    /**
+     * Get chart data for specified number of days
+     */
+    private function getChartData($days)
+    {
+        $startDate = now()->subDays($days)->startOfDay();
+        $endDate = now()->endOfDay();
+        
+        // Determine interval and format based on days
+        if ($days <= 7) {
+            $intervalDays = 1;
+            $format = 'M d';
+        } elseif ($days <= 30) {
+            $intervalDays = 1;
+            $format = 'M d';
+        } elseif ($days <= 60) {
+            $intervalDays = 2;
+            $format = 'M d';
+        } else {
+            $intervalDays = 3;
+            $format = 'M d';
+        }
+        
+        // Generate date labels and data points
+        $labels = [];
+        $usersData = [];
+        $tradesData = [];
+        $volumeData = [];
+        $revenueData = [];
+        
+        $currentDate = clone $startDate;
+        while ($currentDate <= $endDate) {
+            $periodStart = clone $currentDate;
+            $periodEnd = (clone $currentDate)->addDays($intervalDays)->subSecond();
+            
+            // Ensure we don't go beyond endDate
+            if ($periodEnd > $endDate) {
+                $periodEnd = clone $endDate;
+            }
+            
+            // Add label
+            $labels[] = $periodStart->format($format);
+            
+            // Get data for this period
+            $usersData[] = User::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            $tradesData[] = Trade::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+            
+            $volume = Trade::whereBetween('created_at', [$periodStart, $periodEnd])
+                ->sum(DB::raw('COALESCE(amount_invested, amount, 0)'));
+            $volumeData[] = round($volume, 2);
+            
+            $revenue = Trade::whereBetween('created_at', [$periodStart, $periodEnd])
+                ->whereIn('status', ['won', 'WON'])
+                ->sum(DB::raw('COALESCE(payout, payout_amount, 0)'));
+            $revenueData[] = round($revenue, 2);
+            
+            // Move to next period
+            $currentDate->addDays($intervalDays);
+        }
+        
+        return [
+            'labels' => $labels,
+            'users' => $usersData,
+            'trades' => $tradesData,
+            'volume' => $volumeData,
+            'revenue' => $revenueData,
+        ];
     }
 
     /**

@@ -6,11 +6,11 @@
       <section class="content">
          <div class="row">
             <div class="col-12">
-               <div class="box mb-3">
-                  <div class="box-body">
+               <div class="box mb-3" style="border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                  <div class="box-header with-border primary-gradient" style="padding: 25px 30px; border: none; border-radius: 16px 16px 0 0;">
                      <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">
-                           <i class="fa fa-id-card"></i> KYC Verification Management
+                        <h4 class="mb-0" style="color: #fff; font-weight: 700; font-size: 24px;">
+                           <i class="fa fa-id-card me-2"></i> KYC Verification Management
                         </h4>
                      </div>
                   </div>
@@ -121,10 +121,10 @@
                   </div>
                </div>
 
-               <div class="box">
-                  <div class="box-body">
+               <div class="box" style="border-radius: 15px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                  <div class="box-body" style="padding: 25px;">
                      <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
+                        <table id="kycTable" class="table table-bordered table-hover" style="width:100%">
                            <thead>
                               <tr>
                                  <th>ID</th>
@@ -183,14 +183,16 @@
                               </tr>
                               @empty
                               <tr>
-                                 <td colspan="6" class="text-center">No KYC verifications found.</td>
+                                 <td>—</td>
+                                 <td>—</td>
+                                 <td>—</td>
+                                 <td>—</td>
+                                 <td>—</td>
+                                 <td>—</td>
                               </tr>
                               @endforelse
                            </tbody>
                         </table>
-                     </div>
-                     <div class="mt-3">
-                        {{ $kycVerifications->links() }}
                      </div>
                   </div>
                </div>
@@ -199,5 +201,174 @@
       </section>
    </div>
 </div>
+
+@push('styles')
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+<style>
+    /* DataTables Custom Styling */
+    .dataTables_wrapper {
+        padding: 0;
+    }
+    
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 20px;
+    }
+    
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .dataTables_wrapper .dataTables_length select:focus,
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        color: #374151 !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border-color: #667eea;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .dataTables_wrapper table.dataTable thead th {
+        border-bottom: 2px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .dataTables_wrapper table.dataTable tbody tr:hover {
+        background-color: #f9fafb;
+    }
+    
+    .dataTables_wrapper table.dataTable.no-footer {
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* Remove sorting indicators from first and last columns */
+    .dataTables_wrapper table.dataTable thead th:first-child.sorting::before,
+    .dataTables_wrapper table.dataTable thead th:first-child.sorting::after,
+    .dataTables_wrapper table.dataTable thead th:last-child.sorting::before,
+    .dataTables_wrapper table.dataTable thead th:last-child.sorting::after {
+        display: none !important;
+    }
+    
+    /* Remove red border/box from first and last columns */
+    .dataTables_wrapper table.dataTable tbody td:first-child,
+    .dataTables_wrapper table.dataTable thead th:first-child {
+        border-left: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    
+    .dataTables_wrapper table.dataTable tbody td:last-child,
+    .dataTables_wrapper table.dataTable thead th:last-child {
+        border-right: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
+<script>
+   $(document).ready(function() {
+      // Initialize DataTables for KYC Table
+      if ($.fn.DataTable.isDataTable('#kycTable')) {
+         $('#kycTable').DataTable().destroy();
+      }
+      
+      // Remove empty row if it exists (DataTables will handle empty state)
+      $('#kycTable tbody tr').each(function() {
+         var $row = $(this);
+         var isEmpty = true;
+         $row.find('td').each(function() {
+            if ($(this).text().trim() !== '—') {
+               isEmpty = false;
+               return false;
+            }
+         });
+         if (isEmpty) {
+            $row.remove();
+         }
+      });
+      
+      $('#kycTable').DataTable({
+         responsive: true,
+         pageLength: 25,
+         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+         order: [[4, 'desc']], // Sort by date (submitted date column)
+         columnDefs: [
+            { orderable: false, targets: [0, 5] }, // Disable sorting on ID and Actions columns
+            { responsivePriority: 1, targets: 1 }, // User column priority
+            { responsivePriority: 2, targets: 4 }, // Date column priority
+         ],
+         language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            emptyTable: "<div style='padding: 40px; text-align: center;'><i class='fa fa-id-card fa-3x text-muted mb-3'></i><p class='text-muted mb-0'>No KYC verifications found.</p></div>",
+            paginate: {
+               first: "First",
+               last: "Last",
+               next: "Next",
+               previous: "Previous"
+            }
+         },
+         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+      });
+   });
+</script>
+@endpush
+
 @endsection
 

@@ -25,7 +25,7 @@
                                 
                                 @if($supportDescription)
                                     <div class="support-description mb-4" style="color: var(--text-secondary); line-height: 1.8; font-size: 0.95rem;">
-                                        {!! nl2br(e($supportDescription)) !!}
+                                        {!! ($supportDescription) !!}
                                     </div>
                                 @endif
 

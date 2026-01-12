@@ -57,11 +57,25 @@ class GlobalSettingsController extends Controller
          'pixel_id' => $settings['fb_pixel_id'] ?? '',
       ];
 
-      // Binance API Settings
+      // Binance Pay Settings (including manual payment)
       $binanceSettings = [
          'binance_api_key' => $settings['binance_api_key'] ?? config('services.binance.api_key'),
          'binance_secret_key' => $settings['binance_secret_key'] ?? config('services.binance.secret_key'),
          'binance_base_url' => $settings['binance_base_url'] ?? config('services.binance.base_url'),
+         'binance_manual_wallet_address' => $settings['binance_manual_wallet_address'] ?? '',
+         'binance_manual_network' => $settings['binance_manual_network'] ?? 'BEP20',
+         'binance_manual_instructions' => $settings['binance_manual_instructions'] ?? '',
+      ];
+
+      // MetaMask/Crypto Settings
+      $metamaskSettings = [
+         'merchant_address' => $settings['merchant_address'] ?? '',
+         'merchant_address_bsc' => $settings['merchant_address_bsc'] ?? '',
+         'merchant_address_polygon' => $settings['merchant_address_polygon'] ?? '',
+         'chain_network' => $settings['chain_network'] ?? 'ethereum',
+         'etherscan_api_key' => $settings['etherscan_api_key'] ?? '',
+         'bscscan_api_key' => $settings['bscscan_api_key'] ?? '',
+         'polygonscan_api_key' => $settings['polygonscan_api_key'] ?? '',
       ];
 
       // Google OAuth Settings
@@ -130,6 +144,7 @@ class GlobalSettingsController extends Controller
       return view('backend.settings.global_settings', compact(
          'generalSettings',
          'binanceSettings',
+         'metamaskSettings',
          'googleSettings',
          'facebookSettings',
          'mailSettings',
@@ -173,9 +188,19 @@ class GlobalSettingsController extends Controller
          'logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
          'favicon' => 'nullable|file|mimes:ico,png,jpg,jpeg,gif|max:1024',
          'site_logo' => 'nullable|image|mimes:jpeg,jpg,png,gif,svg|max:2048',
-         'binance_api_key' => 'nullable|string',
-         'binance_secret_key' => 'nullable|string',
-         'binance_base_url' => 'nullable|url',
+         'binance_api_key' => 'nullable|string|max:255',
+         'binance_secret_key' => 'nullable|string|max:255',
+         'binance_base_url' => 'nullable|url|max:255',
+         'binance_manual_wallet_address' => 'nullable|string|max:255',
+         'binance_manual_network' => 'nullable|string|in:BEP20,ERC20,TRC20,BTC',
+         'binance_manual_instructions' => 'nullable|string|max:2000',
+         'merchant_address' => 'nullable|string|max:255',
+         'merchant_address_bsc' => 'nullable|string|max:255',
+         'merchant_address_polygon' => 'nullable|string|max:255',
+         'chain_network' => 'nullable|string|in:ethereum,bsc,polygon',
+         'etherscan_api_key' => 'nullable|string|max:255',
+         'bscscan_api_key' => 'nullable|string|max:255',
+         'polygonscan_api_key' => 'nullable|string|max:255',
          'google_client_id' => 'nullable|string',
          'google_client_secret' => 'nullable|string',
          'google_redirect' => 'nullable|url',
@@ -404,10 +429,21 @@ class GlobalSettingsController extends Controller
          'commission_type',
          'commission_percentage',
          'contact_email',
-         // Binance
+         // Binance Pay
          'binance_api_key',
          'binance_secret_key',
          'binance_base_url',
+         'binance_manual_wallet_address',
+         'binance_manual_network',
+         'binance_manual_instructions',
+         // MetaMask/Crypto
+         'merchant_address',
+         'merchant_address_bsc',
+         'merchant_address_polygon',
+         'chain_network',
+         'etherscan_api_key',
+         'bscscan_api_key',
+         'polygonscan_api_key',
          // Google
          'google_client_id',
          'google_client_secret',

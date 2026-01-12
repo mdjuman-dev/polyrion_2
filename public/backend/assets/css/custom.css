@@ -366,6 +366,40 @@
     margin: 2px 10px;
 }
 
+/* Menu Header Styles */
+.sidebar-menu > li.menu-header {
+    margin: 20px 10px 8px 10px;
+    padding: 0;
+    list-style: none;
+    pointer-events: none;
+}
+
+.sidebar-menu > li.menu-header:first-child {
+    margin-top: 10px;
+}
+
+.sidebar-menu > li.menu-header .menu-header-text {
+    display: block;
+    padding: 8px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.5);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+/* Spacing after menu header */
+.sidebar-menu > li.menu-header + li {
+    margin-top: 4px;
+}
+
+/* Better spacing between groups */
+.sidebar-menu > li:not(.menu-header) + li.menu-header {
+    margin-top: 30px;
+}
+
 .sidebar-menu > li > a {
     color: rgba(255, 255, 255, 0.85) !important;
     padding: 12px 20px !important;
@@ -772,9 +806,12 @@ body.sidebar-collapse .content-wrapper {
 /* Ensure Iconify icons render properly */
 iconify-icon {
     display: inline-block !important;
-    width: 1em !important;
-    height: 1em !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
     vertical-align: middle !important;
+    margin-right: 12px !important;
 }
 
 iconify-icon.sidebar-icon {

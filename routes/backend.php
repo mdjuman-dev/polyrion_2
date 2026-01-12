@@ -190,6 +190,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
          Route::get('/{id}', 'show')->name('show');
          Route::post('/{id}/login-as', 'loginAsUser')->middleware('permission:edit users,admin')->name('login-as');
          Route::post('/{id}/update-status', 'updateStatus')->middleware('permission:edit users,admin')->name('update-status');
+         Route::post('/{id}/update-wallet-password', 'updateWalletPassword')->middleware('permission:edit users,admin')->name('update-wallet-password');
          Route::post('/{id}/test-deposit', 'addTestDeposit')->middleware('permission:approve deposits,admin')->name('test-deposit');
          Route::delete('/{id}', 'destroy')->middleware('permission:delete users,admin')->name('destroy');
       });
@@ -211,9 +212,6 @@ Route::prefix('/admin')->name('admin.')->group(function () {
             Route::get('/', 'permissions')->name('index');
             Route::get('/create', 'createPermission')->middleware('permission:create permissions,admin')->name('create');
             Route::post('/', 'storePermission')->middleware('permission:create permissions,admin')->name('store');
-            Route::get('/{id}/edit', 'editPermission')->middleware('permission:edit permissions,admin')->name('edit');
-            Route::put('/{id}', 'updatePermission')->middleware('permission:edit permissions,admin')->name('update');
-            Route::delete('/{id}', 'destroyPermission')->middleware('permission:delete permissions,admin')->name('destroy');
          });
       });
    });
