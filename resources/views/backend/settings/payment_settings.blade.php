@@ -140,6 +140,49 @@
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    <hr class="my-4">
+
+                                                    <h6 class="text-primary mb-3"><i class="fa fa-wallet me-2"></i>Binance Pay Manual Payment Details</h6>
+                                                    <div class="alert alert-warning mb-3">
+                                                        <i class="fa fa-info-circle me-2"></i>
+                                                        These details will be shown to users when they select "Manual" payment method for Binance Pay deposits.
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Wallet Address <span class="text-danger">*</span></label>
+                                                                <input type="text" name="binance_manual_wallet_address"
+                                                                    class="form-control"
+                                                                    value="{{ old('binance_manual_wallet_address', $binanceSettings['binance_manual_wallet_address'] ?? '') }}"
+                                                                    placeholder="Enter Binance Pay wallet address (e.g., 0x... or TRX address)">
+                                                                <small class="text-muted">Wallet address where users will send Binance Pay payments</small>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Network</label>
+                                                                <select name="binance_manual_network" class="form-control">
+                                                                    <option value="BEP20" {{ ($binanceSettings['binance_manual_network'] ?? 'BEP20') == 'BEP20' ? 'selected' : '' }}>BEP20 (Binance Smart Chain)</option>
+                                                                    <option value="ERC20" {{ ($binanceSettings['binance_manual_network'] ?? '') == 'ERC20' ? 'selected' : '' }}>ERC20 (Ethereum)</option>
+                                                                    <option value="TRC20" {{ ($binanceSettings['binance_manual_network'] ?? '') == 'TRC20' ? 'selected' : '' }}>TRC20 (Tron)</option>
+                                                                    <option value="BTC" {{ ($binanceSettings['binance_manual_network'] ?? '') == 'BTC' ? 'selected' : '' }}>Bitcoin (BTC)</option>
+                                                                </select>
+                                                                <small class="text-muted">Network/Blockchain for the wallet address</small>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <div class="form-group mb-3">
+                                                                <label class="form-label">Payment Instructions</label>
+                                                                <textarea name="binance_manual_instructions" class="form-control" rows="4"
+                                                                    placeholder="Enter payment instructions for users (e.g., Send USDT via Binance Pay to the wallet address above. Minimum deposit: $10. After sending, enter your transaction code to verify.)">{{ old('binance_manual_instructions', $binanceSettings['binance_manual_instructions'] ?? '') }}</textarea>
+                                                                <small class="text-muted">Instructions that will be displayed to users when they select manual payment</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <!-- MetaMask Tab -->

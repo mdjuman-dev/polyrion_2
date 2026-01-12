@@ -24,6 +24,10 @@ class PaymentSettingsController extends Controller
             'binance_api_key' => $settings['binance_api_key'] ?? '',
             'binance_secret_key' => $settings['binance_secret_key'] ?? '',
             'binance_base_url' => $settings['binance_base_url'] ?? 'https://bpay.binanceapi.com',
+            // Manual Payment Details
+            'binance_manual_wallet_address' => $settings['binance_manual_wallet_address'] ?? '',
+            'binance_manual_network' => $settings['binance_manual_network'] ?? 'BEP20',
+            'binance_manual_instructions' => $settings['binance_manual_instructions'] ?? '',
         ];
 
         // MetaMask/Crypto Settings
@@ -68,6 +72,10 @@ class PaymentSettingsController extends Controller
             'binance_api_key' => 'nullable|string|max:255',
             'binance_secret_key' => 'nullable|string|max:255',
             'binance_base_url' => 'nullable|url|max:255',
+            // Binance Pay Manual Payment
+            'binance_manual_wallet_address' => 'nullable|string|max:255',
+            'binance_manual_network' => 'nullable|string|in:BEP20,ERC20,TRC20,BTC',
+            'binance_manual_instructions' => 'nullable|string|max:2000',
             // MetaMask/Crypto
             'merchant_address' => 'nullable|string|max:255',
             'merchant_address_bsc' => 'nullable|string|max:255',
@@ -99,6 +107,10 @@ class PaymentSettingsController extends Controller
             'binance_api_key',
             'binance_secret_key',
             'binance_base_url',
+            // Binance Pay Manual Payment
+            'binance_manual_wallet_address',
+            'binance_manual_network',
+            'binance_manual_instructions',
             // MetaMask/Crypto
             'merchant_address',
             'merchant_address_bsc',

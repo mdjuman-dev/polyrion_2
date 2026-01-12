@@ -8212,7 +8212,7 @@ input:checked + .toggle-slider:before {
 }
 
 .deposit-method-btn {
-    padding: 12px 16px;
+    padding: 12px 20px;
     background: var(--secondary);
     border: 1px solid var(--border);
     border-radius: 8px;

@@ -110,11 +110,11 @@
                         @php
                             $logoExists = false;
                             if ($logo) {
-                            if (str_starts_with($logo, 'http')) {
-                                $logoExists = true;
-                            } else {
-                                $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
-                            }
+                                if (str_starts_with($logo, 'http')) {
+                                    $logoExists = true;
+                                } else {
+                                    $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+                                }
                             }
                         @endphp
                         @if ($logo && $logoExists)
@@ -188,15 +188,16 @@
                                         </div>
                                         <div class="header-menu-divider">
                                         </div>
-                                       <a href="{{ route('profile.index') }}">
-                                          <div class="header-menu-item d-flex align-items-center justify-content-between w-100 ">
-                                             <span class="header-menu-icon">
-                                            <i class="fas fa-user"></i>
+                                        <a href="{{ route('profile.index') }}">
+                                            <div
+                                                class="header-menu-item d-flex align-items-center justify-content-between w-100 ">
+                                                <span class="header-menu-icon">
+                                                    <i class="fas fa-user"></i>
 
-                                             </span>
-                                             <span class="header-menu-label">Profile</span>
-                                          </div>
-                                       </a>
+                                                </span>
+                                                <span class="header-menu-label">Profile</span>
+                                            </div>
+                                        </a>
                                     @endif
 
                                     <a href="#">
@@ -264,13 +265,13 @@
                                 @php
                                     $logoExistsMobile = false;
                                     if ($logo) {
-                                    if (str_starts_with($logo, 'http')) {
-                                        $logoExistsMobile = true;
-                                    } else {
-                                        $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
-                                            'public',
-                                        )->exists($logo);
-                                    }
+                                        if (str_starts_with($logo, 'http')) {
+                                            $logoExistsMobile = true;
+                                        } else {
+                                            $logoExistsMobile = \Illuminate\Support\Facades\Storage::disk(
+                                                'public',
+                                            )->exists($logo);
+                                        }
                                     }
                                 @endphp
                                 @if ($logo && $logoExistsMobile)
@@ -422,14 +423,14 @@
     <div class="more-menu-sidebar" id="moreMenuSidebar">
         <div class="more-menu-header">
             @php
-$logoExistsSidebar = false;
-if ($logo) {
-   if (str_starts_with($logo, 'http')) {
-      $logoExistsSidebar = true;
-   } else {
-      $logoExistsSidebar = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
-   }
-}
+                $logoExistsSidebar = false;
+                if ($logo) {
+                    if (str_starts_with($logo, 'http')) {
+                        $logoExistsSidebar = true;
+                    } else {
+                        $logoExistsSidebar = \Illuminate\Support\Facades\Storage::disk('public')->exists($logo);
+                    }
+                }
             @endphp
             @if ($logo && $logoExistsSidebar)
                 <a href="{{ route('home') }}" class="logo-link">
@@ -541,11 +542,11 @@ if ($logo) {
                     </div>
                 </div>
                 <div class="footer-right">
-                    @if($socialMediaLinks && $socialMediaLinks->count() > 0)
+                    @if ($socialMediaLinks && $socialMediaLinks->count() > 0)
                         <div class="footer-social">
-                            @foreach($socialMediaLinks as $link)
+                            @foreach ($socialMediaLinks as $link)
                                 @php
-                                    $iconClass = match($link->platform) {
+                                    $iconClass = match ($link->platform) {
                                         'facebook' => 'fab fa-facebook',
                                         'twitter' => 'fa-brands fa-x',
                                         'instagram' => 'fab fa-instagram',
@@ -555,9 +556,12 @@ if ($logo) {
                                         'linkedin' => 'fab fa-linkedin',
                                         default => 'fas fa-link',
                                     };
-                                    $ariaLabel = ucfirst($link->platform === 'twitter' ? 'X (Twitter)' : $link->platform);
+                                    $ariaLabel = ucfirst(
+                                        $link->platform === 'twitter' ? 'X (Twitter)' : $link->platform,
+                                    );
                                 @endphp
-                                <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="{{ $ariaLabel }}">
+                                <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer"
+                                    class="footer-social-link" aria-label="{{ $ariaLabel }}">
                                     <i class="{{ $iconClass }}"></i>
                                 </a>
                             @endforeach
@@ -624,9 +628,7 @@ if ($logo) {
                 $('#themeToggleMobile').on('click', toggleTheme);
             })();
 
-            // ============================================
             // HEADER MENU (Optimized)
-            // ============================================
             (function() {
                 if ($headerMenuTrigger.length && $headerMenuDropdown.length) {
                     const closeHeaderMenu = () => $headerMenuDropdown.removeClass('active');
@@ -643,9 +645,7 @@ if ($logo) {
                 }
             })();
 
-            // ============================================
             // FILTERS & DROPDOWNS (Optimized with delegation)
-            // ============================================
             (function() {
                 const adjustDropdownPosition = ($dropdown) => {
                     if (!$dropdown.length) return;
@@ -734,9 +734,7 @@ if ($logo) {
                 }
             })();
 
-            // ============================================
             // NAVIGATION (Optimized with Overflow Detection)
-            // ============================================
             (function() {
                 const $navContent = $('.nav-content');
                 const $navItemsWrapper = $('.nav-items-wrapper');
@@ -947,9 +945,7 @@ if ($logo) {
                 setTimeout(handleNavOverflow, 100);
             })();
 
-            // ============================================
             // MOBILE NAVIGATION (Optimized)
-            // ============================================
             (function() {
                 const checkScreenSize = () => {
                     const isMobile = $win.width() <= 768;
@@ -1013,9 +1009,7 @@ if ($logo) {
                 checkScreenSize();
             })();
 
-            // ============================================
             // SEARCH KEYBOARD SHORTCUTS (Livewire handles search)
-            // ============================================
             (function() {
                 $doc.on('keydown', function(e) {
                     const $search = $(
@@ -1034,9 +1028,7 @@ if ($logo) {
                 });
             })();
 
-            // ============================================
             // NOTIFICATIONS (Optimized)
-            // ============================================
             (function() {
                 window.showNotification = function(message, type = 'info') {
                     const colors = {
@@ -1075,9 +1067,7 @@ if ($logo) {
                 };
             })();
 
-            // ============================================
             // MARKET CARDS & ACTIONS (Optimized)
-            // ============================================
             (function() {
                 $doc.on('click', '.yes-btn, .no-btn', function(e) {
                     e.stopPropagation();
@@ -1104,9 +1094,7 @@ if ($logo) {
                 });
             })();
 
-            // ============================================
             // MARKET DETAIL PAGE (Optimized)
-            // ============================================
             (function() {
                     if (!$('#marketChart').length && !$('.outcome-row').length) return;
 
@@ -1523,13 +1511,16 @@ if ($logo) {
             $doc.on('click', '.show-more-btn', function() {
                 $(this).toggleClass('expanded');
             });
+
             $doc.on('click', '.reply-btn', function() {
                 $(this).closest('.comment-section').find('.comment-reply-wrapper').slideToggle(200);
             });
+
             $doc.on('click', '.comment-reply-cancel-btn', function() {
                 $(this).closest('.comment-reply-wrapper').slideUp(200).find('.comment-reply-input').val(
                     '');
             });
+
             $doc.on('click', '.comment-reply-submit-btn', function() {
                 const replyText = $(this).siblings('.comment-reply-input').val().trim();
                 if (replyText === '') {
@@ -1780,6 +1771,10 @@ if ($logo) {
 
         })(jQuery);
 
+
+
+
+
         // DEPOSIT MODAL 
         $(function() {
             const $depositBtn = $("#depositBtn");
@@ -1823,7 +1818,6 @@ if ($logo) {
             $depositClose.on("click", function(e) {
                 e.preventDefault();
                 closeDepositModal();
-
             });
 
             // Close modal on overlay click
@@ -1877,13 +1871,6 @@ if ($logo) {
                             text: 'Please enter a valid amount',
                             confirmButtonColor: '#ffb11a'
                         });
-                    } else if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Invalid Amount',
-                            text: 'Please enter a valid amount',
-                            confirmButtonColor: '#ffb11a'
-                        });
                     } else {
                         alert('Please enter a valid amount');
                     }
@@ -1893,13 +1880,6 @@ if ($logo) {
                 if (amount < 10) {
                     if (typeof showWarning !== 'undefined') {
                         showWarning('Minimum deposit amount is $10', 'Minimum Amount Required');
-                    } else if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Minimum Amount Required',
-                            text: 'Minimum deposit amount is $10',
-                            confirmButtonColor: '#ffb11a'
-                        });
                     } else if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
@@ -1933,19 +1913,14 @@ if ($logo) {
                         },
                         success: function(response) {
                             if (response.success && response.checkoutUrl) {
-                                // Close modal first
                                 closeDepositModal();
-
-                                // Small delay to ensure modal closes
                                 setTimeout(function() {
-                                    // Redirect to Binance Pay checkout
                                     window.location.href = response.checkoutUrl;
                                 }, 100);
                             } else {
                                 let errorMsg = response.message ||
                                     "Failed to create payment. Please try again.";
 
-                                // Show helpful message for IP whitelist errors
                                 if (errorMsg.includes('IP') || errorMsg.includes('whitelist')) {
                                     errorMsg +=
                                         '\n\nPlease contact support to whitelist the server IP address.';
@@ -1961,7 +1936,6 @@ if ($logo) {
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
 
-                                // Add helpful tips for common errors
                                 if (errorMessage.includes('IP') || errorMessage.includes(
                                         'whitelist')) {
                                     errorMessage +=
@@ -2017,7 +1991,6 @@ if ($logo) {
                                     'Payment Verified'
                                 );
 
-                                // Update balance display
                                 $('.wallet-value').each(function() {
                                     if ($(this).closest('.wallet-item').find(
                                             '.wallet-label').text().trim() === 'Cash') {
@@ -2025,15 +1998,11 @@ if ($logo) {
                                     }
                                 });
 
-                                // Update balance in modal
                                 $('.balance-value').text('$' + response.balance);
-
-                                // Close modal and reset form
                                 closeDepositModal();
                                 $depositAmount.val("");
                                 $("#queryCode").val("");
 
-                                // Reload page to update balance everywhere
                                 setTimeout(() => {
                                     window.location.reload();
                                 }, 1500);
@@ -2062,10 +2031,9 @@ if ($logo) {
                     return;
                 }
 
-                // Handle MetaMask
-                if (method === 'metamask') {
-                    // Call immediately from user click event to ensure popup works
-                    handleMetaMaskDeposit(amount, currency, $btn, originalText);
+                // Handle MetaMask & Trust Wallet
+                if (method === 'metamask' || method === 'trustwallet') {
+                    handleWeb3Deposit(amount, currency, $btn, originalText, method);
                     return;
                 }
 
@@ -2081,66 +2049,110 @@ if ($logo) {
                 }
             });
 
-            // MetaMask Deposit Handler
-            function handleMetaMaskDeposit(amount, currency, $btn, originalText) {
-                // Check if MetaMask is installed - check multiple ways
-                const ethereum = window.ethereum || (window.web3 && window.web3.currentProvider);
+            // ==================== WEB3 WALLET INTEGRATION ====================
 
-                if (!ethereum) {
-                    showError(
-                        'MetaMask is not installed. Please install MetaMask extension to continue.',
-                        'MetaMask Required'
-                    );
+            // Detect and get the appropriate Web3 provider
+            function getWeb3Provider(walletType) {
+                // For Trust Wallet on mobile
+                if (walletType === 'trustwallet') {
+                    // Trust Wallet injects as window.ethereum on mobile
+                    if (window.ethereum && window.ethereum.isTrust) {
+                        return window.ethereum;
+                    }
+                    // Fallback to regular ethereum if Trust Wallet is not detected
+                    if (window.ethereum) {
+                        return window.ethereum;
+                    }
+                    return null;
+                }
+
+                // For MetaMask
+                if (walletType === 'metamask') {
+                    // Check for MetaMask specifically
+                    if (window.ethereum && window.ethereum.isMetaMask) {
+                        return window.ethereum;
+                    }
+                    // Fallback to general ethereum provider
+                    if (window.ethereum) {
+                        return window.ethereum;
+                    }
+                    return null;
+                }
+
+                return null;
+            }
+
+            // Main Web3 deposit handler (works for both MetaMask and Trust Wallet)
+            function handleWeb3Deposit(amount, currency, $btn, originalText, walletType) {
+                const walletName = walletType === 'trustwallet' ? 'Trust Wallet' : 'MetaMask';
+
+                const provider = getWeb3Provider(walletType);
+
+                if (!provider) {
+                    const message = walletType === 'trustwallet' ?
+                        'Trust Wallet is not detected. Please open this page in Trust Wallet browser or install Trust Wallet extension.' :
+                        'MetaMask is not installed. Please install MetaMask extension to continue.';
+
+                    if (typeof showError !== 'undefined') {
+                        showError(message, walletName + ' Required');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: walletName + ' Required',
+                            text: message,
+                            confirmButtonColor: '#ef4444',
+                        });
+                    } else {
+                        alert(message);
+                    }
                     $btn.prop("disabled", false).html(originalText);
                     return;
                 }
 
-                console.log('MetaMask detected, starting deposit process...');
+                console.log(walletName + ' detected, starting deposit process...');
 
-                // Get network selection (default to Ethereum)
-                const network = 'ethereum';
+                const network = 'ethereum'; // You can make this dynamic based on user selection
                 const tokenAddress = null; // null for native token (ETH/BNB/MATIC)
-
-                // Use the ethereum provider
-                const provider = ethereum;
 
                 // Helper function to get user address
                 function getUserAddress() {
                     return new Promise(function(resolve, reject) {
-                        // First try to get accounts without requesting (if already connected)
                         provider.request({
-                            method: 'eth_accounts'
-                        }).then(function(accounts) {
-                            if (accounts && accounts.length > 0) {
-                                console.log('MetaMask already connected:', accounts[0]);
-                                resolve(accounts[0]);
-                            } else {
-                                // No accounts, request access - this will trigger MetaMask popup
-                                console.log('Requesting MetaMask accounts...');
-                                $btn.prop("disabled", true).html(
-                                    '<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...'
-                                    );
+                                method: 'eth_accounts'
+                            })
+                            .then(function(accounts) {
+                                if (accounts && accounts.length > 0) {
+                                    console.log(walletName + ' already connected:', accounts[0]);
+                                    resolve(accounts[0]);
+                                } else {
+                                    console.log('Requesting ' + walletName + ' accounts...');
+                                    $btn.prop("disabled", true).html(
+                                        '<i class="fas fa-spinner fa-spin"></i> Opening ' +
+                                        walletName + '...');
 
-                                provider.request({
-                                    method: 'eth_requestAccounts'
-                                }).then(function(requestedAccounts) {
-                                    if (!requestedAccounts || requestedAccounts.length ===
-                                        0) {
-                                        reject(new Error(
-                                            'No accounts found. Please unlock MetaMask.'
-                                            ));
-                                    } else {
-                                        console.log('MetaMask connected:',
-                                            requestedAccounts[0]);
-                                        resolve(requestedAccounts[0]);
-                                    }
-                                }).catch(reject);
-                            }
-                        }).catch(reject);
+                                    provider.request({
+                                            method: 'eth_requestAccounts'
+                                        })
+                                        .then(function(requestedAccounts) {
+                                            if (!requestedAccounts || requestedAccounts.length ===
+                                                0) {
+                                                reject(new Error(
+                                                    'No accounts found. Please unlock ' +
+                                                    walletName + '.'));
+                                            } else {
+                                                console.log(walletName + ' connected:',
+                                                    requestedAccounts[0]);
+                                                resolve(requestedAccounts[0]);
+                                            }
+                                        })
+                                        .catch(reject);
+                                }
+                            })
+                            .catch(reject);
                     });
                 }
 
-                // Step 1: Get user address (will trigger popup if not connected)
+                // Step 1: Get user address
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Connecting...');
 
                 getUserAddress()
@@ -2159,6 +2171,7 @@ if ($logo) {
                                 currency: currency || 'USDT',
                                 network: network,
                                 token_address: tokenAddress,
+                                wallet_type: walletType,
                                 _token: $('meta[name="csrf-token"]').attr('content')
                             }
                         }).then(function(createDepositResponse) {
@@ -2179,160 +2192,156 @@ if ($logo) {
                         const userAddress = data.userAddress;
                         const merchantAddress = response.merchant_address;
 
-                        // Convert amount to wei (for native tokens) - assuming 18 decimals
+                        // Convert amount to wei
                         const decimals = response.token_decimals || 18;
                         const amountFloat = parseFloat(amount);
-                        const multiplier = Math.pow(10, decimals);
-                        const amountInWei = Math.floor(amountFloat * multiplier);
 
-                        // Convert to hex (handle large numbers safely)
-                        let amountHex;
-                        try {
-                            if (typeof BigInt !== 'undefined') {
-                                amountHex = '0x' + BigInt(amountInWei).toString(16);
-                            } else {
-                                // Fallback: use a library-free conversion
-                                amountHex = '0x' + amountInWei.toString(16);
-                            }
-                        } catch (e) {
-                            // If BigInt fails, use string conversion
-                            amountHex = '0x' + amountInWei.toString(16);
+                        // Use string multiplication to avoid precision issues
+                        let amountInWei;
+                        if (typeof BigInt !== 'undefined') {
+                            const multiplier = BigInt(10) ** BigInt(decimals);
+                            const amountBigInt = BigInt(Math.floor(amountFloat * Math.pow(10, decimals)));
+                            amountInWei = amountBigInt;
+                        } else {
+                            amountInWei = Math.floor(amountFloat * Math.pow(10, decimals));
                         }
 
-                        // Step 3: Send transaction - THIS WILL OPEN METAMASK POPUP
-                        // IMPORTANT: Don't close modal yet - keep it open so popup isn't blocked
+                        // Convert to hex
+                        const amountHex = '0x' + amountInWei.toString(16);
+
+                        // Step 3: Send transaction
                         $btn.prop("disabled", true).html(
-                            '<i class="fas fa-spinner fa-spin"></i> Opening MetaMask...');
+                            '<i class="fas fa-spinner fa-spin"></i> Opening ' + walletName + '...');
 
-                        console.log('Preparing transaction...');
-                        console.log('Merchant Address:', merchantAddress);
-                        console.log('Amount (hex):', amountHex);
-                        console.log('User Address:', userAddress);
-
-                        // Get gas price and send transaction
-                        return provider.request({
-                            method: 'eth_gasPrice'
-                        }).then(function(gasPrice) {
-                            console.log('Gas price:', gasPrice);
-
-                            // Prepare transaction parameters
-                            const transactionParameters = {
-                                from: userAddress,
-                                to: merchantAddress,
-                                value: amountHex, // Amount in wei (hex)
-                                gas: '0x5208', // 21000 gas limit for simple transfer
-                                gasPrice: gasPrice
-                            };
-
-                            console.log('Transaction parameters:', transactionParameters);
-                            console.log(
-                                'Calling eth_sendTransaction - MetaMask popup should open now...');
-                            console.log('Provider:', provider);
-                            console.log('Provider.isMetaMask:', provider.isMetaMask);
-                            console.log('Provider type:', typeof provider);
-                            console.log('Provider.request type:', typeof provider.request);
-
-                            // Validate transaction parameters
-                            if (!merchantAddress || !amountHex || !userAddress) {
-                                throw new Error('Invalid transaction parameters');
-                            }
-
-                            // Send transaction - THIS WILL OPEN METAMASK POPUP
-                            // This must be called directly to trigger the popup
-                            if (!provider || typeof provider.request !== 'function') {
-                                throw new Error(
-                                    'MetaMask provider is not available or request method is missing'
-                                    );
-                            }
-
-                            console.log('Making eth_sendTransaction request...');
-                            return provider.request({
-                                method: 'eth_sendTransaction',
-                                params: [transactionParameters]
-                            });
-                        }).then(function(txHash) {
-                            if (!txHash) {
-                                throw new Error('Transaction failed. No transaction hash returned.');
-                            }
-
-                            console.log('Transaction hash:', txHash);
-
-                            // Close deposit modal AFTER transaction is sent
-                            closeDepositModal();
-
-                            // Show success message and verify transaction
-                            if (typeof showSuccess !== 'undefined') {
-                                showSuccess(
-                                    `Transaction sent! Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}. Please wait for confirmation...`,
-                                    'Transaction Sent'
-                                );
-                            } else if (typeof Swal !== 'undefined') {
-                                Swal.fire({
-                                    title: 'Transaction Sent!',
-                                    html: `
-                                        <div style="text-align: left; color: var(--text-primary, #333);">
-                                            <p style="color: var(--text-primary, #333); margin-bottom: 10px;">
-                                                <strong>Transaction Hash:</strong>
-                                            </p>
-                                            <div style="background: var(--secondary, #2a2a2a); color: var(--text-primary, #fff); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #444);">
-                                                ${txHash}
-                                            </div>
-                                            <p style="margin-top: 15px; color: var(--text-primary, #333);">
-                                                Your transaction has been sent. Please wait for confirmation...
-                                            </p>
-                                        </div>
-                                    `,
-                                    icon: 'success',
-                                    showConfirmButton: true,
-                                    confirmButtonText: 'OK',
-                                    confirmButtonColor: '#3085d6',
-                                    allowOutsideClick: false
-                                });
-                            }
-
-                            // Automatically verify transaction
-                            verifyMetaMaskTransaction(txHash, response.deposit_id, network, $btn,
-                                originalText);
+                        console.log('Transaction details:', {
+                            from: userAddress,
+                            to: merchantAddress,
+                            value: amountHex,
+                            network: network
                         });
+
+                        // Get gas price
+                        return provider.request({
+                                method: 'eth_gasPrice'
+                            })
+                            .then(function(gasPrice) {
+                                console.log('Gas price:', gasPrice);
+
+                                // Estimate gas limit
+                                return provider.request({
+                                    method: 'eth_estimateGas',
+                                    params: [{
+                                        from: userAddress,
+                                        to: merchantAddress,
+                                        value: amountHex
+                                    }]
+                                }).catch(function() {
+                                    // If estimation fails, use default
+                                    return '0x5208'; // 21000 in hex
+                                }).then(function(gasLimit) {
+                                    const transactionParameters = {
+                                        from: userAddress,
+                                        to: merchantAddress,
+                                        value: amountHex,
+                                        gas: gasLimit,
+                                        gasPrice: gasPrice
+                                    };
+
+                                    console.log('Sending transaction with params:',
+                                        transactionParameters);
+
+                                    // Send transaction
+                                    return provider.request({
+                                        method: 'eth_sendTransaction',
+                                        params: [transactionParameters]
+                                    }).then(function(txHash) {
+                                        return {
+                                            txHash: txHash,
+                                            depositId: response.deposit_id
+                                        };
+                                    });
+                                });
+                            });
+                    })
+                    .then(function(result) {
+                        const txHash = result.txHash;
+                        const depositId = result.depositId;
+
+                        if (!txHash) {
+                            throw new Error('Transaction failed. No transaction hash returned.');
+                        }
+
+                        console.log('Transaction hash:', txHash);
+
+                        // Close deposit modal
+                        closeDepositModal();
+
+                        // Show success message
+                        if (typeof showSuccess !== 'undefined') {
+                            showSuccess(
+                                `Transaction sent! Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}. Please wait for confirmation...`,
+                                'Transaction Sent'
+                            );
+                        } else if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Transaction Sent!',
+                                html: `
+                                <div style="text-align: left; color: var(--text-primary, #333);">
+                                    <p style="color: var(--text-primary, #333); margin-bottom: 10px;">
+                                        <strong>Transaction Hash:</strong>
+                                    </p>
+                                    <div style="background: var(--secondary, #f5f5f5); color: var(--text-primary, #333); padding: 12px; border-radius: 8px; word-break: break-all; font-family: 'Courier New', monospace; margin: 10px 0; font-size: 13px; border: 1px solid var(--border, #ddd);">
+                                        ${txHash}
+                                    </div>
+                                    <p style="margin-top: 15px; color: var(--text-primary, #333);">
+                                        Your transaction has been sent. Please wait for confirmation...
+                                    </p>
+                                </div>
+                            `,
+                                icon: 'success',
+                                showConfirmButton: true,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#3085d6',
+                                allowOutsideClick: false
+                            });
+                        }
+
+                        // Verify transaction
+                        verifyWeb3Transaction(txHash, depositId, network, $btn, originalText);
                     })
                     .catch(function(error) {
-                        console.error('MetaMask Error:', error);
-                        console.error('Error details:', JSON.stringify(error, null, 2));
+                        console.error(walletName + ' Error:', error);
 
                         let errorMessage = 'Failed to process payment. Please try again.';
 
                         if (error.code === 4001) {
-                            errorMessage = 'Transaction was rejected by user. Please try again.';
+                            errorMessage = 'Transaction was rejected. Please try again.';
                         } else if (error.code === -32002) {
-                            errorMessage =
-                                'MetaMask request is pending. Please check your MetaMask extension and approve the request.';
+                            errorMessage = 'A request is already pending in ' + walletName +
+                                '. Please check your wallet.';
                         } else if (error.code === -32603) {
-                            errorMessage =
-                                'Internal MetaMask error. Please try again or check your MetaMask extension.';
+                            errorMessage = 'Internal error. Please try again.';
                         } else if (error.message) {
                             errorMessage = error.message;
                         } else if (error.responseJSON && error.responseJSON.message) {
                             errorMessage = error.responseJSON.message;
                         }
 
-                        // Show detailed error for debugging
                         console.log('Showing error to user:', errorMessage);
                         showError(errorMessage, 'Payment Error');
                         $btn.prop("disabled", false).html(originalText);
                     });
             }
 
-            // Verify MetaMask Transaction
-            function verifyMetaMaskTransaction(txHash, depositId, network, $btn, originalText) {
+            // Verify Web3 Transaction
+            function verifyWeb3Transaction(txHash, depositId, network, $btn, originalText) {
                 $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Verifying...');
-
-                // First, check transaction status
                 checkTransactionStatus(txHash, network, depositId, $btn, originalText, 0);
             }
 
             // Check transaction status with polling
             function checkTransactionStatus(txHash, network, depositId, $btn, originalText, attempt) {
-                const maxAttempts = 30; // 30 attempts = ~2.5 minutes
+                const maxAttempts = 60; // 60 attempts = ~5 minutes
 
                 $.ajax({
                     url: '{{ route('metamask.transaction.status') }}',
@@ -2344,10 +2353,8 @@ if ($logo) {
                     },
                     success: function(response) {
                         if (response.success && response.status === 'success') {
-                            // Transaction confirmed, now verify
                             verifyTransaction(txHash, depositId, network, $btn, originalText);
                         } else if (response.success && response.status === 'pending') {
-                            // Still pending, poll again
                             if (attempt < maxAttempts) {
                                 setTimeout(() => {
                                     checkTransactionStatus(txHash, network, depositId, $btn,
@@ -2365,13 +2372,12 @@ if ($logo) {
                         }
                     },
                     error: function() {
-                        // If status check fails, try to verify anyway
                         verifyTransaction(txHash, depositId, network, $btn, originalText);
                     }
                 });
             }
 
-            // Verify transaction
+            // Verify transaction on server
             function verifyTransaction(txHash, depositId, network, $btn, originalText) {
                 $.ajax({
                     url: '{{ route('metamask.transaction.verify') }}',
@@ -2390,7 +2396,6 @@ if ($logo) {
                                 'Payment Verified'
                             );
 
-                            // Update balance display
                             $('.wallet-value').each(function() {
                                 if ($(this).closest('.wallet-item').find('.wallet-label').text()
                                     .trim() === 'Cash') {
@@ -2398,14 +2403,10 @@ if ($logo) {
                                 }
                             });
 
-                            // Update balance in modal
                             $('.balance-value').text('$' + response.balance);
-
-                            // Close modal and reset form
                             closeDepositModal();
                             $depositAmount.val("");
 
-                            // Reload page to update balance everywhere
                             setTimeout(() => {
                                 window.location.reload();
                             }, 1500);
@@ -2891,7 +2892,15 @@ if ($logo) {
         }
 
         // Copy to clipboard function
-        function copyToClipboard(text, buttonId) {
+        function copyToClipboard(text, buttonIdOrElement) {
+            // Support both buttonId (string) and button element
+            let btn = null;
+            if (typeof buttonIdOrElement === 'string') {
+                btn = document.getElementById(buttonIdOrElement);
+            } else if (buttonIdOrElement && buttonIdOrElement.nodeType === 1) {
+                btn = buttonIdOrElement;
+            }
+
             // Create a temporary textarea element
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -2906,51 +2915,103 @@ if ($logo) {
                 document.body.removeChild(textarea);
 
                 if (successful) {
-                    // Update button text to show success
-                    const btn = document.getElementById(buttonId);
+                    // Update button icon to show success
                     if (btn) {
-                        const originalHTML = btn.innerHTML;
-                        btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
-                        btn.style.background = '#28a745';
-                        btn.style.color = '#fff';
+                        const icon = btn.querySelector('i');
+                        if (icon) {
+                            const originalClass = icon.className;
+                            const originalTitle = btn.getAttribute('title') || '';
+                            
+                            // Change icon to checkmark
+                            icon.className = 'fas fa-check';
+                            btn.style.background = '#10b981';
+                            if (btn.style.color) {
+                                btn.style.color = '#fff';
+                            }
+                            btn.setAttribute('title', 'Copied!');
 
-                        // Reset after 2 seconds
+                            // Reset after 2 seconds
+                            setTimeout(() => {
+                                icon.className = originalClass;
+                                btn.style.background = 'var(--accent, #ffb11a)';
+                                if (btn.style.color) {
+                                    btn.style.color = '#000';
+                                }
+                                btn.setAttribute('title', originalTitle);
+                            }, 2000);
+                        } else {
+                            // Fallback if no icon found
+                            const originalHTML = btn.innerHTML;
+                            btn.innerHTML = '<i class="fas fa-check"></i>';
+                            btn.style.background = '#10b981';
+                            setTimeout(() => {
+                                btn.innerHTML = originalHTML;
+                                btn.style.background = 'var(--accent, #ffb11a)';
+                            }, 2000);
+                        }
+                    }
+                } else {
+                    if (btn) {
+                        btn.style.background = '#ef4444';
                         setTimeout(() => {
-                            btn.innerHTML = originalHTML;
                             btn.style.background = 'var(--accent, #ffb11a)';
-                            btn.style.color = '#000';
                         }, 2000);
                     }
-
-                    // Show toast notification
-                    showSuccess('Address copied to clipboard!', 'Copied');
-                } else {
-                    showError('Failed to copy. Please try again.', 'Copy Failed');
                 }
             } catch (err) {
                 document.body.removeChild(textarea);
                 // Fallback: try using Clipboard API
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(text).then(() => {
-                        const btn = document.getElementById(buttonId);
+                        // Update button icon to show success
                         if (btn) {
-                            const originalHTML = btn.innerHTML;
-                            btn.innerHTML = '<i class="fas fa-check" style="margin-right: 5px;"></i> Copied!';
-                            btn.style.background = '#28a745';
-                            btn.style.color = '#fff';
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                const originalClass = icon.className;
+                                const originalTitle = btn.getAttribute('title') || '';
+                                
+                                // Change icon to checkmark
+                                icon.className = 'fas fa-check';
+                                btn.style.background = '#10b981';
+                                if (btn.style.color) {
+                                    btn.style.color = '#fff';
+                                }
+                                btn.setAttribute('title', 'Copied!');
 
+                                setTimeout(() => {
+                                    icon.className = originalClass;
+                                    btn.style.background = 'var(--accent, #ffb11a)';
+                                    if (btn.style.color) {
+                                        btn.style.color = '#000';
+                                    }
+                                    btn.setAttribute('title', originalTitle);
+                                }, 2000);
+                            } else {
+                                // Fallback if no icon found
+                                const originalHTML = btn.innerHTML;
+                                btn.innerHTML = '<i class="fas fa-check"></i>';
+                                btn.style.background = '#10b981';
+                                setTimeout(() => {
+                                    btn.innerHTML = originalHTML;
+                                    btn.style.background = 'var(--accent, #ffb11a)';
+                                }, 2000);
+                            }
+                        }
+                    }).catch(() => {
+                        if (btn) {
+                            btn.style.background = '#ef4444';
                             setTimeout(() => {
-                                btn.innerHTML = originalHTML;
                                 btn.style.background = 'var(--accent, #ffb11a)';
-                                btn.style.color = '#000';
                             }, 2000);
                         }
-                        showSuccess('Address copied to clipboard!', 'Copied');
-                    }).catch(() => {
-                        showError('Failed to copy. Please copy manually.', 'Copy Failed');
                     });
                 } else {
-                    showError('Copy not supported. Please copy manually.', 'Copy Failed');
+                    if (btn) {
+                        btn.style.background = '#ef4444';
+                        setTimeout(() => {
+                            btn.style.background = 'var(--accent, #ffb11a)';
+                        }, 2000);
+                    }
                 }
             }
         }

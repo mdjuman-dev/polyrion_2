@@ -82,88 +82,83 @@
             <div class="row">
                 <!-- Left Sidebar - Filters (3 columns) -->
                 <div class="col-lg-3 d-none d-lg-block">
-                    <div class="crypto-sidebar" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto;">
+                    <div class="crypto-sidebar" style="background: #1a1d29; border-radius: 8px; padding: 0; position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto;">
                         <!-- Time-based Filters -->
-                        <div style="margin-bottom: 32px;">
-                            <h3 style="color: var(--text-primary); font-size: 14px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <div style="padding: 20px 16px 12px 16px;">
+                            <h3 style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
                                 Time Filters
                             </h3>
-                            <div class="filter-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="filter-list" style="display: flex; flex-direction: column; gap: 2px;">
                                 <a href="{{ route('crypto.index') }}?timeframe=all{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'all' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: {{ $selectedTimeframe === 'all' ? 'var(--accent)' : 'transparent' }}; border: 1px solid {{ $selectedTimeframe === 'all' ? 'var(--accent)' : 'var(--border)' }}; border-radius: 8px; color: {{ $selectedTimeframe === 'all' ? '#fff' : 'var(--text-primary)' }}; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>All</span>
-                                    <span style="color: {{ $selectedTimeframe === 'all' ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)' }}; font-size: 13px;">{{ $timeframeCounts['all'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['all'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=15m{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === '15m' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>15 Min</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['15m'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['15m'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=hourly{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'hourly' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>Hourly</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['hourly'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['hourly'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=4h{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === '4h' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>4 Hour</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['4h'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['4h'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=daily{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'daily' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>Daily</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['daily'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['daily'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=weekly{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'weekly' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>Weekly</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['weekly'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['weekly'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=monthly{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'monthly' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>Monthly</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['monthly'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['monthly'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=pre-market{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'pre-market' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>Pre-Market</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['pre-market'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['pre-market'] }}</span>
                                 </a>
                                 <a href="{{ route('crypto.index') }}?timeframe=etf{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
                                    class="filter-item {{ $selectedTimeframe === 'etf' ? 'active' : '' }}"
-                                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
                                     <span>ETF</span>
-                                    <span style="color: var(--text-secondary); font-size: 13px;">{{ $timeframeCounts['etf'] }}</span>
+                                    <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $timeframeCounts['etf'] }}</span>
                                 </a>
                             </div>
                         </div>
-
-                        <!-- Divider -->
-                        <div style="height: 1px; background: var(--border); margin: 24px 0;"></div>
-
+                        <div style="height: 1px; background: #2d3142; margin: 0 16px;"></div>
                         <!-- Asset-based Filters -->
-                        <div>
-                            <h3 style="color: var(--text-primary); font-size: 14px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <div style="padding: 12px 16px 20px 16px;">
+                            <h3 style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
                                 Assets
                             </h3>
-                            <div class="filter-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="filter-list" style="display: flex; flex-direction: column; gap: 2px;">
                                 @foreach($assetCounts as $asset)
                                     <a href="{{ route('crypto.index') }}?asset={{ $asset['slug'] }}{{ $selectedTimeframe !== 'all' ? '&timeframe=' . $selectedTimeframe : '' }}" 
                                        class="filter-item {{ $selectedAsset === $asset['slug'] ? 'active' : '' }}"
-                                       style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: {{ $selectedAsset === $asset['slug'] ? 'var(--accent)' : 'transparent' }}; border: 1px solid {{ $selectedAsset === $asset['slug'] ? 'var(--accent)' : 'var(--border)' }}; border-radius: 8px; color: {{ $selectedAsset === $asset['slug'] ? '#fff' : 'var(--text-primary)' }}; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <i class="{{ $asset['icon'] }}" style="font-size: 18px; width: 20px; text-align: center;"></i>
-                                            <span>{{ $asset['name'] }}</span>
-                                        </div>
-                                        <span style="color: {{ $selectedAsset === $asset['slug'] ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)' }}; font-size: 13px;">{{ $asset['count'] }}</span>
+                                       style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;">
+                                        <i class="{{ $asset['icon'] }}" style="color: #9ca3af; font-size: 18px; width: 24px; text-align: center;"></i>
+                                        <span style="flex: 1;">{{ $asset['name'] }}</span>
+                                        <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $asset['count'] }}</span>
                                     </a>
                                 @endforeach
                             </div>
@@ -191,14 +186,11 @@
         }
 
         .filter-item:hover {
-            background: var(--hover) !important;
-            border-color: var(--accent) !important;
+            background: #2d3142 !important;
         }
 
         .filter-item.active {
-            background: var(--accent) !important;
-            color: #fff !important;
-            border-color: var(--accent) !important;
+            background: #2d3142 !important;
         }
 
         @media (max-width: 991px) {
