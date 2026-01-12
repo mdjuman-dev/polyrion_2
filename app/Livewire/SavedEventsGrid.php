@@ -42,14 +42,30 @@ class SavedEventsGrid extends Component
         $savedEventIds = SavedEvent::where('user_id', Auth::id())->pluck('event_id');
 
         // Exclude ended events from saved events list
-        $query = Event::whereIn('id', $savedEventIds)
+        $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'created_at'
+        ])
+        ->whereIn('id', $savedEventIds)
+        ->where('active', true)
+        ->where('closed', false)
+        ->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+        })
+        ->with(['markets' => function($q) {
+            $q->select([
+                'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                'outcome_prices', 'outcomes', 'active', 'closed',
+                'best_ask', 'best_bid', 'last_trade_price',
+                'close_time', 'end_date', 'volume_24hr', 'final_result',
+                'outcome_result', 'final_outcome', 'created_at'
+            ])
             ->where('active', true)
             ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
-            ->with('markets');
+            ->limit(10);
+        }]);
 
         if (!empty($this->search)) {
             $query->where(function ($q) {

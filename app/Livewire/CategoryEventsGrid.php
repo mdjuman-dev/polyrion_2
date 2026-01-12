@@ -53,10 +53,16 @@ class CategoryEventsGrid extends Component
             'end_date', 'created_at'
         ])
         ->with(['markets' => function($q) {
-            $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume_24hr'])
+            $q->select([
+                'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                'outcome_prices', 'outcomes', 'active', 'closed', 
+                'best_ask', 'best_bid', 'last_trade_price',
+                'close_time', 'end_date', 'volume_24hr', 'final_result',
+                'outcome_result', 'final_outcome'
+            ])
               ->where('active', true)
               ->where('closed', false)
-              ->limit(5); // Limit markets per event
+              ->limit(10); // Limit markets per event (increased for better display)
         }])
         ->where('active', true)
         ->where('closed', false);

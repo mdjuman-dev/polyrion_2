@@ -140,11 +140,14 @@ class MarketsGrid extends Component
          ])
          ->with([
             'markets' => function ($q) {
-               // Only active markets: active=true AND closed=false
+               // Only active markets: active=true AND closed=false with all required fields
                $q->select([
                   'id', 'event_id', 'question', 'slug', 'groupItem_title',
-                  'volume', 'volume24hr', 'liquidity_clob', 'active', 'closed',
-                  'outcome_prices', 'close_time', 'created_at'
+                  'outcome_prices', 'outcomes', 'active', 'closed',
+                  'best_ask', 'best_bid', 'last_trade_price',
+                  'close_time', 'end_date', 'volume', 'volume24hr', 
+                  'liquidity_clob', 'final_result', 'outcome_result', 
+                  'final_outcome', 'created_at'
                ])
                ->where('active', true)
                ->where('closed', false)

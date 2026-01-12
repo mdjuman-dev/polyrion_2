@@ -55,8 +55,17 @@ class CryptoEventsGrid extends Component
                   ->orWhere('end_date', '>', now());
             })
             ->with(['markets' => function ($q) {
-                $q->where('active', true)
-                    ->orderBy('created_at', 'desc');
+                $q->select([
+                    'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                    'outcome_prices', 'outcomes', 'active', 'closed',
+                    'best_ask', 'best_bid', 'last_trade_price',
+                    'close_time', 'end_date', 'volume_24hr', 'final_result',
+                    'outcome_result', 'final_outcome', 'created_at'
+                ])
+                ->where('active', true)
+                ->where('closed', false)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
 

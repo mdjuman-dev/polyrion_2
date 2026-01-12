@@ -71,10 +71,13 @@ class TaggedEventsGrid extends Component
             $q->where('tags.id', $tag->id);
         })
         ->with(['markets' => function ($q) {
-            // Only active markets
+            // Only active markets with all required fields
             $q->select([
                 'id', 'event_id', 'question', 'slug', 'groupItem_title',
-                'volume', 'volume24hr', 'active', 'closed', 'close_time', 'created_at'
+                'outcome_prices', 'outcomes', 'active', 'closed',
+                'best_ask', 'best_bid', 'last_trade_price',
+                'close_time', 'end_date', 'volume', 'volume24hr', 
+                'final_result', 'outcome_result', 'final_outcome', 'created_at'
             ])
             ->where('active', true)
             ->where('closed', false)

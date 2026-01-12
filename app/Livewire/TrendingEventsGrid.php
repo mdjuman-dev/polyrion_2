@@ -41,9 +41,26 @@ class TrendingEventsGrid extends Component
    public function render()
    {
       try {
-         $query = Event::with('markets')
+         // Optimize: Select only necessary columns and load markets with required fields
+         $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'created_at'
+         ])
+         ->with(['markets' => function($q) {
+            $q->select([
+                'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                'outcome_prices', 'outcomes', 'active', 'closed',
+                'best_ask', 'best_bid', 'last_trade_price',
+                'close_time', 'end_date', 'volume_24hr', 'final_result',
+                'outcome_result', 'final_outcome'
+            ])
             ->where('active', true)
-            ->where('closed', false);
+            ->where('closed', false)
+            ->limit(10);
+         }])
+         ->where('active', true)
+         ->where('closed', false);
 
          // Hide events where end_date has passed
          $query->where(function ($q) {

@@ -29,18 +29,35 @@ class BreakingEventsGrid extends Component
 
     public function render()
     {
-        $query = Event::with('markets')
+        // Optimize: Select only necessary columns and load markets with required fields
+        $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'featured', 'new', 'created_at'
+        ])
+        ->with(['markets' => function($q) {
+            $q->select([
+                'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                'outcome_prices', 'outcomes', 'active', 'closed',
+                'best_ask', 'best_bid', 'last_trade_price',
+                'close_time', 'end_date', 'volume_24hr', 'final_result',
+                'outcome_result', 'final_outcome', 'created_at'
+            ])
             ->where('active', true)
             ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
-            ->where(function ($q) {
-                $q->where('featured', true)
-                    ->orWhere('new', true)
-                    ->orWhere('created_at', '>=', now()->subDays(7)); // Recent events
-            });
+            ->limit(10);
+        }])
+        ->where('active', true)
+        ->where('closed', false)
+        ->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+        })
+        ->where(function ($q) {
+            $q->where('featured', true)
+                ->orWhere('new', true)
+                ->orWhere('created_at', '>=', now()->subDays(7)); // Recent events
+        });
 
         if (!empty($this->search)) {
             $query->where(function ($q) {
