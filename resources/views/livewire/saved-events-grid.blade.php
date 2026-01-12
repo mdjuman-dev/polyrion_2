@@ -26,7 +26,7 @@
         <!-- Markets Grid -->
         <div class="markets-grid mt-3 mt-lg-0">
             @foreach ($events as $event)
-                <x-event-card :event="$event" :titleLength="100" :keyPrefix="'saved'" :showNewBadge="true"
+                <x-event-card :event="$event" :titleLength="50" :keyPrefix="'saved'" :showNewBadge="true"
                     :newBadgeThreshold="10" />
             @endforeach
         </div>

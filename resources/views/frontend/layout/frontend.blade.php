@@ -51,34 +51,10 @@
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/responsive.css') }}">
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
+    <!-- Custom Styles (Production Optimized) -->
+    <link rel="stylesheet" href="{{ asset('frontend/assets/css/custom.min.css') }}">
     @livewireStyles
     @stack('style')
-    <style>
-        /* Logo Styles */
-        .logo img {
-            display: block;
-            height: auto;
-            width: auto;
-        }
-
-        .logo-link {
-            display: inline-block;
-            text-decoration: none;
-        }
-
-        .logo-link img {
-            display: block;
-            height: auto;
-            width: auto;
-        }
-
-        .more-menu-header .logo-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 0;
-        }
-    </style>
 </head>
 
 <body class="dark-theme has-bottom-nav">
@@ -575,8 +551,23 @@
     <script src="{{ asset('frontend/assets/js/jquery.min.js') }}"></script>
     <script src="{{ asset('frontend/assets/js/bootstrap.min.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <!-- Frontend App JS (Production Optimized) -->
+    <script src="{{ asset('frontend/assets/js/frontend-app.min.js') }}"></script>
     <script>
-        // FRONTEND JAVASCRIPT
+        // Initialize user balance for trading panel
+        @auth
+        @php
+            $userWallet = $authUser?->wallet;
+            $userBalance = $userWallet ? $userWallet->balance : 0;
+        @endphp
+        window.userBalance = {{ $userBalance }};
+        @else
+        window.userBalance = 0;
+        @endauth
+    </script>
+    <!-- Legacy inline script (kept for Blade variables) -->
+    <script>
+        // FRONTEND JAVASCRIPT - Legacy inline code
         (function($) {
             'use strict';
 
@@ -1108,32 +1099,45 @@
                         isYes = true,
                         isLimitOrder = false,
                         limitPrice = 0,
-                        @auth
-                    @php
-                        $userWallet = $authUser?->wallet;
-                        $userBalance = $userWallet ? $userWallet->balance : 0;
-                    @endphp
-                    userBalance = {{ $userBalance }};
-                @else
-                    userBalance = 0;
-                @endauth
+                        userBalance = window.userBalance || 0;
 
                 const updateSummary = () => {
-                    let price;
+                    // Get market price (convert from cents to decimal 0-1)
+                    let marketPrice;
                     if (isLimitOrder && limitPrice > 0) {
-                        price = limitPrice / 100;
+                        marketPrice = limitPrice / 100;
                     } else {
                         if (window.currentYesPrice !== undefined && window.currentNoPrice !== undefined) {
-                            price = isBuy ? (isYes ? window.currentYesPrice / 100 : window.currentNoPrice /
-                                100) : (isYes ? window.currentNoPrice / 100 : window.currentYesPrice / 100);
+                            marketPrice = isYes ? window.currentYesPrice / 100 : window.currentNoPrice / 100;
                         } else {
-                            price = isBuy ? (isYes ? 0.001 : 0.999) : (isYes ? 0.999 : 0.001);
+                            marketPrice = isYes ? 0.5 : 0.5; // Default
                         }
                     }
-                    const total = currentShares * price;
-                    const toWin = isBuy ? currentShares * (1 - price) : currentShares * price;
-                    $('#totalCost').text(`$${total.toFixed(2)}`);
-                    $('#potentialWin').text(`$${toWin.toFixed(2)}`);
+                    
+                    // Ensure price is valid (0.0001 to 0.9999)
+                    marketPrice = Math.max(0.0001, Math.min(0.9999, marketPrice));
+                    
+                    // Investment amount (currentShares is the investment in USD)
+                    const investment = parseFloat(currentShares) || 0;
+                    
+                    // Polymarket-style calculations
+                    // Calculate shares: shares = investment ÷ market_price
+                    const shares = marketPrice > 0 ? investment / marketPrice : 0;
+                    
+                    // Potential payout: payout = shares × 1 (per share payout is $1)
+                    const payout = shares * 1;
+                    
+                    // Update Potential Payout display
+                    $('#potentialPayout').text(`$${payout.toFixed(2)}`);
+                    
+                    // Validation: Check if investment exceeds portfolio balance
+                    const cost = shares * marketPrice;
+                    const portfolioBefore = userBalance || 0;
+                    if (cost > portfolioBefore) {
+                        $('#executeTrade').prop('disabled', true).addClass('disabled');
+                    } else {
+                        $('#executeTrade').prop('disabled', false).removeClass('disabled');
+                    }
                 };
 
                 const updateShares = (amount) => {
@@ -1141,6 +1145,9 @@
                     $('#sharesInput').val(currentShares);
                     updateSummary();
                 };
+                
+                // Initialize summary on page load
+                updateSummary();
 
                 const updateOutcomePrice = () => {
                     if (window.currentYesPrice !== undefined && window.currentNoPrice !== undefined) {
@@ -1275,7 +1282,10 @@
                         $(
                             this).attr('id').match(/\d+/)[0])));
                 }); $('#sharesInput').on('input', function() {
-                    currentShares = parseInt($(this).val()) || 0;
+                    // Allow decimal values for investment amount
+                    const value = parseFloat($(this).val()) || 0;
+                    currentShares = Math.max(0, value);
+                    $(this).val(currentShares);
                     updateSummary();
                 }); $doc.on('click', '.quick-btn', function() {
                     if (this.id === 'maxShares') currentShares = Math.floor(userBalance / 0.01);
@@ -1302,21 +1312,27 @@
 
                         // Check if user is logged in
                         @auth
-                        // Calculate required amount
-                        let price = null;
+                        // Calculate required amount using Polymarket formula
+                        let marketPrice = null;
                         if (isLimitOrder && limitPrice > 0) {
-                            price = limitPrice / 100;
+                            marketPrice = limitPrice / 100;
                         } else {
                             if (isYes && window.currentYesPrice !== undefined) {
-                                price = window.currentYesPrice / 100;
+                                marketPrice = window.currentYesPrice / 100;
                             } else if (!isYes && window.currentNoPrice !== undefined) {
-                                price = window.currentNoPrice / 100;
+                                marketPrice = window.currentNoPrice / 100;
                             } else {
-                                price = 0.5; // Default
+                                marketPrice = 0.5; // Default
                             }
                         }
-                        price = Math.max(0.0001, Math.min(0.9999, price));
-                        const requiredAmount = currentShares * price;
+                        marketPrice = Math.max(0.0001, Math.min(0.9999, marketPrice));
+                        
+                        // Investment amount (currentShares is investment in USD)
+                        const investment = parseFloat(currentShares) || 0;
+                        
+                        // Calculate shares and cost
+                        const shares = marketPrice > 0 ? investment / marketPrice : 0;
+                        const requiredAmount = shares * marketPrice; // Should equal investment
 
                         // Check balance
                         if (userBalance < requiredAmount) {
@@ -1770,12 +1786,13 @@
         })();
 
         })(jQuery);
-
-
-
-
-
-        // DEPOSIT MODAL 
+    </script>
+    <!-- Deposit Modal JS (Production Optimized) -->
+    <script src="{{ asset('frontend/assets/js/deposit-modal.min.js') }}"></script>
+    <!-- Notifications & Utilities JS (Production Optimized) -->
+    <script src="{{ asset('frontend/assets/js/notifications.min.js') }}"></script>
+    <!-- Deposit Modal Routes (Inline - Required for Blade variables) -->
+    <script>
         $(function() {
             const $depositBtn = $("#depositBtn");
             const $depositModal = $("#depositModalPopup");
@@ -2432,776 +2449,19 @@
     <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
     <!-- Toastr JS -->
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
-
-    <style>
-        /* Custom SweetAlert2 Theme */
-        .swal2-popup {
-            background: var(--card-bg) !important;
-            color: var(--text-primary) !important;
-            border-radius: 12px !important;
-            border: 1px solid var(--border) !important;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
-            animation: swalFadeIn 0.3s ease-out !important;
-        }
-
-        /* Toast style for top right alerts */
-        .swal2-toast-theme {
-            background: var(--card-bg) !important;
-            color: var(--text-primary) !important;
-            border-radius: 8px !important;
-            border: 1px solid var(--border) !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-            padding: 1rem 1.5rem !important;
-            min-width: 300px !important;
-            max-width: 400px !important;
-            animation: swalSlideInRight 0.3s ease-out !important;
-        }
-
-        .swal2-toast-theme .swal2-title {
-            font-size: 1rem !important;
-            margin-bottom: 0.5rem !important;
-        }
-
-        .swal2-toast-theme .swal2-html-container {
-            font-size: 0.9rem !important;
-            margin: 0 !important;
-        }
-
-        .swal2-toast-theme .swal2-icon {
-            width: 2rem !important;
-            height: 2rem !important;
-            margin: 0 0.75rem 0 0 !important;
-        }
-
-        .swal2-toast-theme .swal2-timer-progress-bar {
-            background: var(--accent) !important;
-        }
-
-        /* Top right container positioning */
-        .swal2-container.swal2-top-end {
-            top: 20px !important;
-            right: 20px !important;
-            left: auto !important;
-            bottom: auto !important;
-            padding: 0 !important;
-        }
-
-        .swal2-container.swal2-top-end>.swal2-popup {
-            margin: 0 !important;
-        }
-
-        @keyframes swalSlideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .swal2-title {
-            color: var(--text-primary) !important;
-            font-weight: 600 !important;
-            font-size: 1.5rem !important;
-        }
-
-        .swal2-content {
-            color: var(--text-secondary) !important;
-        }
-
-        .swal2-confirm {
-            background: var(--accent) !important;
-            color: var(--bd-primary) !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 12px 24px !important;
-            font-weight: 600 !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 4px 12px rgba(255, 177, 26, 0.3) !important;
-        }
-
-        .swal2-confirm:hover {
-            background: #ffa000 !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(255, 177, 26, 0.4) !important;
-        }
-
-        .swal2-cancel {
-            background: var(--secondary) !important;
-            color: var(--text-primary) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: 8px !important;
-            padding: 12px 24px !important;
-            font-weight: 600 !important;
-            transition: all 0.3s ease !important;
-        }
-
-        .swal2-cancel:hover {
-            background: var(--card-bg) !important;
-            transform: translateY(-2px) !important;
-        }
-
-        .swal2-timer-progress-bar {
-            background: var(--accent) !important;
-        }
-
-        .swal2-icon.swal2-success {
-            border-color: var(--success) !important;
-        }
-
-        .swal2-icon.swal2-error {
-            border-color: var(--danger) !important;
-        }
-
-        .swal2-icon.swal2-warning {
-            border-color: var(--accent) !important;
-        }
-
-        @keyframes swalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        @keyframes swalFadeOut {
-            from {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-
-            to {
-                opacity: 0;
-                transform: scale(0.9) translateY(-20px);
-            }
-        }
-
-        /* Ensure complete removal */
-        .swal2-container.swal2-backdrop-show {
-            transition: opacity 0.3s ease !important;
-        }
-
-        .swal2-container.swal2-backdrop-hide {
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-
-        .swal2-popup.swal2-hide {
-            animation: swalFadeOut 0.3s ease-out forwards !important;
-        }
-
-        /* Remove backdrop and container after animation */
-        .swal2-container:not(.swal2-backdrop-show):not(.swal2-noanimation) {
-            display: none !important;
-        }
-
-        /* Custom Toastr Theme */
-        #toast-container {
-            z-index: 99999 !important;
-        }
-
-        .toast {
-            background: var(--card-bg) !important;
-            color: var(--text-primary) !important;
-            border-radius: 12px !important;
-            border: 1px solid var(--border) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-            padding: 16px 20px !important;
-            min-height: 60px !important;
-            animation: toastSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
-            backdrop-filter: blur(10px) !important;
-        }
-
-        .toast-success {
-            border-left: 4px solid var(--success) !important;
-        }
-
-        .toast-error {
-            border-left: 4px solid var(--danger) !important;
-        }
-
-        .toast-warning {
-            border-left: 4px solid var(--accent) !important;
-        }
-
-        .toast-info {
-            border-left: 4px solid var(--info) !important;
-        }
-
-        .toast-title {
-            color: var(--text-primary) !important;
-            font-weight: 600 !important;
-            font-size: 15px !important;
-        }
-
-        .toast-message {
-            color: var(--text-secondary) !important;
-            font-size: 14px !important;
-            margin-top: 4px !important;
-        }
-
-        .toast-close-button {
-            color: var(--text-secondary) !important;
-            opacity: 0.7 !important;
-            font-size: 18px !important;
-            transition: all 0.2s ease !important;
-        }
-
-        .toast-close-button:hover {
-            opacity: 1 !important;
-            color: var(--text-primary) !important;
-            transform: scale(1.1) !important;
-        }
-
-        .toast-progress {
-            background: var(--accent) !important;
-            opacity: 0.3 !important;
-            height: 3px !important;
-        }
-
-        @keyframes toastSlideIn {
-            from {
-                opacity: 0;
-                transform: translateX(400px) scale(0.8);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        }
-
-        @keyframes toastSlideOut {
-            from {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-
-            to {
-                opacity: 0;
-                transform: translateX(400px) scale(0.8);
-            }
-        }
-
-        /* Ensure toast is fully removed */
-        .toast.toast-removing {
-            animation: toastSlideOut 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important;
-        }
-
-        /* Remove toast container when empty */
-        #toast-container:empty {
-            display: none !important;
-        }
-
-        /* Clean up toast elements */
-        .toast {
-            will-change: transform, opacity;
-        }
-
-        .toast.removed {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Light mode adjustments */
-        :root.light-mode .swal2-popup {
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        :root.light-mode .toast {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        /* Ensure body scroll is restored when SweetAlert is closed */
-        body:not(.swal2-shown) {
-            overflow: auto !important;
-            padding-right: 0 !important;
-        }
-
-        /* Remove scroll lock when no SweetAlert is active */
-        body.swal2-no-backdrop {
-            overflow: auto !important;
-        }
-    </style>
-
+    <!-- Flash Messages Handler -->
     <script>
-        // Get theme colors dynamically
-        function getThemeColor(variable) {
-            return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
-        }
-
-        // Configure Toastr with theme colors
-        toastr.options = {
-            "closeButton": true,
-            "debug": false,
-            "newestOnTop": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "preventDuplicates": false,
-            "onclick": null,
-            "showDuration": "400",
-            "hideDuration": "300",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000",
-            "showEasing": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
-            "hideEasing": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
-            "showMethod": "slideIn",
-            "hideMethod": "slideOut",
-            "onHidden": function() {
-                // Ensure complete removal
-                $(this).remove();
-                // Clean up empty container
-                if ($('#toast-container').children().length === 0) {
-                    $('#toast-container').remove();
-                }
-            },
-            "onCloseClick": function() {
-                // Force remove on close click
-                $(this).fadeOut(300, function() {
-                    $(this).remove();
-                    if ($('#toast-container').children().length === 0) {
-                        $('#toast-container').remove();
-                    }
-                });
-            }
-        };
-
-        // Helper functions for notifications with theme colors - Top Right Position
-        function showSuccess(message, title = 'Success') {
-            if (typeof Swal !== 'undefined') {
-                return Swal.fire({
-                    icon: 'success',
-                    title: title,
-                    text: message,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    toast: true,
-                    background: getThemeColor('--card-bg'),
-                    color: getThemeColor('--text-primary'),
-                    allowOutsideClick: true,
-                    allowEscapeKey: true,
-                    customClass: {
-                        popup: 'swal2-toast-theme',
-                        title: 'swal2-title-theme',
-                        content: 'swal2-content-theme'
-                    },
-                    didClose: () => {
-                        cleanupSwal();
-                    }
-                });
-            } else {
-                toastr.success(message, title);
-            }
-        }
-
-        function showError(message, title = 'Error') {
-            if (typeof Swal !== 'undefined') {
-                return Swal.fire({
-                    icon: 'error',
-                    title: title,
-                    text: message,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 4000,
-                    timerProgressBar: true,
-                    toast: true,
-                    background: getThemeColor('--card-bg'),
-                    color: getThemeColor('--text-primary'),
-                    allowOutsideClick: true,
-                    allowEscapeKey: true,
-                    customClass: {
-                        popup: 'swal2-toast-theme',
-                        title: 'swal2-title-theme',
-                        content: 'swal2-content-theme'
-                    },
-                    didClose: () => {
-                        cleanupSwal();
-                    }
-                });
-            } else {
-                toastr.error(message, title);
-            }
-        }
-
-        function showWarning(message, title = 'Warning') {
-            if (typeof Swal !== 'undefined') {
-                return Swal.fire({
-                    icon: 'warning',
-                    title: title,
-                    text: message,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3500,
-                    timerProgressBar: true,
-                    toast: true,
-                    background: getThemeColor('--card-bg'),
-                    color: getThemeColor('--text-primary'),
-                    allowOutsideClick: true,
-                    allowEscapeKey: true,
-                    customClass: {
-                        popup: 'swal2-toast-theme',
-                        title: 'swal2-title-theme',
-                        content: 'swal2-content-theme'
-                    },
-                    didClose: () => {
-                        cleanupSwal();
-                    }
-                });
-            } else {
-                toastr.warning(message, title);
-            }
-        }
-
-        function showInfo(message, title = 'Info') {
-            if (typeof Swal !== 'undefined') {
-                return Swal.fire({
-                    icon: 'info',
-                    title: title,
-                    text: message,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    toast: true,
-                    background: getThemeColor('--card-bg'),
-                    color: getThemeColor('--text-primary'),
-                    allowOutsideClick: true,
-                    allowEscapeKey: true,
-                    customClass: {
-                        popup: 'swal2-toast-theme',
-                        title: 'swal2-title-theme',
-                        content: 'swal2-content-theme'
-                    },
-                    didClose: () => {
-                        cleanupSwal();
-                    }
-                });
-            } else {
-                toastr.info(message, title);
-            }
-        }
-
-        // Copy to clipboard function
-        function copyToClipboard(text, buttonIdOrElement) {
-            // Support both buttonId (string) and button element
-            let btn = null;
-            if (typeof buttonIdOrElement === 'string') {
-                btn = document.getElementById(buttonIdOrElement);
-            } else if (buttonIdOrElement && buttonIdOrElement.nodeType === 1) {
-                btn = buttonIdOrElement;
-            }
-
-            // Create a temporary textarea element
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            textarea.setSelectionRange(0, 99999); // For mobile devices
-
-            try {
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                if (successful) {
-                    // Update button icon to show success
-                    if (btn) {
-                        const icon = btn.querySelector('i');
-                        if (icon) {
-                            const originalClass = icon.className;
-                            const originalTitle = btn.getAttribute('title') || '';
-                            
-                            // Change icon to checkmark
-                            icon.className = 'fas fa-check';
-                            btn.style.background = '#10b981';
-                            if (btn.style.color) {
-                                btn.style.color = '#fff';
-                            }
-                            btn.setAttribute('title', 'Copied!');
-
-                            // Reset after 2 seconds
-                            setTimeout(() => {
-                                icon.className = originalClass;
-                                btn.style.background = 'var(--accent, #ffb11a)';
-                                if (btn.style.color) {
-                                    btn.style.color = '#000';
-                                }
-                                btn.setAttribute('title', originalTitle);
-                            }, 2000);
-                        } else {
-                            // Fallback if no icon found
-                            const originalHTML = btn.innerHTML;
-                            btn.innerHTML = '<i class="fas fa-check"></i>';
-                            btn.style.background = '#10b981';
-                            setTimeout(() => {
-                                btn.innerHTML = originalHTML;
-                                btn.style.background = 'var(--accent, #ffb11a)';
-                            }, 2000);
-                        }
-                    }
-                } else {
-                    if (btn) {
-                        btn.style.background = '#ef4444';
-                        setTimeout(() => {
-                            btn.style.background = 'var(--accent, #ffb11a)';
-                        }, 2000);
-                    }
-                }
-            } catch (err) {
-                document.body.removeChild(textarea);
-                // Fallback: try using Clipboard API
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        // Update button icon to show success
-                        if (btn) {
-                            const icon = btn.querySelector('i');
-                            if (icon) {
-                                const originalClass = icon.className;
-                                const originalTitle = btn.getAttribute('title') || '';
-                                
-                                // Change icon to checkmark
-                                icon.className = 'fas fa-check';
-                                btn.style.background = '#10b981';
-                                if (btn.style.color) {
-                                    btn.style.color = '#fff';
-                                }
-                                btn.setAttribute('title', 'Copied!');
-
-                                setTimeout(() => {
-                                    icon.className = originalClass;
-                                    btn.style.background = 'var(--accent, #ffb11a)';
-                                    if (btn.style.color) {
-                                        btn.style.color = '#000';
-                                    }
-                                    btn.setAttribute('title', originalTitle);
-                                }, 2000);
-                            } else {
-                                // Fallback if no icon found
-                                const originalHTML = btn.innerHTML;
-                                btn.innerHTML = '<i class="fas fa-check"></i>';
-                                btn.style.background = '#10b981';
-                                setTimeout(() => {
-                                    btn.innerHTML = originalHTML;
-                                    btn.style.background = 'var(--accent, #ffb11a)';
-                                }, 2000);
-                            }
-                        }
-                    }).catch(() => {
-                        if (btn) {
-                            btn.style.background = '#ef4444';
-                            setTimeout(() => {
-                                btn.style.background = 'var(--accent, #ffb11a)';
-                            }, 2000);
-                        }
-                    });
-                } else {
-                    if (btn) {
-                        btn.style.background = '#ef4444';
-                        setTimeout(() => {
-                            btn.style.background = 'var(--accent, #ffb11a)';
-                        }, 2000);
-                    }
-                }
-            }
-        }
-
-        // Confirmation dialog with theme
-        function showConfirm(message, title = 'Confirm', confirmText = 'Yes', cancelText = 'No') {
-            return Swal.fire({
-                title: title,
-                text: message,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: getThemeColor('--accent'),
-                cancelButtonColor: getThemeColor('--secondary'),
-                confirmButtonText: confirmText,
-                cancelButtonText: cancelText,
-                background: getThemeColor('--card-bg'),
-                color: getThemeColor('--text-primary'),
-                customClass: {
-                    popup: 'swal2-theme',
-                    title: 'swal2-title-theme',
-                    content: 'swal2-content-theme'
-                },
-                didClose: () => {
-                    // Restore body scroll
-                    document.body.style.overflow = '';
-                    document.body.style.paddingRight = '';
-                    document.documentElement.style.overflow = '';
-
-                    // Remove all SweetAlert containers and backdrops
-                    const containers = document.querySelectorAll('.swal2-container');
-                    containers.forEach(container => {
-                        container.remove();
-                    });
-
-                    // Remove any remaining backdrops
-                    const backdrops = document.querySelectorAll('.swal2-backdrop-show');
-                    backdrops.forEach(backdrop => {
-                        backdrop.remove();
-                    });
-                }
-            });
-        }
-
-        // Handle logout with confirmation popup
-        document.addEventListener('DOMContentLoaded', function() {
-            // Find all logout forms
-            const logoutForms = document.querySelectorAll('form[action*="logout"]');
-
-            logoutForms.forEach(function(form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-
-                    // Show confirmation popup using SweetAlert
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: 'Do you want to logout?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonColor: '#667eea',
-                            cancelButtonColor: '#6c757d',
-                            confirmButtonText: 'Yes, Logout',
-                            cancelButtonText: 'Cancel',
-                            reverseButtons: true,
-                            customClass: {
-                                popup: 'swal2-theme',
-                                title: 'swal2-title-theme',
-                                content: 'swal2-content-theme'
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Show loading toast
-                                if (typeof showInfo !== 'undefined') {
-                                    showInfo('Logging out...', 'Logout');
-                                } else if (typeof toastr !== 'undefined') {
-                                    toastr.info('Logging out...', 'Logout');
-                                }
-
-                                // Submit form after a short delay
-                                setTimeout(function() {
-                                    form.submit();
-                                }, 300);
-                            }
-                        });
-                    } else {
-                        // Fallback to browser confirm if SweetAlert is not available
-                        if (confirm('Are you sure you want to logout?')) {
-                            form.submit();
-                        }
-                    }
-                });
-            });
-        });
-
-        // Cleanup function for SweetAlert
-        function cleanupSwal() {
-            // Restore body scroll
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-            document.documentElement.style.overflow = '';
-
-            // Remove all SweetAlert containers
-            const containers = document.querySelectorAll('.swal2-container');
-            containers.forEach(container => {
-                container.remove();
-            });
-
-            // Remove any remaining backdrops
-            const backdrops = document.querySelectorAll('.swal2-backdrop-show');
-            backdrops.forEach(backdrop => {
-                backdrop.remove();
-            });
-        }
-
-        // Ensure scroll is restored when SweetAlert closes
-        if (typeof Swal !== 'undefined') {
-            // Global cleanup function that runs after any SweetAlert closes
-            const originalFire = Swal.fire;
-            Swal.fire = function(options) {
-                const result = originalFire.call(this, options);
-
-                // Add cleanup to the promise
-                if (result && typeof result.then === 'function') {
-                    result.then(() => {
-                        setTimeout(() => {
-                            cleanupSwal();
-                        }, 100);
-                    }).catch(() => {
-                        setTimeout(() => {
-                            cleanupSwal();
-                        }, 100);
-                    });
-                }
-
-                return result;
-            };
-
-            // Monitor for SweetAlert container changes
-            const observer = new MutationObserver(function(mutations) {
-                const hasSwal = document.querySelector('.swal2-container');
-                if (!hasSwal) {
-                    // No SweetAlert active, ensure scroll is restored
-                    cleanupSwal();
-                }
-            });
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-
-            // Also check periodically (fallback)
-            setInterval(function() {
-                const hasSwal = document.querySelector('.swal2-container.swal2-backdrop-show');
-                if (!hasSwal) {
-                    const bodyOverflow = window.getComputedStyle(document.body).overflow;
-                    if (bodyOverflow === 'hidden') {
-                        cleanupSwal();
-                    }
-                }
-            }, 500);
-        }
-
-        // Cleanup on page visibility change
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                cleanupSwal();
-            }
-        });
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            cleanupSwal();
-        });
-
-        // Handle flash messages
         @if (Session::has('success'))
-            showSuccess("{{ Session::get('success') }}");
+            if (typeof showSuccess !== 'undefined') showSuccess("{{ Session::get('success') }}");
         @endif
-
         @if (Session::has('error'))
-            showError("{{ Session::get('error') }}");
+            if (typeof showError !== 'undefined') showError("{{ Session::get('error') }}");
         @endif
-
         @if (Session::has('warning'))
-            showWarning("{{ Session::get('warning') }}");
+            if (typeof showWarning !== 'undefined') showWarning("{{ Session::get('warning') }}");
         @endif
-
         @if (Session::has('info'))
-            showInfo("{{ Session::get('info') }}");
+            if (typeof showInfo !== 'undefined') showInfo("{{ Session::get('info') }}");
         @endif
     </script>
 

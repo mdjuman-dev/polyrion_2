@@ -29,7 +29,7 @@
         @foreach ($events as $event)
             <x-event-card 
                 :event="$event" 
-                :titleLength="40" 
+                :titleLength="50" 
                 :keyPrefix="'new'" 
                 :showNewBadge="true" 
                 :newBadgeThreshold="10" />

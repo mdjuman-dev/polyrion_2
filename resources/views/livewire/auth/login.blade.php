@@ -12,6 +12,12 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="auth-alert alert-error">
+                {{ session('error') }}
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="auth-alert alert-error">
                 <ul>
@@ -65,6 +71,18 @@
                 </label>
             </div>
 
+            <!-- Cloudflare Turnstile reCAPTCHA -->
+            @php
+                $recaptchaService = new \App\Services\CloudflareRecaptchaService();
+                $siteKey = $recaptchaService::getSiteKey();
+            @endphp
+            @if(!empty($siteKey))
+                <div class="auth-form-group">
+                    <div id="cf-turnstile-widget" data-sitekey="{{ $siteKey }}" data-theme="dark"></div>
+                    <input type="hidden" name="cf_turnstile_response" id="cf_turnstile_response">
+                </div>
+            @endif
+
             <button type="submit" class="auth-submit-btn" data-test="login-button">
                 {{ __('Log in') }}
             </button>
@@ -92,6 +110,31 @@
             </div>
         @endif
     </div>
+
+    @php
+        $recaptchaService = new \App\Services\CloudflareRecaptchaService();
+        $siteKey = $recaptchaService::getSiteKey();
+    @endphp
+    @if(!empty($siteKey))
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <script>
+            window.addEventListener('DOMContentLoaded', function() {
+                // Wait for Turnstile to load
+                if (typeof turnstile !== 'undefined') {
+                    const widgetId = turnstile.render('#cf-turnstile-widget', {
+                        sitekey: '{{ $siteKey }}',
+                        theme: 'dark',
+                        callback: function(token) {
+                            document.getElementById('cf_turnstile_response').value = token;
+                        },
+                        'error-callback': function() {
+                            document.getElementById('cf_turnstile_response').value = '';
+                        }
+                    });
+                }
+            });
+        </script>
+    @endif
 
     <script>
         function togglePassword(inputId) {

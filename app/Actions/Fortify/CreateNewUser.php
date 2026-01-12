@@ -14,6 +14,16 @@ class CreateNewUser implements CreatesNewUsers
 
     public function create(array $input): User
     {
+        // Verify Cloudflare reCAPTCHA if enabled
+        if (\App\Services\CloudflareRecaptchaService::isEnabled()) {
+            $token = $input['cf_turnstile_response'] ?? null;
+            if (!\App\Services\CloudflareRecaptchaService::verify($token, request()->ip())) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'cf_turnstile_response' => 'reCAPTCHA verification failed. Please try again.',
+                ]);
+            }
+        }
+
         $emailOrNumber = trim($input['email_or_number'] ?? '');
         $name = trim($input['name'] ?? '');
 

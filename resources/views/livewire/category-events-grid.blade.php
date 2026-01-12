@@ -5,7 +5,7 @@
             @foreach ($events as $event)
                 <x-event-card 
                     :event="$event" 
-                    :titleLength="90" 
+                    :titleLength="50" 
                     :keyPrefix="'category'" 
                     :showNewBadge="true" 
                     :newBadgeThreshold="10" />
@@ -22,13 +22,6 @@
                     <span style="color: var(--text-secondary); font-size: 14px;">Loading more events...</span>
                 </div>
             </div>
-        @else
-            @if($events->count() > 0)
-                <div class="text-center py-4" style="color: var(--text-secondary); font-size: 14px;">
-                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-                    All events loaded
-                </div>
-            @endif
         @endif
     @else
         <div class="text-center py-5">

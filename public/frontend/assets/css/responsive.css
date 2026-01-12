@@ -124,7 +124,7 @@
 
     .nav-items-wrapper {
         display: flex;
-        gap: 12px;
+        gap: 0px !important;
         flex-shrink: 0;
         min-width: max-content;
         white-space: nowrap;
@@ -1338,7 +1338,7 @@
 
     .table-header {
         font-size: 0.8125rem;
-        padding: 12px 8px;
+        padding: 0px 8px !important;
     }
 }
 
@@ -1346,7 +1346,7 @@
     main .container {
         padding-left: 12px;
         padding-right: 12px;
-        margin-top: 1rem !important;
+        /* margin-top: 1rem !important; */
     }
 
     .profile-card,

@@ -1,3 +1,58 @@
+<style>
+   .trade-summary {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg-secondary, #1a1a1a);
+      border-radius: 8px;
+      border: 1px solid var(--border, #2a2a2a);
+   }
+   .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border, #2a2a2a);
+   }
+   .summary-row:last-child {
+      border-bottom: none;
+   }
+   .summary-label {
+      display: flex;
+      align-items: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary, #9ca3af);
+   }
+   .summary-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary, #ffffff);
+   }
+   .summary-value.profit {
+      color: #10b981;
+   }
+   .summary-value.loss {
+      color: #ef4444;
+   }
+   .portfolio-row {
+      font-size: 0.8rem;
+   }
+   .portfolio-row .summary-label {
+      font-size: 0.8rem;
+   }
+   .portfolio-row .summary-value {
+      font-size: 0.85rem;
+   }
+   .ev-row {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 2px solid var(--border, #2a2a2a);
+   }
+   .trade-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+   }
+</style>
+
 <div class="trading-panel" id="tradingPanel" data-market-id="{{ $event->markets->first()->id ?? '' }}">
    <div class="panel-header">
       <div class="market-profile-img">
@@ -62,8 +117,8 @@
          <div class="amount-header my-2">
             <label class="input-label">Amount</label>
             <div class="amount-display-wrapper">
-               <input type="number" class="shares-input" id="sharesInput" min="0" value="" placeholder="0"
-                  aria-label="Number of shares">
+               <input type="number" class="shares-input" id="sharesInput" min="0" step="0.01" value="" placeholder="0"
+                  aria-label="Investment amount in USD">
                <span class="amount-currency">$</span>
             </div>
          </div>
@@ -84,7 +139,7 @@
                   <i class="fas fa-coins" style="color: var(--success); margin-left: 4px;"></i>
                </div>
             </div>
-            <div class="to-win-value" id="potentialWin">$0</div>
+            <div class="to-win-value" id="potentialPayout">$0</div>
          </div>
       </div>
 

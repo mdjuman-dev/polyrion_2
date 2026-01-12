@@ -67,6 +67,12 @@ class Market extends Model
 
     /**
      * Check if market is open for trading
+     * Market is NOT open if:
+     * - Not active
+     * - Closed flag is set
+     * - Archived
+     * - Close time has passed
+     * - Has final result (resolving/settled state) - prevents trading after result is determined
      */
     public function isOpenForTrading(): bool
     {
@@ -75,6 +81,12 @@ class Market extends Model
         }
 
         if ($this->close_time && now() >= $this->close_time) {
+            return false;
+        }
+
+        // Prevent trading if market has result (resolving or settled state)
+        // This ensures users can't trade after result is determined but before settlement
+        if ($this->hasResult() || $this->settled) {
             return false;
         }
 

@@ -13,7 +13,7 @@
 
             <!-- Mobile: Filters Scrollable (Top) -->
             <div class="d-lg-none mb-4">
-                <div class="crypto-filters-mobile" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding: 10px 0;">
+                <div class="crypto-filters-mobile" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;">
                     <div class="d-flex gap-2" style="min-width: max-content;">
                         <!-- Time Filters -->
                         <a href="{{ route('crypto.index') }}?timeframe=all{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
@@ -204,8 +204,8 @@
 
         /* Mobile Filters Scrollbar */
         .crypto-filters-mobile {
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent) var(--secondary);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         .crypto-filters-mobile::-webkit-scrollbar {

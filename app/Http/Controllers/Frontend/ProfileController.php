@@ -38,6 +38,9 @@ class ProfileController extends Controller
       // Calculate portfolio value from active/pending trades
       $portfolio = $this->calculatePortfolioValue($trades);
 
+      // Calculate total profit/loss from all settled trades
+      $totalProfitLoss = $this->calculateTotalProfitLoss($trades);
+
       // Calculate stats using database queries instead of collection filters (much faster)
       $totalTrades = \App\Models\Trade::where('user_id', $user->id)->count();
       $pendingTrades = \App\Models\Trade::where('user_id', $user->id)
@@ -61,6 +64,7 @@ class ProfileController extends Controller
 
       $stats = [
          'positions_value' => $portfolio,
+         'total_profit_loss' => $totalProfitLoss,
          'biggest_win' => $biggestWin,
          'predictions' => $totalTrades,
       ];
@@ -627,12 +631,12 @@ class ProfileController extends Controller
 
    /**
     * Calculate profit/loss data grouped by date for chart
+    * Includes all trades: settled (WON/LOST) and pending (with current value)
     */
    private function calculateProfitLossData($trades)
    {
       // Group trades by date
       $dailyData = [];
-      $cumulativeProfit = 0;
 
       // Get all trades sorted by date
       $sortedTrades = $trades->sortBy('created_at');
@@ -641,18 +645,53 @@ class ProfileController extends Controller
          $date = $trade->created_at->format('Y-m-d');
 
          // Calculate profit/loss for this trade
-         $amount = $trade->amount ?? $trade->amount_invested ?? 0;
+         $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
          $profitLoss = 0;
 
-         if (strtoupper($trade->status) === 'WON' || $trade->status === 'win') {
+         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+
+         if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
             // Win: profit = payout - amount invested
             $payout = $trade->payout ?? $trade->payout_amount ?? 0;
-            $profitLoss = $payout - $amount;
-         } elseif (strtoupper($trade->status) === 'LOST' || $trade->status === 'loss') {
+            $profitLoss = $payout - $amountInvested;
+         } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
             // Loss: lost the full amount invested
-            $profitLoss = -$amount;
+            $profitLoss = -$amountInvested;
+         } elseif ($tradeStatus === 'PENDING' && $trade->market) {
+            // Pending trades: calculate current value based on market price
+            $market = $trade->market;
+            $outcomePrices = is_string($market->outcome_prices ?? null)
+               ? json_decode($market->outcome_prices, true)
+               : ($market->outcome_prices ?? [0.5, 0.5]);
+
+            if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
+               // Get average price at buy
+               $avgPrice = $trade->price_at_buy ?? $trade->price ?? 0.5;
+               if ($avgPrice > 0) {
+                  // Get outcome
+                  $outcome = strtoupper($trade->outcome ?? ($trade->option === 'yes' ? 'YES' : 'NO'));
+
+                  // Get current price for the outcome
+                  // outcome_prices[0] = NO price, outcome_prices[1] = YES price
+                  $currentPrice = ($outcome === 'YES' && isset($outcomePrices[1]))
+                     ? $outcomePrices[1]
+                     : (($outcome === 'NO' && isset($outcomePrices[0]))
+                        ? $outcomePrices[0]
+                        : $avgPrice);
+
+                  // Calculate shares (token_amount)
+                  $shares = $trade->token_amount ?? ($trade->shares ?? 0);
+                  if ($shares <= 0) {
+                     $shares = $amountInvested / $avgPrice;
+                  }
+
+                  // Current value = shares * current_price
+                  $currentValue = $shares * $currentPrice;
+                  // Profit/Loss = current value - amount invested
+                  $profitLoss = $currentValue - $amountInvested;
+               }
+            }
          }
-         // Pending trades don't contribute to profit/loss yet
 
          // Group by date (if multiple trades on same day, sum them)
          if (!isset($dailyData[$date])) {
@@ -667,14 +706,29 @@ class ProfileController extends Controller
 
       // Calculate cumulative profit/loss over time
       $result = [];
+      
+      // If no trades, return empty array
+      if (empty($dailyData)) {
+         return $result;
+      }
+
+      // Get date range from first trade to today (max 90 days back)
+      $firstTradeDate = min(array_keys($dailyData));
+      $startDate = \Carbon\Carbon::parse($firstTradeDate);
       $today = now();
-      $startDate = $today->copy()->subDays(90);
+      
+      // Limit to last 90 days if first trade is older
+      $maxStartDate = $today->copy()->subDays(90);
+      if ($startDate < $maxStartDate) {
+         $startDate = $maxStartDate;
+      }
 
       // Sort daily data by date
       ksort($dailyData);
 
       // Fill in dates and calculate cumulative values
       $lastCumulative = 0;
+      
       for ($date = $startDate->copy(); $date <= $today; $date->addDay()) {
          $dateStr = $date->format('Y-m-d');
 
@@ -683,7 +737,7 @@ class ProfileController extends Controller
             $lastCumulative += $dailyData[$dateStr]['profit_loss'];
          }
 
-         // Add data point (even if no trades, to show cumulative value)
+         // Add data point for all dates to show smooth chart
          $result[] = [
             'date' => $dateStr,
             'label' => $date->format('M d'),
@@ -754,5 +808,33 @@ class ProfileController extends Controller
       }
 
       return $portfolioValue;
+   }
+
+   /**
+    * Calculate total profit/loss from all settled trades
+    * Profit/Loss = sum of (payout - amount_invested) for all WON/LOST trades
+    */
+   private function calculateTotalProfitLoss($trades)
+   {
+      $totalProfitLoss = 0;
+
+      foreach ($trades as $trade) {
+         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+         
+         // Only calculate for settled trades
+         if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
+            $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
+            $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+            $profitLoss = $payout - $amountInvested;
+            $totalProfitLoss += $profitLoss;
+         } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
+            // Lost trades: lost the full amount invested
+            $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
+            $totalProfitLoss -= $amountInvested;
+         }
+         // Pending trades don't contribute to profit/loss
+      }
+
+      return $totalProfitLoss;
    }
 }

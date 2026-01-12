@@ -47,14 +47,14 @@
                                           </a>
                                        </li>
 
-                                       <!-- <li class="nav-item">
-                                                <a class="nav-link" data-bs-toggle="pill" href="#recaptcha" role="tab">
-                                                   <div class="nav-icon">
-                                                      <i data-feather="shield"></i>
-                                                   </div>
-                                                   <span>Google reCaptcha</span>
-                                                </a>
-                                             </li> -->
+                                       <li class="nav-item">
+                                          <a class="nav-link" data-bs-toggle="pill" href="#recaptcha" role="tab">
+                                             <div class="nav-icon">
+                                                <i data-feather="shield"></i>
+                                             </div>
+                                             <span>Cloudflare reCAPTCHA</span>
+                                          </a>
+                                       </li>
                                        <li class="nav-item">
                                           <a class="nav-link" data-bs-toggle="pill" href="#tawk" role="tab">
                                              <div class="nav-icon">
@@ -308,27 +308,61 @@
                                        </div>
                                     </div>
 
-                                    <!-- Google reCaptcha Tab -->
+                                    <!-- Cloudflare reCAPTCHA Tab -->
                                     <div class="tab-pane fade" id="recaptcha" role="tabpanel">
-                                       <h5 class="mb-4">Google reCaptcha</h5>
+                                       <h5 class="mb-4">Cloudflare Turnstile (reCAPTCHA)</h5>
+
+                                       <div class="alert alert-info">
+                                          <i class="fa fa-info-circle"></i> Configure Cloudflare Turnstile to protect your login and registration forms from bots.
+                                          <br><br>
+                                          <strong>How to get your keys:</strong>
+                                          <ol class="mb-0 mt-2">
+                                             <li>Go to <a href="https://dash.cloudflare.com/" target="_blank">Cloudflare Dashboard</a></li>
+                                             <li>Navigate to <strong>Turnstile</strong> section</li>
+                                             <li>Create a new site/widget</li>
+                                             <li>Copy your <strong>Site Key</strong> and <strong>Secret Key</strong></li>
+                                             <li>Paste them below</li>
+                                          </ol>
+                                       </div>
 
                                        <div class="row">
                                           <div class="col-md-12">
                                              <div class="form-group mb-3">
-                                                <label class="form-label">reCaptcha Site Key</label>
-                                                <input type="text" name="recaptcha_site_key" class="form-control"
-                                                   value="{{ old('recaptcha_site_key', $recaptchaSettings['site_key'] ?? '') }}"
-                                                   placeholder="Enter your site key">
+                                                <label class="form-label">Cloudflare Turnstile Site Key</label>
+                                                <div class="input-group">
+                                                   <span class="input-group-text"><i class="fa fa-key"></i></span>
+                                                   <input type="text" name="recaptcha_site_key" class="form-control"
+                                                      value="{{ old('recaptcha_site_key', $recaptchaSettings['site_key'] ?? '') }}"
+                                                      placeholder="0x4AAAAAAABkMYinukE_vqoE">
+                                                </div>
+                                                <small class="form-text text-muted mt-2">Your Cloudflare Turnstile Site Key</small>
                                              </div>
                                           </div>
                                           <div class="col-md-12">
                                              <div class="form-group mb-3">
-                                                <label class="form-label">reCaptcha Secret Key</label>
-                                                <input type="password" name="recaptcha_secret_key" class="form-control"
-                                                   value="{{ old('recaptcha_secret_key', $recaptchaSettings['secret_key'] ?? '') }}"
-                                                   placeholder="Enter your secret key">
+                                                <label class="form-label">Cloudflare Turnstile Secret Key</label>
+                                                <div class="input-group">
+                                                   <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                                                   <input type="password" name="recaptcha_secret_key" id="recaptcha_secret_key" class="form-control"
+                                                      value="{{ old('recaptcha_secret_key', $recaptchaSettings['secret_key'] ?? '') }}"
+                                                      placeholder="0x4AAAAAAABkMYinukE_vqoE_secret_key">
+                                                   <button type="button" class="btn btn-outline-secondary"
+                                                      onclick="togglePasswordVisibility('recaptcha_secret_key', 'recaptcha_secret_key_icon')">
+                                                      <i class="fa fa-eye" id="recaptcha_secret_key_icon"></i>
+                                                   </button>
+                                                </div>
+                                                <small class="form-text text-muted mt-2">Your Cloudflare Turnstile Secret Key (keep this secure)</small>
                                              </div>
                                           </div>
+                                       </div>
+
+                                       <div class="alert alert-warning mt-4">
+                                          <strong><i class="fa fa-exclamation-triangle"></i> Important:</strong>
+                                          <ul class="mb-0 mt-2">
+                                             <li>reCAPTCHA will be enabled on login and registration forms once both keys are configured</li>
+                                             <li>If keys are empty, reCAPTCHA will be disabled (useful for development)</li>
+                                             <li>Make sure to test the forms after configuring the keys</li>
+                                          </ul>
                                        </div>
                                     </div>
 

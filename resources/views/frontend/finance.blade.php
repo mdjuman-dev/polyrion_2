@@ -12,7 +12,7 @@
         <div class="container">
             <!-- Mobile: Filters Scrollable (Top) -->
             <div class="d-lg-none mb-4">
-                <div class="finance-filters-mobile" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding: 10px 0;">
+                <div class="finance-filters-mobile" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;">
                     <div class="d-flex gap-2" style="min-width: max-content;">
                         <!-- Time Filters -->
                         <a href="{{ route('finance.index') }}?timeframe=all{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}" 
@@ -121,12 +121,12 @@
     <style>
         /* Finance Sidebar Styles */
         .finance-sidebar {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none !important; 
+            -ms-overflow-style: none !important; 
         }
 
         .finance-sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none !important ;
         }
 
         .filter-item:hover {
@@ -148,8 +148,8 @@
 
         /* Mobile Filters Scrollbar */
         .finance-filters-mobile {
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent) var(--secondary);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         .finance-filters-mobile::-webkit-scrollbar {

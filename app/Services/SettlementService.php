@@ -63,6 +63,9 @@ class SettlementService
                     $market->outcome_result = $outcomeResult;
                     $market->final_result = $outcomeResult;
                     $market->result_set_at = $market->result_set_at ?? now();
+                    // Mark as closed when result is determined (prevents new trades)
+                    $market->closed = true;
+                    $market->is_closed = true;
                     $market->save();
                     Log::info("Market result auto-determined from lastTradePrice", [
                         'market_id' => $marketId,

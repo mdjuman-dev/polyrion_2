@@ -47,6 +47,16 @@ class FortifyServiceProvider extends ServiceProvider
         // Custom authentication to allow login with email or phone number
         Fortify::authenticateUsing(function (Request $request) {
             try {
+                // Verify Cloudflare reCAPTCHA if enabled
+                if (\App\Services\CloudflareRecaptchaService::isEnabled()) {
+                    $token = $request->input('cf_turnstile_response');
+                    if (empty($token) || !\App\Services\CloudflareRecaptchaService::verify($token, $request->ip())) {
+                        // Add error to session and return null
+                        session()->flash('error', 'reCAPTCHA verification failed. Please complete the verification and try again.');
+                        return null;
+                    }
+                }
+
                 // Get login input (Fortify uses 'email' field by default)
                 $login = trim($request->input('email') ?? '');
                 $password = $request->input('password');

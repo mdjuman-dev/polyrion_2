@@ -31,7 +31,7 @@
                         <!-- Current Value -->
                         <div style="margin-bottom: 0.5rem;">
                             <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
-                                ${{ number_format($stats['positions_value'], 2) }}
+                                ${{ number_format($balance + $portfolio, 2) }}
                             </div>
                         </div>
 
@@ -89,7 +89,7 @@
                                 <span id="profitLossAmount">${{ number_format($stats['total_profit_loss'] ?? 0, 2) }}</span>
                             </div>
                             <i class="fas fa-info-circle" style="color: var(--text-secondary); font-size: 0.875rem; cursor: pointer;"
-                                title="Profit/Loss for the selected time period"></i>
+                                title="Cumulative Profit/Loss for the selected time period"></i>
                         </div>
 
                         <!-- Timeframe -->
@@ -105,12 +105,9 @@
                             <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Polyrion</span>
                         </div>
 
-                        <!-- Chart Placeholder -->
-                        <div
-                            style="height: 60px; background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: 6px; position: relative; overflow: hidden;">
-                            <div
-                                style="position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.5) 50%, transparent 100%);">
-                            </div>
+                        <!-- Chart Canvas -->
+                        <div style="height: 200px; position: relative; margin-top: 0.5rem;">
+                            <canvas id="profitLossChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -2957,18 +2954,32 @@
 
                 // Search functionality for positions - works with Active/Closed filter
                 $('.search-input').on('input', function() {
-                    const searchTerm = $(this).val().toLowerCase();
+                    const searchTerm = $(this).val().toLowerCase().trim();
                     const activeSubtab = $('.subtab-btn.active').data('subtab') || 'active';
 
                     $('.position-row').each(function() {
                         const $row = $(this);
                         const marketText = ($row.data('market') || '').toLowerCase();
+                        const rowText = $row.text().toLowerCase();
                         const rowSubtab = $row.data('subtab');
-                        const matchesSearch = !searchTerm || marketText.includes(searchTerm);
+                        const matchesSearch = !searchTerm || marketText.includes(searchTerm) || rowText.includes(searchTerm);
                         const matchesSubtab = activeSubtab === 'active' ? rowSubtab === 'active' :
                             rowSubtab === 'closed';
 
                         $row.toggle(matchesSearch && matchesSubtab);
+                    });
+                    
+                    // Also filter mobile cards
+                    $('.position-card').each(function() {
+                        const $card = $(this);
+                        const marketText = ($card.data('market') || '').toLowerCase();
+                        const cardText = $card.text().toLowerCase();
+                        const rowSubtab = $card.data('subtab');
+                        const matchesSearch = !searchTerm || marketText.includes(searchTerm) || cardText.includes(searchTerm);
+                        const matchesSubtab = activeSubtab === 'active' ? rowSubtab === 'active' :
+                            rowSubtab === 'closed';
+
+                        $card.toggle(matchesSearch && matchesSubtab);
                     });
                 });
 
@@ -3462,13 +3473,25 @@
                     return;
                 }
 
-                // Calculate total profit/loss (last value - first value, or just last value if starting from 0)
-                const firstValue = chartData.data[0] || 0;
+                // Calculate total profit/loss for the selected timeframe
+                // The data is cumulative, so we show the last value (total cumulative profit/loss)
                 const lastValue = chartData.data[chartData.data.length - 1] || 0;
-                const totalProfitLoss = lastValue - firstValue;
 
-                // Update amount display
-                $('#profitLossAmount').text('$' + lastValue.toFixed(2));
+                // Update amount display with the cumulative profit/loss
+                const sign = lastValue >= 0 ? '' : '';
+                $('#profitLossAmount').text(sign + '$' + Math.abs(lastValue).toFixed(2));
+                
+                // Update color based on profit/loss
+                if (lastValue >= 0) {
+                    $('#profitLossAmount').css('color', '#10b981');
+                } else {
+                    $('#profitLossAmount').css('color', '#ef4444');
+                }
+
+                // Determine chart color based on profit/loss
+                const isPositive = lastValue >= 0;
+                const borderColor = isPositive ? '#10b981' : '#ef4444'; // Green for profit, red for loss
+                const backgroundColor = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
 
                 profitLossChart = new Chart(ctx, {
                     type: 'line',
@@ -3477,14 +3500,14 @@
                         datasets: [{
                             label: 'Profit/Loss',
                             data: chartData.data,
-                            borderColor: '#00d4aa', // Teal-green color
-                            backgroundColor: 'rgba(0, 212, 170, 0.2)', // Teal-green with transparency
+                            borderColor: borderColor,
+                            backgroundColor: backgroundColor,
                             borderWidth: 2,
                             fill: true,
                             tension: 0.4,
                             pointRadius: 0,
-                            pointHoverRadius: 4,
-                            pointHoverBackgroundColor: '#00d4aa',
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: borderColor,
                             pointHoverBorderColor: '#ffffff',
                             pointHoverBorderWidth: 2,
                         }]
@@ -3500,53 +3523,33 @@
                                 enabled: true,
                                 mode: 'index',
                                 intersect: false,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
                                 titleColor: '#ffffff',
-                                bodyColor: '#00d4aa',
-                                borderColor: '#00d4aa',
+                                bodyColor: borderColor,
+                                borderColor: borderColor,
                                 borderWidth: 1,
                                 padding: 12,
                                 displayColors: false,
                                 callbacks: {
                                     label: function(context) {
-                                        return '$' + context.parsed.y.toFixed(2);
+                                        const value = context.parsed.y;
+                                        const sign = value >= 0 ? '+' : '';
+                                        return sign + '$' + value.toFixed(2);
                                     }
                                 }
                             }
                         },
                         scales: {
                             x: {
-                                display: true,
+                                display: false,
                                 grid: {
-                                    display: true,
-                                    color: 'rgba(255, 255, 255, 0.05)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: 'var(--text-secondary)',
-                                    font: {
-                                        size: 10
-                                    },
-                                    maxRotation: 0,
-                                    autoSkip: true,
-                                    maxTicksLimit: timeframe === '1D' ? 12 : timeframe === '1W' ? 7 : 10
+                                    display: false
                                 }
                             },
                             y: {
-                                display: true,
+                                display: false,
                                 grid: {
-                                    display: true,
-                                    color: 'rgba(255, 255, 255, 0.05)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: 'var(--text-secondary)',
-                                    font: {
-                                        size: 10
-                                    },
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(0);
-                                    }
+                                    display: false
                                 },
                                 beginAtZero: false
                             }
@@ -3558,7 +3561,7 @@
                         elements: {
                             point: {
                                 radius: 0,
-                                hoverRadius: 4
+                                hoverRadius: 5
                             }
                         }
                     }
@@ -3584,13 +3587,14 @@
                 // Wait for Chart.js to load
                 function checkChartJS() {
                     if (typeof Chart !== 'undefined') {
-                        initProfitLossChart('1D');
+                        // Initialize with '1M' to match the active button
+                        initProfitLossChart('1M');
+                        updateProfitLoss('1M');
                     } else {
                         setTimeout(checkChartJS, 50);
                     }
                 }
                 checkChartJS();
-
             });
         </script>
 
@@ -3634,6 +3638,9 @@
                         // Update profit/loss calculation if function exists
                         if (typeof initProfitLossChart === 'function') {
                             initProfitLossChart(period);
+                        }
+                        if (typeof updateProfitLoss === 'function') {
+                            updateProfitLoss(period);
                         }
                     });
                 });

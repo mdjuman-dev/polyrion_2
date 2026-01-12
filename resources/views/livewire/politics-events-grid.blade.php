@@ -2,7 +2,7 @@
     <!-- Markets Grid -->
     <div class="markets-grid mt-3 mt-lg-0">
         @foreach($events as $event)
-            <x-event-card :event="$event" :titleLength="90" :keyPrefix="'politics'" :showNewBadge="true" :newBadgeThreshold="10" />
+            <x-event-card :event="$event" :titleLength="50" :keyPrefix="'politics'" :showNewBadge="true" :newBadgeThreshold="10" />
         @endforeach
     </div>
 
@@ -16,13 +16,7 @@
                 <span style="color: var(--text-secondary); font-size: 14px;">Loading more events...</span>
             </div>
         </div>
-    @else
-        @if($events->count() > 0)
-            <div class="text-center py-4" style="color: var(--text-secondary); font-size: 14px;">
-                <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-                All events loaded
-            </div>
-        @endif
+    
     @endif
 
 </div>

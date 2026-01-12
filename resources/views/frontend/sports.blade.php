@@ -12,7 +12,7 @@
         <div class="container">
             <!-- Mobile: Categories Scrollable (Top) -->
             <div class="d-lg-none mb-4">
-                <div class="sports-categories-scroll" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding: 10px 0;">
+                <div class="sports-categories-scroll" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; ;">
                     <div class="d-flex gap-2" style="min-width: max-content;">
                         <a href="{{ route('sports.index') }}?category=all" 
                            class="sports-category-btn {{ $selectedCategory === 'all' ? 'active' : '' }}"
@@ -101,12 +101,12 @@
     <style>
         /* Sports Sidebar Styles */
         .sports-sidebar {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE and Edge */
         }
 
         .sports-sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none !important; /* Chrome, Safari, Opera */
         }
 
         .sports-categories-list {

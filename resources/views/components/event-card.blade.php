@@ -126,7 +126,7 @@
                      $isNoWinner = $marketResult === 'NO';
                   @endphp
                   <div class="market-card-outcome-row">
-                     <span class="market-card-outcome-label">{{ $market->groupItem_title }}</span>
+                     <span class="market-card-outcome-label">{{ Str::limit($market->groupItem_title, 20) }}</span>
                      @if ($marketEnded && $marketResult)
                         {{-- Show percentage and buttons with winner/loser indication --}}
                         <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
