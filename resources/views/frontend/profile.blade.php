@@ -108,6 +108,10 @@
                         <!-- Chart Canvas -->
                         <div style="height: 200px; position: relative; margin-top: 0.5rem;">
                             <canvas id="profitLossChart"></canvas>
+                            <div id="profitLossNoData" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-secondary); font-size: 0.875rem;">
+                                <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                                <div>No completed trades yet</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3353,6 +3357,23 @@
 
             // Real profit/loss data from backend
             const profitLossData = @json($profitLossData ?? []);
+            
+            // Debug: Log data structure (remove in production if needed)
+            console.log('=== Profit/Loss Chart Debug ===');
+            console.log('Data type:', typeof profitLossData);
+            console.log('Is array:', Array.isArray(profitLossData));
+            if (profitLossData && profitLossData.length > 0) {
+                console.log('Profit/Loss data loaded:', profitLossData.length, 'data points');
+                console.log('First data point:', profitLossData[0]);
+                console.log('Last data point:', profitLossData[profitLossData.length - 1]);
+            } else {
+                console.log('No profit/loss data available');
+                console.log('This could mean:');
+                console.log('1. User has no trades yet');
+                console.log('2. User has no completed trades');
+                console.log('3. Data format issue');
+            }
+            console.log('==============================');
 
             function getProfitLossDataForTimeframe(timeframe) {
                 if (!profitLossData || profitLossData.length === 0) {
@@ -3418,8 +3439,15 @@
             }
 
             function initProfitLossChart(timeframe = '1D') {
+                console.log('initProfitLossChart called with timeframe:', timeframe);
                 const ctx = document.getElementById('profitLossChart');
-                if (!ctx || typeof Chart === 'undefined') {
+                if (!ctx) {
+                    console.error('Profit/Loss chart canvas not found');
+                    return;
+                }
+                
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js not loaded yet, retrying...');
                     setTimeout(() => initProfitLossChart(timeframe), 100);
                     return;
                 }
@@ -3427,51 +3455,68 @@
                 // Destroy existing chart if it exists
                 if (profitLossChart) {
                     profitLossChart.destroy();
+                    profitLossChart = null;
                 }
 
                 const chartData = getProfitLossDataForTimeframe(timeframe);
+                console.log('Chart data for timeframe:', timeframe, chartData);
 
-                // If no data, show zero
+                // If no data, show zero and "No trades yet" message
                 if (chartData.data.length === 0) {
+                    console.log('No chart data available');
                     $('#profitLossAmount').text('$0.00');
-                    // Create empty chart
-                    profitLossChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: [],
-                            datasets: [{
-                                label: 'Profit/Loss',
-                                data: [],
-                                borderColor: '#00d4aa',
-                                backgroundColor: 'rgba(0, 212, 170, 0.2)',
-                                borderWidth: 2,
-                                fill: true,
-                                tension: 0.4,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    enabled: false
-                                }
+                    $('#profitLossAmount').css('color', 'var(--text-primary)');
+                    $('#profitLossNoData').show();
+                    
+                    // Create empty chart (hidden, but needed to prevent errors)
+                    if (profitLossChart) {
+                        profitLossChart.destroy();
+                        profitLossChart = null;
+                    }
+                    try {
+                        profitLossChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: [],
+                                datasets: [{
+                                    label: 'Profit/Loss',
+                                    data: [],
+                                    borderColor: '#00d4aa',
+                                    backgroundColor: 'rgba(0, 212, 170, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4,
+                                }]
                             },
-                            scales: {
-                                x: {
-                                    display: false
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        enabled: false
+                                    }
                                 },
-                                y: {
-                                    display: false
+                                scales: {
+                                    x: {
+                                        display: false
+                                    },
+                                    y: {
+                                        display: false
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    } catch (error) {
+                        console.error('Error creating empty chart:', error);
+                    }
                     return;
                 }
+                
+                // Hide "No trades yet" message if data exists
+                $('#profitLossNoData').hide();
 
                 // Calculate total profit/loss for the selected timeframe
                 // The data is cumulative, so we show the last value (total cumulative profit/loss)
@@ -3493,79 +3538,85 @@
                 const borderColor = isPositive ? '#10b981' : '#ef4444'; // Green for profit, red for loss
                 const backgroundColor = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
 
-                profitLossChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: 'Profit/Loss',
-                            data: chartData.data,
-                            borderColor: borderColor,
-                            backgroundColor: backgroundColor,
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 5,
-                            pointHoverBackgroundColor: borderColor,
-                            pointHoverBorderColor: '#ffffff',
-                            pointHoverBorderWidth: 2,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: true,
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                titleColor: '#ffffff',
-                                bodyColor: borderColor,
+                try {
+                    profitLossChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [{
+                                label: 'Profit/Loss',
+                                data: chartData.data,
                                 borderColor: borderColor,
-                                borderWidth: 1,
-                                padding: 12,
-                                displayColors: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        const value = context.parsed.y;
-                                        const sign = value >= 0 ? '+' : '';
-                                        return sign + '$' + value.toFixed(2);
-                                    }
-                                }
-                            }
+                                backgroundColor: backgroundColor,
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                pointHoverBackgroundColor: borderColor,
+                                pointHoverBorderColor: '#ffffff',
+                                pointHoverBorderWidth: 2,
+                            }]
                         },
-                        scales: {
-                            x: {
-                                display: false,
-                                grid: {
-                                    display: false
-                                }
-                            },
-                            y: {
-                                display: false,
-                                grid: {
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
                                     display: false
                                 },
-                                beginAtZero: false
-                            }
-                        },
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        elements: {
-                            point: {
-                                radius: 0,
-                                hoverRadius: 5
+                                tooltip: {
+                                    enabled: true,
+                                    mode: 'index',
+                                    intersect: false,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: borderColor,
+                                    borderColor: borderColor,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const value = context.parsed.y;
+                                            const sign = value >= 0 ? '+' : '';
+                                            return sign + '$' + value.toFixed(2);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: false,
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    display: false,
+                                    grid: {
+                                        display: false
+                                    },
+                                    beginAtZero: false
+                                }
+                            },
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            elements: {
+                                point: {
+                                    radius: 0,
+                                    hoverRadius: 5
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (error) {
+                    console.error('Error creating profit/loss chart:', error);
+                    $('#profitLossNoData').show();
+                    $('#profitLossNoData').html('<i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i><div>Error loading chart</div>');
+                }
             }
 
             function updateProfitLoss(timeframe) {
@@ -3578,23 +3629,78 @@
 
                 $('#profitLossTimeframe').text(timeframes[timeframe] || 'Past Day');
 
-                // Update chart with new timeframe data
-                initProfitLossChart(timeframe);
+                // Update chart with new timeframe data (initProfitLossChart already updates the display)
+                // Don't call it again here to avoid duplicate initialization
             }
 
             // Initialize chart on page load
-            $(document).ready(function() {
+            function initializeChart() {
+                console.log('Initializing profit/loss chart...');
+                console.log('Chart.js available:', typeof Chart !== 'undefined');
+                console.log('Profit/Loss data:', profitLossData);
+                
                 // Wait for Chart.js to load
+                let attempts = 0;
+                const maxAttempts = 40; // Increased to 2 seconds
+                
                 function checkChartJS() {
+                    const ctx = document.getElementById('profitLossChart');
+                    if (!ctx) {
+                        console.warn('Chart canvas element not found, retrying...');
+                        if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkChartJS, 50);
+                        } else {
+                            console.error('Chart canvas not found after 2 seconds');
+                            $('#profitLossNoData').show();
+                            $('#profitLossNoData').html('<i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i><div>Chart element not found</div>');
+                        }
+                        return;
+                    }
+                    
                     if (typeof Chart !== 'undefined') {
+                        console.log('Chart.js loaded, initializing chart...');
                         // Initialize with '1M' to match the active button
-                        initProfitLossChart('1M');
-                        updateProfitLoss('1M');
+                        try {
+                            initProfitLossChart('1M');
+                            updateProfitLoss('1M');
+                            console.log('Chart initialized successfully');
+                        } catch (error) {
+                            console.error('Error initializing chart:', error);
+                            $('#profitLossNoData').show();
+                            $('#profitLossNoData').html('<i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i><div>Error loading chart</div>');
+                        }
                     } else {
-                        setTimeout(checkChartJS, 50);
+                        // Retry after 50ms, but limit to maxAttempts
+                        if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkChartJS, 50);
+                        } else {
+                            console.error('Chart.js failed to load after 2 seconds');
+                            $('#profitLossNoData').show();
+                            $('#profitLossNoData').html('<i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i><div>Chart library not loaded</div>');
+                        }
                     }
                 }
                 checkChartJS();
+            }
+            
+            // Try multiple initialization methods
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeChart);
+            } else {
+                // DOM already loaded
+                initializeChart();
+            }
+            
+            // Also try on window load as fallback (only if chart not initialized)
+            let chartInitialized = false;
+            window.addEventListener('load', function() {
+                if (!profitLossChart && !chartInitialized) {
+                    console.log('Window loaded, retrying chart initialization...');
+                    chartInitialized = true;
+                    initializeChart();
+                }
             });
         </script>
 
@@ -3635,12 +3741,9 @@
                             timeframeEl.textContent = timeframeMap[period] || 'Past Month';
                         }
 
-                        // Update profit/loss calculation if function exists
+                        // Update chart with new timeframe
                         if (typeof initProfitLossChart === 'function') {
                             initProfitLossChart(period);
-                        }
-                        if (typeof updateProfitLoss === 'function') {
-                            updateProfitLoss(period);
                         }
                     });
                 });

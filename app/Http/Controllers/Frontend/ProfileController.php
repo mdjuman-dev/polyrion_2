@@ -99,7 +99,7 @@ class ProfileController extends Controller
          ->orderBy('created_at', 'desc')
          ->get();
 
-      // Calculate profit/loss data for chart
+      // Calculate profit/loss data for chart (all trades - completed + pending with current value)
       $profitLossData = $this->calculateProfitLossData($trades);
 
       // Combine trades and withdrawals for activity tab
@@ -631,31 +631,45 @@ class ProfileController extends Controller
 
    /**
     * Calculate profit/loss data grouped by date for chart
-    * Includes all trades: settled (WON/LOST) and pending (with current value)
+    * Includes all trades: completed (WON/LOST) and pending (with current market value)
     */
    private function calculateProfitLossData($trades)
    {
+      // If no trades, return empty array
+      if ($trades->isEmpty()) {
+         return [];
+      }
+
       // Group trades by date
       $dailyData = [];
 
-      // Get all trades sorted by date
-      $sortedTrades = $trades->sortBy('created_at');
+      // Sort trades by date (use settled_at for completed, created_at for pending)
+      $sortedTrades = $trades->sortBy(function ($trade) {
+         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+         if (in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS'])) {
+            return $trade->settled_at ?? $trade->created_at;
+         }
+         return $trade->created_at;
+      });
 
       foreach ($sortedTrades as $trade) {
-         $date = $trade->created_at->format('Y-m-d');
+         // Use settled_at date for completed trades, created_at for pending
+         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
+         $tradeDate = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']) 
+            ? ($trade->settled_at ?? $trade->created_at)
+            : $trade->created_at;
+         $date = $tradeDate->format('Y-m-d');
 
          // Calculate profit/loss for this trade
          $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
          $profitLoss = 0;
 
-         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
-
          if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
-            // Win: profit = payout - amount invested
+            // Win: profit = payout - cost (amount invested)
             $payout = $trade->payout ?? $trade->payout_amount ?? 0;
             $profitLoss = $payout - $amountInvested;
          } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
-            // Loss: lost the full amount invested
+            // Loss: lost the full cost (amount invested)
             $profitLoss = -$amountInvested;
          } elseif ($tradeStatus === 'PENDING' && $trade->market) {
             // Pending trades: calculate current value based on market price
@@ -693,6 +707,11 @@ class ProfileController extends Controller
             }
          }
 
+         // Skip if no valid profit/loss calculation
+         if ($amountInvested <= 0) {
+            continue;
+         }
+
          // Group by date (if multiple trades on same day, sum them)
          if (!isset($dailyData[$date])) {
             $dailyData[$date] = [
@@ -704,13 +723,13 @@ class ProfileController extends Controller
          $dailyData[$date]['profit_loss'] += $profitLoss;
       }
 
+      // If no valid trades after filtering, return empty array
+      if (empty($dailyData)) {
+         return [];
+      }
+
       // Calculate cumulative profit/loss over time
       $result = [];
-      
-      // If no trades, return empty array
-      if (empty($dailyData)) {
-         return $result;
-      }
 
       // Get date range from first trade to today (max 90 days back)
       $firstTradeDate = min(array_keys($dailyData));
@@ -741,7 +760,7 @@ class ProfileController extends Controller
          $result[] = [
             'date' => $dateStr,
             'label' => $date->format('M d'),
-            'value' => $lastCumulative,
+            'value' => round($lastCumulative, 2), // Round to 2 decimal places
          ];
       }
 
