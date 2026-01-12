@@ -30,7 +30,10 @@
             // ====================================
 
             // Parse outcome prices (Polymarket format: [NO, YES])
-            $prices = json_decode($market->outcome_prices, true) ?? [0.5, 0.5];
+            // Handle both string (JSON) and array formats
+            $prices = is_string($market->outcome_prices) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? [0.5, 0.5]);
 
             // Initialize with fallback mid-market prices
             $yesPrice = isset($prices[1]) ? (float) $prices[1] : 0.5;

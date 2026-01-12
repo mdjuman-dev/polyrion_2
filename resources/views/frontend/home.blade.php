@@ -577,7 +577,7 @@
 
             function findMarketsGridComponent() {
                // Try to get cached component first
-               if (marketsGridComponent && marketsGridComponent.$wire) {
+               if (marketsGridComponent) {
                   return marketsGridComponent;
                }
 
@@ -700,8 +700,15 @@
                         // Try to find component and update directly
                         else {
                            const component = findMarketsGridComponent();
-                           if (component && component.$wire) {
-                              component.$wire.set('search', value);
+                           if (component) {
+                              // Use Livewire v3 method
+                              if (typeof component.set === 'function') {
+                                 component.set('search', value);
+                              }
+                              // Fallback to Livewire v2 method
+                              else if (typeof component.call === 'function') {
+                                 component.call('$set', 'search', value);
+                              }
                            }
                         }
                      } else {
@@ -733,12 +740,12 @@
                const component = findMarketsGridComponent();
                if (component) {
                   // Try Livewire v3 method first
-                  if (component.$wire && typeof component.$wire.call === 'function') {
-                     component.$wire.call('setSortBy', sort);
+                  if (typeof component.call === 'function') {
+                     component.call('setSortBy', sort);
                   }
                   // Try Livewire v2 method
-                  else if (typeof component.call === 'function') {
-                     component.call('setSortBy', sort);
+                  else if (component.__instance && typeof component.__instance.call === 'function') {
+                     component.__instance.call('setSortBy', sort);
                   }
                   // Try direct method call
                   else if (component.__instance && component.__instance.call) {
@@ -758,11 +765,12 @@
             function setFrequency(frequency, label) {
                const component = findMarketsGridComponent();
                if (component) {
-                  if (component.$wire && typeof component.$wire.call === 'function') {
-                     component.$wire.call('setFrequency', frequency);
-                  } else if (typeof component.call === 'function') {
+                  // Try Livewire v3 method first
+                  if (typeof component.call === 'function') {
                      component.call('setFrequency', frequency);
-                  } else if (component.__instance && component.__instance.call) {
+                  }
+                  // Try Livewire v2 method
+                  else if (component.__instance && typeof component.__instance.call === 'function') {
                      component.__instance.call('setFrequency', frequency);
                   }
                   const frequencyText = document.getElementById('frequencyText');
@@ -777,11 +785,12 @@
             function setStatus(status, label) {
                const component = findMarketsGridComponent();
                if (component) {
-                  if (component.$wire && typeof component.$wire.call === 'function') {
-                     component.$wire.call('setStatus', status);
-                  } else if (typeof component.call === 'function') {
+                  // Try Livewire v3 method first
+                  if (typeof component.call === 'function') {
                      component.call('setStatus', status);
-                  } else if (component.__instance && component.__instance.call) {
+                  }
+                  // Try Livewire v2 method
+                  else if (component.__instance && typeof component.__instance.call === 'function') {
                      component.__instance.call('setStatus', status);
                   }
                   const statusText = document.getElementById('statusText');

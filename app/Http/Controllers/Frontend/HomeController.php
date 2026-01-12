@@ -107,16 +107,22 @@ class HomeController extends Controller
    {
       $syncedCount = 0;
 
+      // Optimize: Load all parent comments at once to avoid N+1 queries
+      $parentCommentIds = array_filter(array_column($polymarketComments, 'parentCommentID'));
+      $parentComments = [];
+      if (!empty($parentCommentIds)) {
+         $parentComments = EventComment::whereIn('polymarket_id', $parentCommentIds)
+            ->pluck('id', 'polymarket_id')
+            ->toArray();
+      }
+
       foreach ($polymarketComments as $pmComment) {
          try {
             $parentCommentId = null;
 
-            // Find parent comment if this is a reply
-            if (!empty($pmComment['parentCommentID'])) {
-               $parentComment = EventComment::where('polymarket_id', $pmComment['parentCommentID'])->first();
-               if ($parentComment) {
-                  $parentCommentId = $parentComment->id;
-               }
+            // Find parent comment if this is a reply (from pre-loaded array)
+            if (!empty($pmComment['parentCommentID']) && isset($parentComments[$pmComment['parentCommentID']])) {
+               $parentCommentId = $parentComments[$pmComment['parentCommentID']];
             }
 
             // Find or create user by address (you may need to map addresses to users)
@@ -238,7 +244,10 @@ class HomeController extends Controller
             // Get current price - use YES price (prices[1]) for chart display
             $currentPrice = 50;
             if ($market->outcome_prices) {
-               $prices = json_decode($market->outcome_prices, true);
+               // Handle both string (JSON) and array formats
+               $prices = is_string($market->outcome_prices) 
+                   ? json_decode($market->outcome_prices, true) 
+                   : ($market->outcome_prices ?? []);
                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
                // Use YES price (prices[1]) for chart, or best_ask if available
                if (is_array($prices)) {
@@ -376,18 +385,25 @@ class HomeController extends Controller
    {
       // Get all events for this category to extract dynamic sub-categories - Exclude ended events
       $categoryName = ucfirst(strtolower($category));
-      $allCategoryEvents = Event::where('category', $categoryName)
-         ->where('active', true)
-         ->where('closed', false)
-         ->where(function ($q) {
-            $q->whereNull('end_date')
-              ->orWhere('end_date', '>', now());
-         })
-         ->with('markets')
-         ->get();
-
-      // Extract dynamic sub-categories from event titles and market questions
-      $dynamicSubCategories = $this->extractSubCategoriesFromEvents($allCategoryEvents, $categoryName);
+      
+      // Cache subcategories for 5 minutes to avoid duplicate queries
+      $cacheKey = 'category_subcategories_' . strtolower($categoryName);
+      $dynamicSubCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($categoryName) {
+         $allCategoryEvents = Event::where('category', $categoryName)
+            ->where('active', true)
+            ->where('closed', false)
+            ->where(function ($q) {
+               $q->whereNull('end_date')
+                 ->orWhere('end_date', '>', now());
+            })
+            ->select(['id', 'title'])
+            ->with(['markets' => function($q) {
+               $q->select(['id', 'event_id', 'question']);
+            }])
+            ->get();
+         
+         return $this->extractSubCategoriesFromEvents($allCategoryEvents, $categoryName);
+      });
 
       // Get popular sub-categories (top 10 by event count)
       $popularSubCategories = collect($dynamicSubCategories)
@@ -552,7 +568,10 @@ class HomeController extends Controller
          if ($event->markets && $event->markets->count() > 0) {
             $firstMarket = $event->markets->first();
             if ($firstMarket->outcome_prices) {
-               $prices = json_decode($firstMarket->outcome_prices, true);
+               // Handle both string (JSON) and array formats
+               $prices = is_string($firstMarket->outcome_prices) 
+                   ? json_decode($firstMarket->outcome_prices, true) 
+                   : ($firstMarket->outcome_prices ?? []);
                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
                // Use YES price (prices[1]) for current price
                if (is_array($prices)) {
@@ -686,7 +705,11 @@ class HomeController extends Controller
       // Fallback to database prices
       $market = Market::find($marketId);
       if ($market) {
-         $prices = json_decode($market->outcome_prices ?? '[]', true);
+         // Handle both string (JSON) and array formats
+         $outcomePricesRaw = $market->outcome_prices ?? null;
+         $prices = is_string($outcomePricesRaw) 
+             ? json_decode($outcomePricesRaw, true) 
+             : ($outcomePricesRaw ?? []);
          $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
          $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
 
@@ -855,7 +878,10 @@ class HomeController extends Controller
             // Get current price - use YES price (prices[1]) for chart display
             $currentPrice = 50;
             if ($market->outcome_prices) {
-               $prices = json_decode($market->outcome_prices, true);
+               // Handle both string (JSON) and array formats
+               $prices = is_string($market->outcome_prices) 
+                   ? json_decode($market->outcome_prices, true) 
+                   : ($market->outcome_prices ?? []);
                // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
                if (is_array($prices)) {
                   if (isset($prices[1])) {

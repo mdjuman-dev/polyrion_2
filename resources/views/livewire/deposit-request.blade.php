@@ -306,22 +306,28 @@ new class extends Component {
     document.addEventListener('livewire:init', () => {
         // Handle Deposit Success
         Livewire.on('deposit-submitted', (event) => {
-            const data = Array.isArray(event) ? event[0] : event;
+            // Handle both Livewire 2 and 3 event formats
+            let data = event;
+            if (Array.isArray(event)) {
+                data = event[0];
+            } else if (event && typeof event === 'object' && event.detail) {
+                data = event.detail;
+            }
+            
+            const message = data?.message || data?.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.';
             
             if (typeof closeDepositModal === 'function') {
                 closeDepositModal();
             }
 
+            // Use showSuccess function (now defined globally)
             if (typeof showSuccess !== 'undefined') {
-                showSuccess(
-                    data.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.',
-                    'Deposit Submitted'
-                );
+                showSuccess(message, 'Deposit Submitted');
             } else if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Deposit Submitted',
-                    text: data.message || 'Deposit request submitted successfully! Your deposit is pending admin verification.',
+                    text: message,
                     position: 'top-end',
                     showConfirmButton: false,
                     timer: 4000,
@@ -330,7 +336,9 @@ new class extends Component {
                     confirmButtonColor: '#ffb11a',
                 });
             } else if (typeof toastr !== 'undefined') {
-                toastr.success(data.message || 'Deposit request submitted successfully!', 'Deposit Submitted');
+                toastr.success(message, 'Deposit Submitted');
+            } else {
+                alert('Success: ' + message);
             }
 
             setTimeout(() => {

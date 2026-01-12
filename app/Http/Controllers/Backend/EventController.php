@@ -64,7 +64,10 @@ class EventController extends Controller
         }
 
         // Apply pagination AFTER filtering - this ensures filter works on all data
-        $events = $query->with('markets')->orderBy('volume', 'desc')->paginate(20)->withQueryString();
+        // Optimize: Eager load markets with select to avoid N+1 and reduce data
+        $events = $query->with(['markets' => function($q) {
+            $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume']);
+        }])->orderBy('volume', 'desc')->paginate(20)->withQueryString();
         $categories = $this->categoryDetector->getAvailableCategories();
 
         return view('backend.events.index', compact('events', 'categories'));
@@ -511,11 +514,10 @@ class EventController extends Controller
             }
         ]);
 
-        // Get all comments count (including replies) - both active and inactive
-        $totalCommentsCount = \App\Models\MarketComment::where('market_id', $event->id)->count();
-
-        // Get active comments count for display
-        $activeCommentsCount = \App\Models\MarketComment::where('market_id', $event->id)
+        // Optimize: Get both counts in a single query to avoid duplicate queries
+        $commentsBaseQuery = \App\Models\MarketComment::where('market_id', $event->id);
+        $totalCommentsCount = (clone $commentsBaseQuery)->count();
+        $activeCommentsCount = (clone $commentsBaseQuery)
             ->where(function ($q) {
                 $q->where('is_active', true)
                     ->orWhereNull('is_active'); // For backward compatibility

@@ -228,15 +228,17 @@
 
                                                     // Get current price from market
                                                     if ($position && $position['market']) {
-                                                        $outcomePrices = json_decode(
-                                                            $position['market']->outcome_prices,
-                                                            true,
-                                                        );
-                                                        if (is_array($outcomePrices)) {
+                                                        // Handle both string (JSON) and array formats
+                                                        $outcomePricesRaw = $position['market']->outcome_prices ?? null;
+                                                        $outcomePrices = is_string($outcomePricesRaw) 
+                                                            ? json_decode($outcomePricesRaw, true) 
+                                                            : ($outcomePricesRaw ?? []);
+                                                        
+                                                        if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
                                                             if ($trade->option === 'yes') {
-                                                                $currentPrice = $outcomePrices[0] ?? $avgPrice;
+                                                                $currentPrice = $outcomePrices[1] ?? $avgPrice; // YES is at index 1
                                                             } else {
-                                                                $currentPrice = $outcomePrices[1] ?? $avgPrice;
+                                                                $currentPrice = $outcomePrices[0] ?? $avgPrice; // NO is at index 0
                                                             }
                                                         } else {
                                                             $currentPrice = $avgPrice;
@@ -440,12 +442,17 @@
                                             $avgPrice = $trade->price ?? 0.0001;
 
                                             if ($position && $position['market']) {
-                                                $outcomePrices = json_decode($position['market']->outcome_prices, true);
-                                                if (is_array($outcomePrices)) {
+                                                // Handle both string (JSON) and array formats
+                                                $outcomePricesRaw = $position['market']->outcome_prices ?? null;
+                                                $outcomePrices = is_string($outcomePricesRaw) 
+                                                    ? json_decode($outcomePricesRaw, true) 
+                                                    : ($outcomePricesRaw ?? []);
+                                                
+                                                if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
                                                     if ($trade->option === 'yes') {
-                                                        $currentPrice = $outcomePrices[0] ?? $avgPrice;
+                                                        $currentPrice = $outcomePrices[1] ?? $avgPrice; // YES is at index 1
                                                     } else {
-                                                        $currentPrice = $outcomePrices[1] ?? $avgPrice;
+                                                        $currentPrice = $outcomePrices[0] ?? $avgPrice; // NO is at index 0
                                                     }
                                                 } else {
                                                     $currentPrice = $avgPrice;
@@ -3257,24 +3264,29 @@
                     });
 
                     Livewire.on('withdrawal-submitted', (event) => {
-                        const data = Array.isArray(event) ? event[0] : event;
+                        // Handle both Livewire 2 and 3 event formats
+                        let data = event;
+                        if (Array.isArray(event)) {
+                            data = event[0];
+                        } else if (event && typeof event === 'object' && event.detail) {
+                            data = event.detail;
+                        }
+
+                        const message = data?.message || data?.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.';
 
                         setTimeout(() => {
                             if (typeof closeWithdrawalModal === 'function') {
                                 closeWithdrawalModal();
                             }
 
-                            // Use showSuccess function if available
+                            // Use showSuccess function (now defined globally)
                             if (typeof showSuccess !== 'undefined') {
-                                showSuccess(
-                                    data.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.',
-                                    'Withdrawal Submitted'
-                                );
+                                showSuccess(message, 'Withdrawal Submitted');
                             } else if (typeof Swal !== 'undefined') {
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Withdrawal Submitted',
-                                    text: data.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.',
+                                    text: message,
                                     position: 'top-end',
                                     showConfirmButton: false,
                                     timer: 4000,
@@ -3283,10 +3295,7 @@
                                     confirmButtonColor: '#ffb11a',
                                 });
                             } else if (typeof toastr !== 'undefined') {
-                                toastr.success(
-                                    data.message || 'Withdrawal request submitted successfully!',
-                                    'Withdrawal Submitted'
-                                );
+                                toastr.success(message, 'Withdrawal Submitted');
                             } else {
                                 alert(data.message || 'Withdrawal request submitted successfully!');
                             }

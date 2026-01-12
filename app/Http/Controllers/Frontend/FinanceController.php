@@ -14,32 +14,33 @@ class FinanceController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all finance events - Exclude ended events
-        $allFinanceEvents = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
-            ->where('active', true)
-            ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
-            ->with('markets')
-            ->get();
-
         // Get selected filters from query parameters
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedCategory = $request->get('category', 'all');
 
-        // Get events filtered by finance category - Exclude ended events
-        $eventsQuery = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
+        // Base query for finance events - Exclude ended events (reused for counts)
+        $baseQuery = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
             ->where('active', true)
             ->where('closed', false)
             ->where(function ($q) {
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
-            })
+            });
+
+        // Get events filtered by finance category - Exclude ended events
+        $eventsQuery = (clone $baseQuery)
             ->with(['markets' => function ($query) {
-                $query->where('active', true)
-                    ->orderBy('created_at', 'desc');
+                $query->select([
+                    'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                    'outcome_prices', 'outcomes', 'active', 'closed',
+                    'best_ask', 'best_bid', 'last_trade_price',
+                    'close_time', 'end_date', 'volume24hr', 'final_result',
+                    'outcome_result', 'final_outcome', 'created_at'
+                ])
+                ->where('active', true)
+                ->where('closed', false)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
 
@@ -66,9 +67,9 @@ class FinanceController extends Controller
 
         $events = $eventsQuery->paginate(20);
 
-        // Get filter counts
-        $timeframeCounts = $this->getTimeframeCounts($allFinanceEvents);
-        $categoryCounts = $this->getCategoryCounts($allFinanceEvents);
+        // Get filter counts using database queries (more efficient than collection filtering)
+        $timeframeCounts = $this->getTimeframeCounts($baseQuery);
+        $categoryCounts = $this->getCategoryCounts($baseQuery);
 
         return view('frontend.finance', compact(
             'selectedTimeframe',
@@ -102,25 +103,28 @@ class FinanceController extends Controller
     }
 
     /**
-     * Get timeframe counts
+     * Get timeframe counts using database queries (more efficient)
      */
-    private function getTimeframeCounts($events)
+    private function getTimeframeCounts($baseQuery)
     {
         $now = now();
-        $counts = [
-            'all' => $events->count(),
-            'daily' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subDay())->count(),
-            'weekly' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subWeek())->count(),
-            'monthly' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subMonth())->count(),
-        ];
-
-        return $counts;
+        
+        // Cache counts for 1 minute to avoid duplicate queries
+        $cacheKey = 'finance_timeframe_counts';
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $now) {
+            return [
+                'all' => (clone $baseQuery)->count(),
+                'daily' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subDay())->count(),
+                'weekly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subWeek())->count(),
+                'monthly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subMonth())->count(),
+            ];
+        });
     }
 
     /**
-     * Get category counts
+     * Get category counts using database queries (more efficient)
      */
-    private function getCategoryCounts($events)
+    private function getCategoryCounts($baseQuery)
     {
         $categories = [
             'Stocks' => ['stock', 'nvidia', 'apple', 'alphabet', 'microsoft', 'amazon', 'netflix', 'nflx', 'aapl', 'msft', 'googl', 'amzn'],
@@ -136,44 +140,34 @@ class FinanceController extends Controller
             'Treasuries' => ['treasury', 'treasuries', 'bond', 't-bill', 't-bond'],
         ];
 
-        $counts = [];
+        // Cache counts for 1 minute to avoid duplicate queries
+        $cacheKey = 'finance_category_counts';
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $categories) {
+            $counts = [];
 
-        foreach ($categories as $categoryName => $keywords) {
-            $count = $events->filter(function ($event) use ($keywords) {
-                $title = strtolower($event->title);
-                $hasKeyword = false;
-
-                foreach ($keywords as $keyword) {
-                    if (strpos($title, $keyword) !== false) {
-                        $hasKeyword = true;
-                        break;
+            foreach ($categories as $categoryName => $keywords) {
+                $query = (clone $baseQuery)->where(function ($q) use ($keywords) {
+                    foreach ($keywords as $keyword) {
+                        $q->orWhere('title', 'LIKE', '%' . $keyword . '%');
                     }
-                }
-
-                if (!$hasKeyword) {
-                    foreach ($event->markets as $market) {
-                        $question = strtolower($market->question ?? '');
+                })->orWhereHas('markets', function ($mq) use ($keywords) {
+                    $mq->where(function ($q) use ($keywords) {
                         foreach ($keywords as $keyword) {
-                            if (strpos($question, $keyword) !== false) {
-                                $hasKeyword = true;
-                                break 2;
-                            }
+                            $q->orWhere('question', 'LIKE', '%' . $keyword . '%');
                         }
-                    }
-                }
+                    });
+                });
 
-                return $hasKeyword;
-            })->count();
+                $counts[] = [
+                    'name' => $categoryName,
+                    'slug' => strtolower(str_replace(' ', '-', $categoryName)),
+                    'count' => $query->count(),
+                    'icon' => $this->getCategoryIcon($categoryName),
+                ];
+            }
 
-            $counts[] = [
-                'name' => $categoryName,
-                'slug' => strtolower(str_replace(' ', '-', $categoryName)),
-                'count' => $count,
-                'icon' => $this->getCategoryIcon($categoryName),
-            ];
-        }
-
-        return $counts;
+            return $counts;
+        });
     }
 
     /**

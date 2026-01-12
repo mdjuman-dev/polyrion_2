@@ -105,15 +105,8 @@ class UserController extends Controller
         $walletBalance = $user->wallet ? $user->wallet->balance : 0;
         $lockedBalance = $user->wallet ? $user->wallet->locked_balance : 0;
 
-        // Recent Activity
-        $recentTrades = $user->trades()->with('market.event')->latest()->take(10)->get();
-        $recentDeposits = $user->deposits()->latest()->take(5)->get();
-        $recentWithdrawals = $user->withdrawals()->latest()->take(5)->get();
-        
         // All User Activities (for activity log) - Optimized: Limit to last 100 records
-        $allActivities = collect();
-        
-        // Add trades as activities - Limit to last 50 trades
+        // Reuse trades query to avoid duplicate queries
         $trades = $user->trades()
             ->select(['id', 'market_id', 'amount_invested', 'amount', 'status', 'created_at'])
             ->with(['market' => function($q) {
@@ -124,6 +117,15 @@ class UserController extends Controller
             ->latest()
             ->limit(50)
             ->get();
+        
+        // Recent Activity - reuse trades collection to avoid duplicate query
+        $recentTrades = $trades->take(10);
+        $recentDeposits = $user->deposits()->latest()->take(5)->get();
+        $recentWithdrawals = $user->withdrawals()->latest()->take(5)->get();
+        
+        $allActivities = collect();
+        
+        // Add trades as activities - Limit to last 50 trades (already loaded above)
         foreach ($trades as $trade) {
             $allActivities->push([
                 'type' => 'trade',

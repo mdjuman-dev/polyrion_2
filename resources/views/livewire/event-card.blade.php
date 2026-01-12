@@ -22,7 +22,10 @@
             <div class="market-card-body">
                 @foreach ($event->markets as $market)
                     @php
-                        $prices = json_decode($market->outcome_prices, true);
+                        // Handle both string (JSON) and array formats
+                        $prices = is_string($market->outcome_prices) 
+                            ? json_decode($market->outcome_prices, true) 
+                            : ($market->outcome_prices ?? [0.5, 0.5]);
                         // Polymarket format - prices[0] = NO, prices[1] = YES
                         // Prices are stored as decimals (0-1 range)
                         $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
@@ -35,7 +38,9 @@
                         // Ensure price is in valid range and convert to percentage
                         $yesPrice = max(0.001, min(0.999, $yesPrice));
                         $yesProb = round($yesPrice * 100, 1);
-                        $outcomes = json_decode($market->outcomes, true);
+                        $outcomes = is_string($market->outcomes) 
+                            ? json_decode($market->outcomes, true) 
+                            : ($market->outcomes ?? []);
                     @endphp
 
                     @if ($outcomes !== null)
@@ -70,7 +75,10 @@
         @php
             $market = $event->markets->first();
             if ($market) {
-                $prices = json_decode($market->outcome_prices, true);
+                // Handle both string (JSON) and array formats
+                $prices = is_string($market->outcome_prices) 
+                    ? json_decode($market->outcome_prices, true) 
+                    : ($market->outcome_prices ?? [0.5, 0.5]);
                 // Polymarket format - prices[0] = NO, prices[1] = YES
                 // Prices are stored as decimals (0-1 range)
                 $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
@@ -83,7 +91,9 @@
                 // Ensure price is in valid range and convert to percentage
                 $yesPrice = max(0.001, min(0.999, $yesPrice));
                 $yesProb = round($yesPrice * 100, 1);
-                $outcomes = json_decode($market->outcomes, true);
+                $outcomes = is_string($market->outcomes) 
+                    ? json_decode($market->outcomes, true) 
+                    : ($market->outcomes ?? []);
             }
         @endphp
 

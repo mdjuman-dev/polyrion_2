@@ -57,7 +57,7 @@ class ProfileController extends Controller
             'market' => function($query) {
                $query->select([
                   'id', 'event_id', 'question', 'slug',
-                  'outcome_prices', 'outcomePrices',
+                  'outcome_prices',
                   'close_time', 'result_set_at', 'final_result',
                   'active', 'closed', 'archived'
                ]);

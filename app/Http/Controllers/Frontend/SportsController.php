@@ -15,19 +15,27 @@ class SportsController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all sports events to extract dynamic categories - Exclude ended events
-        $allSportsEvents = Event::where('category', 'Sports')
+        // Base query for sports events - Exclude ended events (reused for counts)
+        $baseQuery = Event::where('category', 'Sports')
             ->where('active', true)
             ->where('closed', false)
             ->where(function ($q) {
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
-            })
-            ->with('markets')
-            ->get();
+            });
 
-        // Extract dynamic categories from event titles and market questions
-        $dynamicCategories = $this->extractCategoriesFromEvents($allSportsEvents);
+        // Extract dynamic categories from event titles and market questions (cached)
+        $cacheKey = 'sports_dynamic_categories';
+        $dynamicCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($baseQuery) {
+            // Load only necessary data for category extraction
+            $events = (clone $baseQuery)
+                ->select(['id', 'title'])
+                ->with(['markets' => function($q) {
+                    $q->select(['id', 'event_id', 'question']);
+                }])
+                ->get();
+            return $this->extractCategoriesFromEvents($events);
+        });
 
         // Get popular categories (top 5 by event count)
         $popularCategories = collect($dynamicCategories)
@@ -47,16 +55,19 @@ class SportsController extends Controller
         $selectedSubcategory = $request->get('subcategory', null);
 
         // Get events filtered by sports category - Exclude ended events
-        $eventsQuery = Event::where('category', 'Sports')
-            ->where('active', true)
-            ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
+        $eventsQuery = (clone $baseQuery)
             ->with(['markets' => function ($query) {
-                $query->where('active', true)
-                    ->orderBy('created_at', 'desc');
+                $query->select([
+                    'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                    'outcome_prices', 'outcomes', 'active', 'closed',
+                    'best_ask', 'best_bid', 'last_trade_price',
+                    'close_time', 'end_date', 'volume24hr', 'final_result',
+                    'outcome_result', 'final_outcome', 'created_at'
+                ])
+                ->where('active', true)
+                ->where('closed', false)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
 
@@ -86,8 +97,18 @@ class SportsController extends Controller
 
         $events = $eventsQuery->paginate(20);
 
-        // Get subcategories for selected category (e.g., countries for Cricket)
-        $subcategories = $this->getSubcategories($selectedCategory, $allSportsEvents);
+        // Get subcategories for selected category (e.g., countries for Cricket) - cached
+        $subcategoriesCacheKey = 'sports_subcategories_' . ($selectedCategory ?? 'all');
+        $subcategories = \Illuminate\Support\Facades\Cache::remember($subcategoriesCacheKey, 300, function () use ($baseQuery, $selectedCategory) {
+            // Load only necessary data for subcategory extraction
+            $events = (clone $baseQuery)
+                ->select(['id', 'title'])
+                ->with(['markets' => function($q) {
+                    $q->select(['id', 'event_id', 'question']);
+                }])
+                ->get();
+            return $this->getSubcategories($selectedCategory, $events);
+        });
 
         return view('frontend.sports', compact(
             'popularCategories',

@@ -14,19 +14,27 @@ class PoliticsController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all politics events to extract dynamic categories - Exclude ended events
-        $allPoliticsEvents = Event::whereIn('category', ['Politics', 'Geopolitics', 'Elections'])
+        // Base query for politics events - Exclude ended events (reused for counts)
+        $baseQuery = Event::whereIn('category', ['Politics', 'Geopolitics', 'Elections'])
             ->where('active', true)
             ->where('closed', false)
             ->where(function ($q) {
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
-            })
-            ->with('markets')
-            ->get();
+            });
 
-        // Extract dynamic categories from event titles and market questions
-        $dynamicCategories = $this->extractCategoriesFromEvents($allPoliticsEvents);
+        // Extract dynamic categories from event titles and market questions (cached)
+        $cacheKey = 'politics_dynamic_categories';
+        $dynamicCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($baseQuery) {
+            // Load only necessary data for category extraction
+            $events = (clone $baseQuery)
+                ->select(['id', 'title'])
+                ->with(['markets' => function($q) {
+                    $q->select(['id', 'event_id', 'question']);
+                }])
+                ->get();
+            return $this->extractCategoriesFromEvents($events);
+        });
 
         // Get popular categories (top 8 by event count)
         $popularCategories = collect($dynamicCategories)
@@ -46,16 +54,19 @@ class PoliticsController extends Controller
         $selectedCountry = $request->get('country', null);
 
         // Get events filtered by politics category - Exclude ended events
-        $eventsQuery = Event::whereIn('category', ['Politics', 'Geopolitics', 'Elections'])
-            ->where('active', true)
-            ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
+        $eventsQuery = (clone $baseQuery)
             ->with(['markets' => function ($query) {
-                $query->where('active', true)
-                    ->orderBy('created_at', 'desc');
+                $query->select([
+                    'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                    'outcome_prices', 'outcomes', 'active', 'closed',
+                    'best_ask', 'best_bid', 'last_trade_price',
+                    'close_time', 'end_date', 'volume24hr', 'final_result',
+                    'outcome_result', 'final_outcome', 'created_at'
+                ])
+                ->where('active', true)
+                ->where('closed', false)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
 
@@ -94,8 +105,18 @@ class PoliticsController extends Controller
 
         $events = $eventsQuery->paginate(20);
 
-        // Get countries/regions for category navigation
-        $countries = $this->getCountriesWithCounts($allPoliticsEvents);
+        // Get countries/regions for category navigation (cached)
+        $countriesCacheKey = 'politics_countries_counts';
+        $countries = \Illuminate\Support\Facades\Cache::remember($countriesCacheKey, 300, function () use ($baseQuery) {
+            // Load only necessary data for country extraction
+            $events = (clone $baseQuery)
+                ->select(['id', 'title'])
+                ->with(['markets' => function($q) {
+                    $q->select(['id', 'event_id', 'question']);
+                }])
+                ->get();
+            return $this->getCountriesWithCounts($events);
+        });
 
         return view('frontend.politics', compact(
             'popularCategories',

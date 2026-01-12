@@ -1446,11 +1446,24 @@
                         },
                         body: JSON.stringify(tradeData)
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        // Check if response is ok
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.message || 'Server error');
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
-                            // Show success message
-                            showSuccess('Trade placed successfully!', 'Trade Executed');
+                            // Show success message with backend message or default
+                            const successMessage = data.message || 'Trade placed successfully!';
+                            if (typeof showSuccess !== 'undefined') {
+                                showSuccess(successMessage, 'Trade Executed');
+                            } else {
+                                alert('Success: ' + successMessage);
+                            }
 
                             // Reset form
                             currentShares = 0;
@@ -1467,12 +1480,23 @@
                                 location.reload();
                             }, 1500);
                         } else {
-                            showError(data.message || 'Failed to place trade', 'Trade Failed');
+                            // Show error message
+                            const errorMessage = data.message || 'Failed to place trade';
+                            if (typeof showError !== 'undefined') {
+                                showError(errorMessage, 'Trade Failed');
+                            } else {
+                                alert('Error: ' + errorMessage);
+                            }
                         }
                     })
                     .catch(error => {
                         console.error('Trade error:', error);
-                        showError('An error occurred. Please try again.', 'Error');
+                        const errorMessage = error.message || 'An error occurred. Please try again.';
+                        if (typeof showError !== 'undefined') {
+                            showError(errorMessage, 'Error');
+                        } else {
+                            alert('Error: ' + errorMessage);
+                        }
                     })
                     .finally(() => {
                         $btn.prop('disabled', false).text(originalText);
@@ -2449,6 +2473,115 @@
     <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
     <!-- Toastr JS -->
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
+    
+    <!-- Success/Error Message Functions -->
+    <script>
+        // Initialize Toastr
+        if (typeof toastr !== 'undefined') {
+            toastr.options = {
+                "closeButton": true,
+                "debug": false,
+                "newestOnTop": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "preventDuplicates": false,
+                "onclick": null,
+                "showDuration": "300",
+                "hideDuration": "1000",
+                "timeOut": "5000",
+                "extendedTimeOut": "1000",
+                "showEasing": "swing",
+                "hideEasing": "linear",
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
+        }
+
+        // Define showSuccess function
+        window.showSuccess = function(message, title = 'Success') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#00C853',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.success(message, title);
+            } else {
+                alert(title + ': ' + message);
+            }
+        };
+
+        // Define showError function
+        window.showError = function(message, title = 'Error') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#FF4757',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.error(message, title);
+            } else {
+                alert(title + ': ' + message);
+            }
+        };
+
+        // Define showWarning function
+        window.showWarning = function(message, title = 'Warning') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#ffb11a',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.warning(message, title);
+            } else {
+                alert(title + ': ' + message);
+            }
+        };
+
+        // Define showInfo function
+        window.showInfo = function(message, title = 'Info') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: title,
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#ffb11a',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.info(message, title);
+            } else {
+                alert(title + ': ' + message);
+            }
+        };
+    </script>
+    
     <!-- Flash Messages Handler -->
     <script>
         @if (Session::has('success'))

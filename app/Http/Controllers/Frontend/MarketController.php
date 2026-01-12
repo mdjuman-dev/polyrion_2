@@ -178,7 +178,11 @@ class MarketController extends Controller
     public function settleMarket($marketId)
     {
         try {
-            $market = Market::findOrFail($marketId);
+            // Optimize: Eager load trades to avoid N+1 if trades have relationships
+            $market = Market::with(['trades' => function($q) {
+                $q->where('status', 'PENDING')
+                  ->select(['id', 'user_id', 'market_id', 'outcome', 'amount_invested', 'amount', 'status', 'payout', 'payout_amount']);
+            }])->findOrFail($marketId);
 
             if (!$market->final_outcome) {
                 return response()->json([
@@ -187,7 +191,7 @@ class MarketController extends Controller
                 ], 400);
             }
 
-            $pendingTrades = $market->trades()->where('status', 'PENDING')->get();
+            $pendingTrades = $market->trades;
 
             if ($pendingTrades->isEmpty()) {
                 return response()->json([

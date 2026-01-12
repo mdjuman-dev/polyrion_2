@@ -14,32 +14,33 @@ class CryptoController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all crypto events - Exclude ended events
-        $allCryptoEvents = Event::where('category', 'Crypto')
-            ->where('active', true)
-            ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
-            })
-            ->with('markets')
-            ->get();
-
         // Get selected filters from query parameters
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedAsset = $request->get('asset', 'all');
 
-        // Get events filtered by crypto category - Exclude ended events
-        $eventsQuery = Event::where('category', 'Crypto')
+        // Base query for crypto events - Exclude ended events (reused for counts)
+        $baseQuery = Event::where('category', 'Crypto')
             ->where('active', true)
             ->where('closed', false)
             ->where(function ($q) {
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
-            })
+            });
+
+        // Get events filtered by crypto category - Exclude ended events
+        $eventsQuery = (clone $baseQuery)
             ->with(['markets' => function ($query) {
-                $query->where('active', true)
-                    ->orderBy('created_at', 'desc');
+                $query->select([
+                    'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                    'outcome_prices', 'outcomes', 'active', 'closed',
+                    'best_ask', 'best_bid', 'last_trade_price',
+                    'close_time', 'end_date', 'volume24hr', 'final_result',
+                    'outcome_result', 'final_outcome', 'created_at'
+                ])
+                ->where('active', true)
+                ->where('closed', false)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
 
@@ -66,9 +67,9 @@ class CryptoController extends Controller
 
         $events = $eventsQuery->paginate(20);
 
-        // Get filter counts
-        $timeframeCounts = $this->getTimeframeCounts($allCryptoEvents);
-        $assetCounts = $this->getAssetCounts($allCryptoEvents);
+        // Get filter counts using database queries (more efficient than collection filtering)
+        $timeframeCounts = $this->getTimeframeCounts($baseQuery);
+        $assetCounts = $this->getAssetCounts($baseQuery);
 
         return view('frontend.crypto', compact(
             'selectedTimeframe',
@@ -126,35 +127,38 @@ class CryptoController extends Controller
     }
 
     /**
-     * Get timeframe counts
+     * Get timeframe counts using database queries (more efficient)
      */
-    private function getTimeframeCounts($events)
+    private function getTimeframeCounts($baseQuery)
     {
         $now = now();
-        $counts = [
-            'all' => $events->count(),
-            '15m' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subMinutes(15))->count(),
-            'hourly' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subHour())->count(),
-            '4h' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subHours(4))->count(),
-            'daily' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subDay())->count(),
-            'weekly' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subWeek())->count(),
-            'monthly' => $events->filter(fn($e) => $e->created_at >= $now->copy()->subMonth())->count(),
-            'pre-market' => $events->filter(function ($e) use ($now) {
-                return !$e->start_date || $e->start_date > $now;
-            })->count(),
-            'etf' => $events->filter(function ($e) {
-                $title = strtolower($e->title);
-                return strpos($title, 'etf') !== false || strpos($title, 'exchange traded fund') !== false;
-            })->count(),
-        ];
-
-        return $counts;
+        
+        // Cache counts for 1 minute to avoid duplicate queries
+        $cacheKey = 'crypto_timeframe_counts';
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $now) {
+            return [
+                'all' => (clone $baseQuery)->count(),
+                '15m' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subMinutes(15))->count(),
+                'hourly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subHour())->count(),
+                '4h' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subHours(4))->count(),
+                'daily' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subDay())->count(),
+                'weekly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subWeek())->count(),
+                'monthly' => (clone $baseQuery)->where('created_at', '>=', $now->copy()->subMonth())->count(),
+                'pre-market' => (clone $baseQuery)->where(function ($q) use ($now) {
+                    $q->whereNull('start_date')->orWhere('start_date', '>', $now);
+                })->count(),
+                'etf' => (clone $baseQuery)->where(function ($q) {
+                    $q->where('title', 'LIKE', '%etf%')
+                      ->orWhere('title', 'LIKE', '%exchange traded fund%');
+                })->count(),
+            ];
+        });
     }
 
     /**
-     * Get asset counts
+     * Get asset counts using database queries (more efficient)
      */
-    private function getAssetCounts($events)
+    private function getAssetCounts($baseQuery)
     {
         $assets = [
             'Bitcoin' => ['bitcoin', 'btc'],
@@ -165,44 +169,34 @@ class CryptoController extends Controller
             'Microstrategy' => ['microstrategy', 'mstr'],
         ];
 
-        $counts = [];
+        // Cache counts for 1 minute to avoid duplicate queries
+        $cacheKey = 'crypto_asset_counts';
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($baseQuery, $assets) {
+            $counts = [];
 
-        foreach ($assets as $assetName => $keywords) {
-            $count = $events->filter(function ($event) use ($keywords) {
-                $title = strtolower($event->title);
-                $hasKeyword = false;
-
-                foreach ($keywords as $keyword) {
-                    if (strpos($title, $keyword) !== false) {
-                        $hasKeyword = true;
-                        break;
+            foreach ($assets as $assetName => $keywords) {
+                $query = (clone $baseQuery)->where(function ($q) use ($keywords) {
+                    foreach ($keywords as $keyword) {
+                        $q->orWhere('title', 'LIKE', '%' . $keyword . '%');
                     }
-                }
-
-                if (!$hasKeyword) {
-                    foreach ($event->markets as $market) {
-                        $question = strtolower($market->question ?? '');
+                })->orWhereHas('markets', function ($mq) use ($keywords) {
+                    $mq->where(function ($q) use ($keywords) {
                         foreach ($keywords as $keyword) {
-                            if (strpos($question, $keyword) !== false) {
-                                $hasKeyword = true;
-                                break 2;
-                            }
+                            $q->orWhere('question', 'LIKE', '%' . $keyword . '%');
                         }
-                    }
-                }
+                    });
+                });
 
-                return $hasKeyword;
-            })->count();
+                $counts[] = [
+                    'name' => $assetName,
+                    'slug' => strtolower($assetName),
+                    'count' => $query->count(),
+                    'icon' => $this->getAssetIcon($assetName),
+                ];
+            }
 
-            $counts[] = [
-                'name' => $assetName,
-                'slug' => strtolower($assetName),
-                'count' => $count,
-                'icon' => $this->getAssetIcon($assetName),
-            ];
-        }
-
-        return $counts;
+            return $counts;
+        });
     }
 
     /**
