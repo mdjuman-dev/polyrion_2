@@ -55,9 +55,90 @@
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/custom.min.css') }}">
     @livewireStyles
     @stack('style')
+    
+    <!-- Page Loader Styles -->
+    <style>
+        /* Page Loader - Only Spinner with Blurred Background */
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease, visibility 0.5s ease, backdrop-filter 0.5s ease;
+        }
+        
+        #page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+        }
+        
+        .loader-content {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .loader-spinner {
+            width: 35px;
+            height: 35px;
+            border: 4px solid rgba(160, 174, 192, 0.2);
+            border-top-color: var(--text-secondary, #a0aec0);
+            border-radius: 50%;
+            animation: spin 0.3s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loader-text {
+            display: none;
+        }
+        
+        /* Blur body content when loader is active */
+        body:not(.page-loaded) > *:not(#page-loader) {
+            filter: blur(2px);
+            transition: filter 0.3s ease;
+        }
+        
+        body.page-loaded > *:not(#page-loader) {
+            filter: blur(0px);
+        }
+        
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Body fade in after loader */
+        body.page-loaded {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </head>
 
 <body class="dark-theme has-bottom-nav">
+    <!-- Page Loader -->
+    <div id="page-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
     @if (session('admin_id'))
         <div class="admin-impersonation-banner"
             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 0; text-align: center; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
@@ -553,6 +634,61 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <!-- Frontend App JS (Production Optimized) -->
     <script src="{{ asset('frontend/assets/js/frontend-app.min.js') }}"></script>
+    
+    <!-- Page Loader Script -->
+    <script>
+        // Page Loader - Hide when page is fully loaded
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('page-loader');
+            const body = document.body;
+            
+            // Add fade out animation
+            if (loader) {
+                loader.classList.add('hidden');
+                body.classList.add('page-loaded');
+                
+                // Remove loader from DOM after animation
+                setTimeout(function() {
+                    loader.style.display = 'none';
+                }, 500);
+            }
+        });
+        
+        // Fallback: Hide loader after 3 seconds even if page hasn't fully loaded
+        setTimeout(function() {
+            const loader = document.getElementById('page-loader');
+            if (loader && !loader.classList.contains('hidden')) {
+                loader.classList.add('hidden');
+                document.body.classList.add('page-loaded');
+                setTimeout(function() {
+                    loader.style.display = 'none';
+                }, 500);
+            }
+        }, 3000);
+        
+        // Show loader on Livewire navigation
+        document.addEventListener('livewire:navigate', function() {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.classList.remove('hidden');
+            }
+        });
+        
+        // Hide loader when Livewire finishes loading
+        document.addEventListener('livewire:navigated', function() {
+            setTimeout(function() {
+                const loader = document.getElementById('page-loader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(function() {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 300);
+        });
+    </script>
+    
     <script>
         // Initialize user balance for trading panel
         @auth
@@ -2584,18 +2720,100 @@
     
     <!-- Flash Messages Handler -->
     <script>
-        @if (Session::has('success'))
-            if (typeof showSuccess !== 'undefined') showSuccess("{{ Session::get('success') }}");
-        @endif
-        @if (Session::has('error'))
-            if (typeof showError !== 'undefined') showError("{{ Session::get('error') }}");
-        @endif
-        @if (Session::has('warning'))
-            if (typeof showWarning !== 'undefined') showWarning("{{ Session::get('warning') }}");
-        @endif
-        @if (Session::has('info'))
-            if (typeof showInfo !== 'undefined') showInfo("{{ Session::get('info') }}");
-        @endif
+        // Wait for DOM and showSuccess function to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Use setTimeout to ensure showSuccess is defined
+            setTimeout(function() {
+                @if (Session::has('success'))
+                    const successMsg = @json(Session::get('success'));
+                    if (typeof showSuccess !== 'undefined') {
+                        showSuccess(successMsg);
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: successMsg,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 4000,
+                            timerProgressBar: true,
+                            toast: true,
+                            confirmButtonColor: '#00C853',
+                        });
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.success(successMsg);
+                    } else {
+                        alert('Success: ' + successMsg);
+                    }
+                @endif
+                @if (Session::has('error'))
+                    const errorMsg = @json(Session::get('error'));
+                    if (typeof showError !== 'undefined') {
+                        showError(errorMsg);
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMsg,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 4000,
+                            timerProgressBar: true,
+                            toast: true,
+                            confirmButtonColor: '#FF4757',
+                        });
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.error(errorMsg);
+                    } else {
+                        alert('Error: ' + errorMsg);
+                    }
+                @endif
+                @if (Session::has('warning'))
+                    const warningMsg = @json(Session::get('warning'));
+                    if (typeof showWarning !== 'undefined') {
+                        showWarning(warningMsg);
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Warning',
+                            text: warningMsg,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            toast: true,
+                            confirmButtonColor: '#ffb11a',
+                        });
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.warning(warningMsg);
+                    } else {
+                        alert('Warning: ' + warningMsg);
+                    }
+                @endif
+                @if (Session::has('info'))
+                    const infoMsg = @json(Session::get('info'));
+                    if (typeof showInfo !== 'undefined') {
+                        showInfo(infoMsg);
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Info',
+                            text: infoMsg,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            toast: true,
+                            confirmButtonColor: '#ffb11a',
+                        });
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.info(infoMsg);
+                    } else {
+                        alert('Info: ' + infoMsg);
+                    }
+                @endif
+            }, 500);
+        });
     </script>
 
     @livewireScripts

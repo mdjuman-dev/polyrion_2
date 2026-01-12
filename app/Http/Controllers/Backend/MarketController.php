@@ -577,9 +577,10 @@ class MarketController extends Controller
                      // Update cache
                      $existingEvents[$ev['slug']] = $event->id;
 
-                     // Process tags
+                     // Process tags - Optimize to avoid N+1 queries
                      $tagIds = [];
                      if (!empty($ev['tags'])) {
+                        $newTagSlugs = [];
                         foreach ($ev['tags'] as $tag) {
                            $tagSlug = $tag['slug'] ?? null;
                            if (!$tagSlug)
@@ -589,15 +590,52 @@ class MarketController extends Controller
                            if (isset($existingTags[$tagSlug])) {
                               $tagIds[] = $existingTags[$tagSlug];
                            } else {
-                              // Create new tag
-                              $tagModel = Tag::firstOrCreate(
-                                 ['slug' => $tagSlug],
-                                 ['label' => $tag['label'] ?? $tagSlug]
-                              );
-                              $existingTags[$tagSlug] = $tagModel->id;
-                              $tagIds[] = $tagModel->id;
+                              // Collect new tags to create in bulk
+                              $newTagSlugs[$tagSlug] = $tag['label'] ?? $tagSlug;
                            }
                         }
+                        
+                        // Bulk create new tags to avoid N+1 queries - Use insertOrIgnore for better performance
+                        if (!empty($newTagSlugs)) {
+                           // Prepare bulk insert data
+                           $tagsToInsert = [];
+                           foreach ($newTagSlugs as $tagSlug => $tagLabel) {
+                              $tagsToInsert[] = [
+                                 'slug' => $tagSlug,
+                                 'label' => $tagLabel,
+                                 'created_at' => now(),
+                                 'updated_at' => now(),
+                              ];
+                           }
+                           
+                           // Bulk insert new tags (ignore duplicates)
+                           if (!empty($tagsToInsert)) {
+                              try {
+                                 DB::table('tags')->insertOrIgnore($tagsToInsert);
+                                 
+                                 // Refresh cache with newly inserted tags
+                                 $newTagIds = Tag::whereIn('slug', array_keys($newTagSlugs))
+                                    ->pluck('id', 'slug')
+                                    ->toArray();
+                                 
+                                 foreach ($newTagIds as $slug => $id) {
+                                    $existingTags[$slug] = $id;
+                                    $tagIds[] = $id;
+                                 }
+                              } catch (\Exception $e) {
+                                 // Fallback to individual creates if bulk insert fails
+                                 foreach ($newTagSlugs as $tagSlug => $tagLabel) {
+                                    $tagModel = Tag::firstOrCreate(
+                                       ['slug' => $tagSlug],
+                                       ['label' => $tagLabel]
+                                    );
+                                    $existingTags[$tagSlug] = $tagModel->id;
+                                    $tagIds[] = $tagModel->id;
+                                 }
+                              }
+                           }
+                        }
+                        
                         // Batch sync tags
                         if (!empty($tagIds)) {
                            $event->tags()->sync($tagIds);

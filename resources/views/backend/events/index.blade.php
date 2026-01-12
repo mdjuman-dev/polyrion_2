@@ -296,9 +296,9 @@
                                                     <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
                                                         <i class="fa fa-plus"></i> Create Event Only
                                                     </a>
-                                                    <a href="{{ route('admin.event.fetch') }}" class="btn btn-info">
+                                                    <button type="button" id="fetchEventsBtn" class="btn btn-info" onclick="fetchEvents()">
                                                         <i class="fa fa-download"></i> Fetch Events
-                                                    </a>
+                                                    </button>
                                                 @endif
                                             </div>
                                         </div>
@@ -879,5 +879,117 @@
                 }
             }
         </style>
+    @endpush
+
+    @push('scripts')
+    <script>
+        function fetchEvents() {
+            const btn = document.getElementById('fetchEventsBtn');
+            const originalHtml = btn.innerHTML;
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Fetching Events...';
+            
+            // Show loader modal
+            showLoaderModal('Fetching Events', 'Please wait while we fetch and process events from the API. This may take a few minutes...');
+            
+            // Make AJAX request
+            fetch('{{ route("admin.event.fetch") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html',
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error('Network response was not ok');
+            })
+            .then(data => {
+                // Hide loader
+                hideLoaderModal();
+                
+                // Show success message
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Events fetched successfully! Processing completed.', 'Success');
+                } else if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Events fetched successfully! Processing completed.',
+                        confirmButtonColor: '#00C853',
+                    });
+                } else {
+                    alert('Events fetched successfully!');
+                }
+                
+                // Reload page after 2 seconds to show new events
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            })
+            .catch(error => {
+                // Hide loader
+                hideLoaderModal();
+                
+                // Show error message
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Error fetching events: ' + error.message, 'Error');
+                } else if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error fetching events: ' + error.message,
+                        confirmButtonColor: '#FF4757',
+                    });
+                } else {
+                    alert('Error fetching events: ' + error.message);
+                }
+                
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+        }
+        
+        function showLoaderModal(title, message) {
+            // Create loader modal if it doesn't exist
+            let loaderModal = document.getElementById('eventsLoaderModal');
+            if (!loaderModal) {
+                loaderModal = document.createElement('div');
+                loaderModal.id = 'eventsLoaderModal';
+                loaderModal.innerHTML = `
+                    <div class="loader-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 99999; display: flex; justify-content: center; align-items: center;">
+                        <div class="loader-content" style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                            <div class="loader-spinner" style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                            <h4 id="loaderTitle" style="margin: 0 0 10px 0; color: #333;">${title}</h4>
+                            <p id="loaderMessage" style="margin: 0; color: #666; font-size: 14px;">${message}</p>
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                `;
+                document.body.appendChild(loaderModal);
+            } else {
+                document.getElementById('loaderTitle').textContent = title;
+                document.getElementById('loaderMessage').textContent = message;
+                loaderModal.style.display = 'flex';
+            }
+        }
+        
+        function hideLoaderModal() {
+            const loaderModal = document.getElementById('eventsLoaderModal');
+            if (loaderModal) {
+                loaderModal.style.display = 'none';
+            }
+        }
+    </script>
     @endpush
 @endsection

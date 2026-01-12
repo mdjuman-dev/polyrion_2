@@ -3263,16 +3263,28 @@
                         }
                     });
 
+                    // Handle Withdrawal Success - Livewire 3 format with named arguments
                     Livewire.on('withdrawal-submitted', (event) => {
-                        // Handle both Livewire 2 and 3 event formats
-                        let data = event;
-                        if (Array.isArray(event)) {
-                            data = event[0];
-                        } else if (event && typeof event === 'object' && event.detail) {
-                            data = event.detail;
+                        // Livewire 3 named arguments are passed directly as object properties
+                        let message = 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.';
+                        
+                        // Handle different event formats
+                        if (event && typeof event === 'object') {
+                            // Livewire 3 named arguments format: event.message
+                            if (event.message) {
+                                message = event.message;
+                            } 
+                            // Array format: [0].message
+                            else if (Array.isArray(event) && event[0] && event[0].message) {
+                                message = event[0].message;
+                            }
+                            // Detail format: event.detail.message
+                            else if (event.detail && event.detail.message) {
+                                message = event.detail.message;
+                            }
                         }
-
-                        const message = data?.message || data?.message || 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.';
+                        
+                        console.log('Withdrawal submitted event received:', event, 'Message:', message);
 
                         setTimeout(() => {
                             if (typeof closeWithdrawalModal === 'function') {
@@ -3297,7 +3309,7 @@
                             } else if (typeof toastr !== 'undefined') {
                                 toastr.success(message, 'Withdrawal Submitted');
                             } else {
-                                alert(data.message || 'Withdrawal request submitted successfully!');
+                                alert(message);
                             }
 
                             // Reload after a delay to update balance
@@ -3305,6 +3317,55 @@
                                 window.location.reload();
                             }, 2000);
                         }, 100);
+                    });
+                    
+                    // Also listen after Livewire is fully initialized
+                    document.addEventListener('livewire:initialized', () => {
+                        window.Livewire.on('withdrawal-submitted', (event) => {
+                            let message = 'Withdrawal request submitted successfully! It will be reviewed by admin and processed within 24-48 hours.';
+                            
+                            if (event && typeof event === 'object') {
+                                if (event.message) {
+                                    message = event.message;
+                                } else if (Array.isArray(event) && event[0] && event[0].message) {
+                                    message = event[0].message;
+                                } else if (event.detail && event.detail.message) {
+                                    message = event.detail.message;
+                                }
+                            }
+                            
+                            console.log('Withdrawal submitted event (initialized):', event, 'Message:', message);
+
+                            setTimeout(() => {
+                                if (typeof closeWithdrawalModal === 'function') {
+                                    closeWithdrawalModal();
+                                }
+
+                                if (typeof showSuccess !== 'undefined') {
+                                    showSuccess(message, 'Withdrawal Submitted');
+                                } else if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Withdrawal Submitted',
+                                        text: message,
+                                        position: 'top-end',
+                                        showConfirmButton: false,
+                                        timer: 4000,
+                                        timerProgressBar: true,
+                                        toast: true,
+                                        confirmButtonColor: '#ffb11a',
+                                    });
+                                } else if (typeof toastr !== 'undefined') {
+                                    toastr.success(message, 'Withdrawal Submitted');
+                                } else {
+                                    alert(message);
+                                }
+
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            }, 100);
+                        });
                     });
                 });
 
