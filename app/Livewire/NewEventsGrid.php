@@ -84,7 +84,13 @@ class NewEventsGrid extends Component
             });
         }
 
-        $totalCount = $query->count();
+        // Cache count query for 30 seconds to avoid duplicate queries
+        $cacheKey = 'events_count:new:' . md5(serialize([
+            $this->selectedTag, $this->search
+        ]));
+        $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
+            return $query->count();
+        });
 
         // New = sorted by created_at desc
         $events = $query->orderBy('created_at', 'desc')

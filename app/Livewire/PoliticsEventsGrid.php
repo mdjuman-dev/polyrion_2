@@ -95,7 +95,14 @@ class PoliticsEventsGrid extends Component
             });
         }
 
-        $totalCount = (clone $query)->count();
+        // Cache count query for 30 seconds to avoid duplicate queries
+        $cacheKey = 'events_count:politics:' . md5(serialize([
+            $this->category, $this->country, $this->search
+        ]));
+        $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
+            return (clone $query)->count();
+        });
+        
         $events = $query->take($this->perPage)->get();
         $hasMore = $totalCount > $this->perPage;
 

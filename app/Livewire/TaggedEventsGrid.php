@@ -106,7 +106,13 @@ class TaggedEventsGrid extends Component
             });
         }
 
-        $totalCount = (clone $query)->count();
+        // Cache count query for 30 seconds to avoid duplicate queries
+        $cacheKey = 'events_count:tagged:' . md5(serialize([
+            $this->tagSlug, $this->search
+        ]));
+        $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
+            return (clone $query)->count();
+        });
 
         $events = $query->orderBy('volume', 'desc')
             ->take($this->perPage)

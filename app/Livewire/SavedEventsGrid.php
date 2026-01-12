@@ -77,7 +77,13 @@ class SavedEventsGrid extends Component
             });
         }
 
-        $totalCount = $query->count();
+        // Cache count query for 30 seconds to avoid duplicate queries
+        $cacheKey = 'events_count:saved:' . md5(serialize([
+            Auth::id(), $this->search
+        ]));
+        $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
+            return $query->count();
+        });
 
         $events = $query->orderBy('created_at', 'desc')
             ->take($this->perPage)

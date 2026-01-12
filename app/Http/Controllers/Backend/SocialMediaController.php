@@ -37,6 +37,9 @@ class SocialMediaController extends Controller
             }
         }
 
+        // Clear cache after update
+        \Illuminate\Support\Facades\Cache::forget('social_media_links:active');
+
         return response()->json([
             'success' => true,
             'message' => 'Social media settings updated successfully!',

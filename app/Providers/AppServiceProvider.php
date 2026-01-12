@@ -29,21 +29,28 @@ class AppServiceProvider extends ServiceProvider
       // Dynamically configure mail settings from database
       $this->configureMailSettings();
 
-      // Share global settings with all views
+      // Share global settings with all views (cached)
       View::composer('*', function ($view) {
          // Safely get authenticated user using helper function
          $authUser = safeAuthUser('web');
 
          try {
-            $socialMediaLinks = SocialMediaLink::active()->get();
+            // Cache social media links for 1 hour
+            $socialMediaLinks = \Illuminate\Support\Facades\Cache::remember('social_media_links:active', 3600, function () {
+               return SocialMediaLink::active()->get();
+            });
+            
+            // Get all settings at once (cached) to reduce queries
+            $allSettings = GlobalSetting::getAllSettings();
+            
             $view->with([
-               'appName' => GlobalSetting::getValue('app_name') ?? config('app.name', 'Polyrion'),
-               'appUrl' => GlobalSetting::getValue('app_url') ?? config('app.url', url('/')),
-               'favicon' => GlobalSetting::getValue('favicon'),
-               'logo' => GlobalSetting::getValue('logo'),
-               'gaTrackingId' => GlobalSetting::getValue('ga_tracking_id'),
-               'fbPixelId' => GlobalSetting::getValue('fb_pixel_id'),
-               'tawkWidgetCode' => GlobalSetting::getValue('tawk_widget_code'),
+               'appName' => $allSettings['app_name'] ?? config('app.name', 'Polyrion'),
+               'appUrl' => $allSettings['app_url'] ?? config('app.url', url('/')),
+               'favicon' => $allSettings['favicon'] ?? null,
+               'logo' => $allSettings['logo'] ?? null,
+               'gaTrackingId' => $allSettings['ga_tracking_id'] ?? null,
+               'fbPixelId' => $allSettings['fb_pixel_id'] ?? null,
+               'tawkWidgetCode' => $allSettings['tawk_widget_code'] ?? null,
                'authUser' => $authUser, // Safe user variable
                'socialMediaLinks' => $socialMediaLinks,
             ]);
@@ -84,20 +91,23 @@ class AppServiceProvider extends ServiceProvider
    }
 
    /**
-    * Configure mail settings from database
+    * Configure mail settings from database (cached)
     */
    protected function configureMailSettings(): void
    {
       try {
-         // Read SMTP settings from database
-         $mailMailer = GlobalSetting::getValue('mail_mailer');
-         $mailHost = GlobalSetting::getValue('mail_host');
-         $mailPort = GlobalSetting::getValue('mail_port');
-         $mailUsername = GlobalSetting::getValue('mail_username');
-         $mailPassword = GlobalSetting::getValue('mail_password');
-         $mailEncryption = GlobalSetting::getValue('mail_encryption');
-         $mailFromAddress = GlobalSetting::getValue('mail_from_address');
-         $mailFromName = GlobalSetting::getValue('mail_from_name');
+         // Get all settings at once (cached) to reduce queries
+         $allSettings = GlobalSetting::getAllSettings();
+         
+         // Read SMTP settings from cached array
+         $mailMailer = $allSettings['mail_mailer'] ?? null;
+         $mailHost = $allSettings['mail_host'] ?? null;
+         $mailPort = $allSettings['mail_port'] ?? null;
+         $mailUsername = $allSettings['mail_username'] ?? null;
+         $mailPassword = $allSettings['mail_password'] ?? null;
+         $mailEncryption = $allSettings['mail_encryption'] ?? null;
+         $mailFromAddress = $allSettings['mail_from_address'] ?? null;
+         $mailFromName = $allSettings['mail_from_name'] ?? null;
 
          // Only log if settings are actually configured (not all null)
          $hasSettings = $mailMailer || $mailHost || $mailPort || $mailUsername || $mailPassword;

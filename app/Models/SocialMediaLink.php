@@ -19,4 +19,20 @@ class SocialMediaLink extends Model
     {
         return $query->where('status', 'active')->whereNotNull('url');
     }
+
+    /**
+     * Boot method to clear cache on save/update/delete
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('social_media_links:active');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('social_media_links:active');
+        });
+    }
 }

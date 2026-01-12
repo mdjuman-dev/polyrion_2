@@ -106,7 +106,13 @@ class CategoryEventsGrid extends Component
             });
         }
 
-        $totalCount = $query->count();
+        // Cache count query for 30 seconds to avoid duplicate queries
+        $cacheKey = 'events_count:category:' . md5(serialize([
+            $this->category, $this->subcategory, $this->search
+        ]));
+        $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
+            return $query->count();
+        });
 
         // Order by volume and date
         $events = $query->orderBy('volume_24hr', 'desc')
