@@ -145,7 +145,7 @@ class MarketsGrid extends Component
                   'id', 'event_id', 'question', 'slug', 'groupItem_title',
                   'outcome_prices', 'outcomes', 'active', 'closed',
                   'best_ask', 'best_bid', 'last_trade_price',
-                  'close_time', 'end_date', 'volume', 'volume24hr', 
+                  'close_time', 'end_date', 'volume', 'volume24hr',
                   'liquidity_clob', 'final_result', 'outcome_result', 
                   'final_outcome', 'created_at'
                ])
