@@ -26,7 +26,11 @@ class MarketController extends Controller
     */
    public function index(Request $request)
    {
-      $query = Market::with('event');
+      // Optimize: Select only necessary columns
+      $query = Market::select(['id', 'event_id', 'question', 'slug', 'description', 'created_at'])
+          ->with(['event' => function($q) {
+              $q->select(['id', 'title', 'slug']);
+          }]);
 
       // Search functionality
       if ($request->has('search') && !empty($request->search)) {
@@ -64,7 +68,12 @@ class MarketController extends Controller
     */
    public function show($id)
    {
-      $market = Market::with('event')->findOrFail($id);
+      // Optimize: Select only necessary columns
+      $market = Market::select(['id', 'event_id', 'question', 'slug', 'description', 'outcome_prices', 'outcomes', 'active', 'closed', 'featured', 'created_at'])
+          ->with(['event' => function($q) {
+              $q->select(['id', 'title', 'slug']);
+          }])
+          ->findOrFail($id);
 
       // Decode JSON fields
       $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [];
@@ -78,13 +87,21 @@ class MarketController extends Controller
     */
    public function edit($id)
    {
-      $market = Market::with('event')->findOrFail($id);
+      // Optimize: Select only necessary columns
+      $market = Market::select(['id', 'event_id', 'question', 'slug', 'description', 'outcome_prices', 'outcomes', 'active', 'closed', 'featured', 'created_at'])
+          ->with(['event' => function($q) {
+              $q->select(['id', 'title', 'slug']);
+          }])
+          ->findOrFail($id);
 
       // Decode JSON fields
       $outcomePrices = $market->outcome_prices ? json_decode($market->outcome_prices, true) : [0.5, 0.5];
       $outcomes = $market->outcomes ? json_decode($market->outcomes, true) : [];
 
-      $events = Event::orderBy('title')->get();
+      // Optimize: Select only necessary columns
+      $events = Event::select(['id', 'title', 'slug'])
+          ->orderBy('title')
+          ->get();
 
       return view('backend.market.edit', compact('market', 'outcomePrices', 'outcomes', 'events'));
    }
@@ -249,7 +266,11 @@ class MarketController extends Controller
     */
    public function marketList(Request $request)
    {
-      $query = Market::with('event');
+      // Optimize: Select only necessary columns
+      $query = Market::select(['id', 'event_id', 'question', 'slug', 'description', 'created_at'])
+          ->with(['event' => function($q) {
+              $q->select(['id', 'title', 'slug']);
+          }]);
 
       if ($request->has('search')) {
          $searchTerm = $request->search;
@@ -274,7 +295,11 @@ class MarketController extends Controller
       ]);
 
       $searchTerm = $request->search;
-      $markets = Market::with('event')
+      // Optimize: Select only necessary columns
+      $markets = Market::select(['id', 'event_id', 'question', 'slug', 'description', 'volume', 'active', 'closed', 'created_at'])
+         ->with(['event' => function($q) {
+             $q->select(['id', 'title', 'slug']);
+         }])
          ->where(function ($q) use ($searchTerm) {
             $q->where('question', 'like', "%{$searchTerm}%")
                ->orWhere('description', 'like', "%{$searchTerm}%")

@@ -41,9 +41,20 @@ class NewEventsGrid extends Component
     public function render()
     {
         try {
-        $query = Event::with('markets')
-            ->where('active', true)
-            ->where('closed', false);
+        // Optimize: Select only necessary columns
+        $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'created_at'
+        ])
+        ->with(['markets' => function($q) {
+            $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume_24hr'])
+              ->where('active', true)
+              ->where('closed', false)
+              ->limit(5); // Limit markets per event
+        }])
+        ->where('active', true)
+        ->where('closed', false);
 
         // Hide events where end_date has passed
         $query->where(function ($q) {

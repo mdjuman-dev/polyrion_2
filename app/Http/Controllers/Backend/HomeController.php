@@ -44,10 +44,36 @@ class HomeController extends Controller
         // Calculate total locked balance (money in pending trades)
         $totalLockedBalance = Wallet::sum('locked_balance') ?? 0;
         
-        // Recent Activity
-        $recentEvents = Event::latest()->take(5)->get();
-        $recentTrades = Trade::with(['user', 'market.event'])->latest()->take(10)->get();
-        $recentWithdrawals = Withdrawal::with('user')->where('status', 'pending')->latest()->take(5)->get();
+        // Recent Activity - Optimize with select
+        $recentEvents = Event::select(['id', 'title', 'slug', 'volume', 'created_at'])
+            ->latest()
+            ->take(5)
+            ->get();
+        $recentTrades = Trade::select([
+            'id', 'user_id', 'market_id', 'amount_invested', 'amount', 'status', 'created_at'
+        ])
+        ->with([
+            'user' => function($q) {
+                $q->select(['id', 'name', 'email']);
+            },
+            'market' => function($q) {
+                $q->select(['id', 'event_id', 'question', 'slug'])
+                  ->with(['event' => function($eq) {
+                      $eq->select(['id', 'title', 'slug']);
+                  }]);
+            }
+        ])
+        ->latest()
+        ->take(10)
+        ->get();
+        $recentWithdrawals = Withdrawal::select(['id', 'user_id', 'amount', 'status', 'created_at'])
+            ->with(['user' => function($q) {
+                $q->select(['id', 'name', 'email']);
+            }])
+            ->where('status', 'pending')
+            ->latest()
+            ->take(5)
+            ->get();
         
         // User Growth (Last 30 days)
         $userGrowth = User::where('created_at', '>=', now()->subDays(30))->count();
@@ -57,8 +83,11 @@ class HomeController extends Controller
         $volumeLast7Days = Trade::where('created_at', '>=', now()->subDays(7))
             ->sum('amount_invested') ?? Trade::where('created_at', '>=', now()->subDays(7))->sum('amount') ?? 0;
         
-        // Top Markets by Volume
-        $topMarkets = Market::with('event')
+        // Top Markets by Volume - Optimize with select
+        $topMarkets = Market::select(['id', 'event_id', 'question', 'slug', 'volume', 'created_at'])
+            ->with(['event' => function($q) {
+                $q->select(['id', 'title', 'slug']);
+            }])
             ->orderBy('volume', 'desc')
             ->take(5)
             ->get();

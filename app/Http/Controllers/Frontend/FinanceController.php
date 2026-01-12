@@ -14,10 +14,14 @@ class FinanceController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all finance events
+        // Get all finance events - Exclude ended events
         $allFinanceEvents = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with('markets')
             ->get();
 
@@ -25,10 +29,14 @@ class FinanceController extends Controller
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedCategory = $request->get('category', 'all');
 
-        // Get events filtered by finance category
+        // Get events filtered by finance category - Exclude ended events
         $eventsQuery = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with(['markets' => function ($query) {
                 $query->where('active', true)
                     ->orderBy('created_at', 'desc');

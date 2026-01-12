@@ -58,8 +58,35 @@ class UserController extends Controller
     public function show($id)
     {
         try {
-        $user = User::with(['wallet', 'trades.market.event', 'deposits', 'withdrawals'])
-            ->findOrFail($id);
+        // Optimize: Load only necessary relationships with select
+        $user = User::with([
+            'wallet' => function($q) {
+                $q->select(['id', 'user_id', 'balance', 'locked_balance', 'currency']);
+            },
+            'trades' => function($q) {
+                $q->select(['id', 'user_id', 'market_id', 'amount_invested', 'amount', 'status', 'payout', 'payout_amount', 'created_at'])
+                  ->with(['market' => function($mq) {
+                      $mq->select(['id', 'event_id', 'question', 'slug'])
+                         ->with(['event' => function($eq) {
+                             $eq->select(['id', 'title', 'slug']);
+                         }]);
+                  }])
+                  ->latest()
+                  ->limit(100); // Limit initial load
+            },
+            'deposits' => function($q) {
+                $q->select(['id', 'user_id', 'amount', 'status', 'created_at'])
+                  ->latest()
+                  ->limit(50);
+            },
+            'withdrawals' => function($q) {
+                $q->select(['id', 'user_id', 'amount', 'status', 'created_at'])
+                  ->latest()
+                  ->limit(50);
+            }
+        ])
+        ->select(['id', 'name', 'email', 'username', 'number', 'profile_image', 'created_at'])
+        ->findOrFail($id);
 
         // User Statistics - optimize with base query
         $tradesQuery = $user->trades();
@@ -83,11 +110,20 @@ class UserController extends Controller
         $recentDeposits = $user->deposits()->latest()->take(5)->get();
         $recentWithdrawals = $user->withdrawals()->latest()->take(5)->get();
         
-        // All User Activities (for activity log)
+        // All User Activities (for activity log) - Optimized: Limit to last 100 records
         $allActivities = collect();
         
-        // Add trades as activities
-        $trades = $user->trades()->with('market.event')->latest()->get();
+        // Add trades as activities - Limit to last 50 trades
+        $trades = $user->trades()
+            ->select(['id', 'market_id', 'amount_invested', 'amount', 'status', 'created_at'])
+            ->with(['market' => function($q) {
+                $q->select(['id', 'event_id'])->with(['event' => function($eq) {
+                    $eq->select(['id', 'title']);
+                }]);
+            }])
+            ->latest()
+            ->limit(50)
+            ->get();
         foreach ($trades as $trade) {
             $allActivities->push([
                 'type' => 'trade',
@@ -103,8 +139,12 @@ class UserController extends Controller
             ]);
         }
         
-        // Add deposits as activities
-        $deposits = $user->deposits()->latest()->get();
+        // Add deposits as activities - Limit to last 30 deposits
+        $deposits = $user->deposits()
+            ->select(['id', 'amount', 'status', 'created_at'])
+            ->latest()
+            ->limit(30)
+            ->get();
         foreach ($deposits as $deposit) {
             $allActivities->push([
                 'type' => 'deposit',
@@ -118,8 +158,12 @@ class UserController extends Controller
             ]);
         }
         
-        // Add withdrawals as activities
-        $withdrawals = $user->withdrawals()->latest()->get();
+        // Add withdrawals as activities - Limit to last 30 withdrawals
+        $withdrawals = $user->withdrawals()
+            ->select(['id', 'amount', 'status', 'created_at'])
+            ->latest()
+            ->limit(30)
+            ->get();
         foreach ($withdrawals as $withdrawal) {
             $allActivities->push([
                 'type' => 'withdrawal',
@@ -133,11 +177,13 @@ class UserController extends Controller
             ]);
         }
         
-        // Add wallet transactions as activities
+        // Add wallet transactions as activities - Limit to last 30 transactions
         if ($user->wallet) {
             $walletTransactions = WalletTransaction::where('wallet_id', $user->wallet->id)
                 ->orWhere('user_id', $user->id)
+                ->select(['id', 'type', 'amount', 'description', 'created_at'])
                 ->latest()
+                ->limit(30)
                 ->get();
             foreach ($walletTransactions as $transaction) {
                 $allActivities->push([
@@ -153,8 +199,8 @@ class UserController extends Controller
             }
         }
         
-        // Sort all activities by date (newest first)
-        $allActivities = $allActivities->sortByDesc('date')->values();
+        // Sort all activities by date (newest first) and limit to 100 most recent
+        $allActivities = $allActivities->sortByDesc('date')->take(100)->values();
 
         $stats = [
             'total_trades' => $totalTrades,

@@ -484,16 +484,30 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        // In admin panel, show ALL comments (both active and inactive)
+        // In admin panel, show ALL comments (both active and inactive) - Optimized with limits
         $event->load([
-            'markets',
-            'tags',
+            'markets' => function($q) {
+                $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume', 'created_at'])
+                  ->latest()
+                  ->limit(50); // Limit markets shown
+            },
+            'tags' => function($q) {
+                $q->select(['id', 'label', 'slug']);
+            },
             'comments' => function ($query) {
-                $query->whereNull('parent_comment_id')
-                    ->with(['user', 'replies' => function ($replyQuery) {
-                        $replyQuery->with('user', 'likes');
-                    }, 'replies.likes'])
-                    ->latest();
+                $query->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment', 'is_active', 'created_at'])
+                    ->whereNull('parent_comment_id')
+                    ->with(['user' => function($uq) {
+                        $uq->select(['id', 'name', 'email']);
+                    }, 'replies' => function ($replyQuery) {
+                        $replyQuery->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment', 'is_active', 'created_at'])
+                            ->with(['user' => function($uq) {
+                                $uq->select(['id', 'name', 'email']);
+                            }])
+                            ->limit(10); // Limit replies per comment
+                    }])
+                    ->latest()
+                    ->limit(50); // Limit comments shown
             }
         ]);
 
@@ -578,24 +592,30 @@ class EventController extends Controller
      */
     public function bulkRedetectCategories()
     {
-        $events = Event::whereNotNull('title')->get();
+        // Optimize: Process in chunks to avoid memory issues
         $updated = 0;
+        $totalProcessed = 0;
+        
+        Event::whereNotNull('title')
+            ->select(['id', 'title', 'category'])
+            ->chunk(100, function ($events) use (&$updated, &$totalProcessed) {
+                foreach ($events as $event) {
+                    $oldCategory = $event->category;
+                    $event->detectCategory();
 
-        foreach ($events as $event) {
-            $oldCategory = $event->category;
-            $event->detectCategory();
-
-            if ($oldCategory !== $event->category) {
-                $event->save();
-                $updated++;
-            }
-        }
+                    if ($oldCategory !== $event->category) {
+                        $event->save();
+                        $updated++;
+                    }
+                    $totalProcessed++;
+                }
+            });
 
         return response()->json([
             'success' => true,
-            'total_events' => $events->count(),
+            'total_events' => $totalProcessed,
             'updated' => $updated,
-            'message' => "Updated categories for {$updated} out of {$events->count()} events."
+            'message' => "Updated categories for {$updated} out of {$totalProcessed} events."
         ]);
     }
 }

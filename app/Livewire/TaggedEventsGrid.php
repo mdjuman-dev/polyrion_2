@@ -55,25 +55,35 @@ class TaggedEventsGrid extends Component
             ]);
         }
 
-        // Frontend always shows only active events
-        $query = Event::where('active', true)
+        // Frontend always shows only active events - Optimize with select
+        $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'created_at'
+        ])
+        ->where('active', true)
+        ->where('closed', false)
+        ->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+        })
+        ->whereHas('tags', function ($q) use ($tag) {
+            $q->where('tags.id', $tag->id);
+        })
+        ->with(['markets' => function ($q) {
+            // Only active markets
+            $q->select([
+                'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                'volume', 'volume24hr', 'active', 'closed', 'close_time', 'created_at'
+            ])
+            ->where('active', true)
             ->where('closed', false)
-            ->where(function ($q) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>', now());
+            ->where(function ($query) {
+                $query->whereNull('close_time')
+                      ->orWhere('close_time', '>', now());
             })
-            ->whereHas('tags', function ($q) use ($tag) {
-                $q->where('tags.id', $tag->id);
-            })
-            ->with(['markets' => function ($q) {
-                // Only active markets
-                $q->where('active', true)
-                  ->where('closed', false)
-                  ->where(function ($query) {
-                      $query->whereNull('close_time')
-                            ->orWhere('close_time', '>', now());
-                  });
-            }])
+            ->limit(10); // Limit markets per event
+        }])
             ->whereHas('markets', function ($q) {
                 // Only events with at least one active market
                 $q->where('active', true)

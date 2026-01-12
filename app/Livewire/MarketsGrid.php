@@ -132,16 +132,27 @@ class MarketsGrid extends Component
    {
       try {
          // Frontend always shows only active events
-         // Eager load only active markets
-         $query = Event::with([
+         // Eager load only active markets - Optimize with select
+         $query = Event::select([
+            'id', 'title', 'slug', 'image', 'icon', 'category',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed',
+            'end_date', 'created_at'
+         ])
+         ->with([
             'markets' => function ($q) {
                // Only active markets: active=true AND closed=false
-               $q->where('active', true)
-                  ->where('closed', false)
-                  ->where(function ($query) {
+               $q->select([
+                  'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                  'volume', 'volume24hr', 'liquidity_clob', 'active', 'closed',
+                  'outcome_prices', 'close_time', 'created_at'
+               ])
+               ->where('active', true)
+               ->where('closed', false)
+               ->where(function ($query) {
                   $query->whereNull('close_time')
                      ->orWhere('close_time', '>', now());
-               });
+               })
+               ->limit(10); // Limit markets per event
             }
          ]);
 

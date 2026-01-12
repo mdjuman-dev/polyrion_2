@@ -20,7 +20,8 @@ class ProfileController extends Controller
    {
       $user = Auth::user();
 
-      $user->load('wallet', 'trades.market');
+      // Optimize: Load only wallet (not all trades at once)
+      $user->load('wallet');
 
       $wallet = $user->wallet;
       $balance = $wallet ? $wallet->balance : 0;
@@ -29,38 +30,49 @@ class ProfileController extends Controller
          ? asset('storage/' . $user->profile_image)
          : asset('frontend/assets/images/default-avatar.png');
 
-      // Get user's trades with market info - eager load market.event for better performance
+      // Optimize: Get stats in single query using conditional aggregation
+      $statsQuery = \App\Models\Trade::where('user_id', $user->id)
+         ->selectRaw('
+            COUNT(*) as total_trades,
+            SUM(CASE WHEN UPPER(status) = "PENDING" THEN 1 ELSE 0 END) as pending_trades,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN 1 ELSE 0 END) as win_trades,
+            SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN 1 ELSE 0 END) as loss_trades,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as total_payout,
+            MAX(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as biggest_win
+         ')
+         ->first();
+
+      $totalTrades = $statsQuery->total_trades ?? 0;
+      $biggestWin = $statsQuery->biggest_win ?? 0;
+
+      // Optimize: Get only recent trades (last 100) with limited columns for positions
       $trades = \App\Models\Trade::where('user_id', $user->id)
-         ->with(['market.event'])
+         ->select([
+            'id', 'user_id', 'market_id', 'outcome', 'option',
+            'amount_invested', 'amount', 'token_amount', 'shares',
+            'price_at_buy', 'price', 'status', 'payout', 'payout_amount',
+            'settled_at', 'created_at', 'updated_at'
+         ])
+         ->with([
+            'market' => function($query) {
+               $query->select([
+                  'id', 'event_id', 'question', 'slug',
+                  'outcome_prices', 'outcomePrices',
+                  'close_time', 'result_set_at', 'final_result',
+                  'active', 'closed', 'archived'
+               ]);
+            },
+            'market.event' => function($query) {
+               $query->select(['id', 'title', 'slug']);
+            }
+         ])
          ->orderBy('created_at', 'desc')
+         ->limit(100) // Limit to last 100 trades
          ->get();
 
-      // Calculate portfolio value from active/pending trades
+      // Optimize: Calculate portfolio and profit/loss from limited trades
       $portfolio = $this->calculatePortfolioValue($trades);
-
-      // Calculate total profit/loss from all settled trades
       $totalProfitLoss = $this->calculateTotalProfitLoss($trades);
-
-      // Calculate stats using database queries instead of collection filters (much faster)
-      $totalTrades = \App\Models\Trade::where('user_id', $user->id)->count();
-      $pendingTrades = \App\Models\Trade::where('user_id', $user->id)
-         ->whereRaw('UPPER(status) = ?', ['PENDING'])
-         ->count();
-      $winTrades = \App\Models\Trade::where('user_id', $user->id)
-         ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
-         ->count();
-      $lossTrades = \App\Models\Trade::where('user_id', $user->id)
-         ->whereIn('status', ['LOST', 'LOSS', 'lost', 'loss'])
-         ->count();
-      $closedTrades = \App\Models\Trade::where('user_id', $user->id)
-         ->whereRaw('UPPER(status) = ?', ['CLOSED'])
-         ->count();
-      $totalPayout = \App\Models\Trade::where('user_id', $user->id)
-         ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
-         ->sum(\DB::raw('COALESCE(payout, payout_amount, 0)'));
-      $biggestWin = \App\Models\Trade::where('user_id', $user->id)
-         ->whereIn('status', ['WON', 'WIN', 'won', 'win'])
-         ->max(\DB::raw('COALESCE(payout, payout_amount, 0)')) ?? 0;
 
       $stats = [
          'positions_value' => $portfolio,
@@ -69,10 +81,9 @@ class ProfileController extends Controller
          'predictions' => $totalTrades,
       ];
 
-      // Get all positions with market info (for all trades, not just pending)
+      // Optimize: Map positions with minimal data
       $activePositions = $trades->map(function ($trade) {
          $tradeStatus = strtoupper($trade->status ?? 'PENDING');
-         $isTradeClosed = false; // Close position feature disabled
          $isTradeSettled = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']);
 
          return [
@@ -84,46 +95,62 @@ class ProfileController extends Controller
             'is_closed' => $trade->market ? $trade->market->isClosed() : false,
             'has_result' => $trade->market ? $trade->market->hasResult() : false,
             'final_result' => $trade->market ? $trade->market->final_result : null,
-            'is_trade_closed' => $isTradeClosed,
+            'is_trade_closed' => false,
             'is_trade_settled' => $isTradeSettled,
          ];
       });
 
-      // Get user's withdrawals
+      // Optimize: Get only recent withdrawals (last 50)
       $withdrawals = \App\Models\Withdrawal::where('user_id', $user->id)
+         ->select(['id', 'user_id', 'amount', 'status', 'created_at', 'updated_at'])
          ->orderBy('created_at', 'desc')
+         ->limit(50)
          ->get();
 
-      // Get user's deposits
+      // Optimize: Get only recent deposits (last 50)
       $deposits = \App\Models\Deposit::where('user_id', $user->id)
+         ->select(['id', 'user_id', 'amount', 'status', 'created_at', 'updated_at'])
          ->orderBy('created_at', 'desc')
+         ->limit(50)
          ->get();
 
-      // Calculate profit/loss data for chart (all trades - completed + pending with current value)
-      $profitLossData = $this->calculateProfitLossData($trades);
+      // Optimize: Get only completed trades for chart (more efficient)
+      $completedTradesForChart = \App\Models\Trade::where('user_id', $user->id)
+         ->whereIn('status', ['WON', 'WIN', 'won', 'win', 'LOST', 'LOSS', 'lost', 'loss'])
+         ->select([
+            'id', 'status', 'amount_invested', 'amount',
+            'payout', 'payout_amount', 'settled_at', 'created_at'
+         ])
+         ->orderBy('created_at', 'asc')
+         ->get();
 
-      // Combine trades and withdrawals for activity tab
+      // Calculate profit/loss data for chart (only completed trades)
+      $profitLossData = $this->calculateProfitLossDataOptimized($completedTradesForChart);
+
+      // Optimize: Combine only recent activities (already limited above)
       $allActivity = collect();
-      foreach ($trades as $trade) {
+      foreach ($trades->take(30) as $trade) {
          $allActivity->push([
             'type' => 'trade',
             'data' => $trade,
             'date' => $trade->created_at,
          ]);
       }
-      foreach ($withdrawals as $withdrawal) {
+      foreach ($withdrawals->take(20) as $withdrawal) {
          $allActivity->push([
             'type' => 'withdrawal',
             'data' => $withdrawal,
             'date' => $withdrawal->created_at,
          ]);
       }
-      $allActivity = $allActivity->sortByDesc('date');
+      $allActivity = $allActivity->sortByDesc('date')->take(50); // Limit to 50 most recent
 
+      // Optimize: Load KYC only if needed
       $hasWithdrawalPassword = !empty($user->withdrawal_password);
       $binanceWallet = $user->binance_wallet_address;
       $metamaskWallet = $user->metamask_wallet_address;
-      $kycVerification = $user->kycVerification;
+      $kycVerification = \App\Models\UserKycVerification::where('user_id', $user->id)
+         ->first(['id', 'user_id', 'status']);
 
       // Get referral stats
       $referralService = new ReferralService();
@@ -630,89 +657,43 @@ class ProfileController extends Controller
    }
 
    /**
-    * Calculate profit/loss data grouped by date for chart
-    * Includes all trades: completed (WON/LOST) and pending (with current market value)
+    * Calculate profit/loss data grouped by date for chart (Optimized version)
+    * Only includes completed trades (WON/LOST) - no pending trades for better performance
     */
-   private function calculateProfitLossData($trades)
+   private function calculateProfitLossDataOptimized($trades)
    {
       // If no trades, return empty array
       if ($trades->isEmpty()) {
          return [];
       }
 
-      // Group trades by date
+      // Optimize: Use database aggregation for daily profit/loss
       $dailyData = [];
 
-      // Sort trades by date (use settled_at for completed, created_at for pending)
-      $sortedTrades = $trades->sortBy(function ($trade) {
-         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
-         if (in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS'])) {
-            return $trade->settled_at ?? $trade->created_at;
-         }
-         return $trade->created_at;
-      });
-
-      foreach ($sortedTrades as $trade) {
-         // Use settled_at date for completed trades, created_at for pending
-         $tradeStatus = strtoupper($trade->status ?? 'PENDING');
-         $tradeDate = in_array($tradeStatus, ['WON', 'WIN', 'LOST', 'LOSS']) 
-            ? ($trade->settled_at ?? $trade->created_at)
-            : $trade->created_at;
+      foreach ($trades as $trade) {
+         // Use settled_at date if available, otherwise created_at
+         $tradeDate = $trade->settled_at ?? $trade->created_at;
          $date = $tradeDate->format('Y-m-d');
 
          // Calculate profit/loss for this trade
          $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
-         $profitLoss = 0;
-
-         if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
-            // Win: profit = payout - cost (amount invested)
-            $payout = $trade->payout ?? $trade->payout_amount ?? 0;
-            $profitLoss = $payout - $amountInvested;
-         } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
-            // Loss: lost the full cost (amount invested)
-            $profitLoss = -$amountInvested;
-         } elseif ($tradeStatus === 'PENDING' && $trade->market) {
-            // Pending trades: calculate current value based on market price
-            $market = $trade->market;
-            $outcomePrices = is_string($market->outcome_prices ?? null)
-               ? json_decode($market->outcome_prices, true)
-               : ($market->outcome_prices ?? [0.5, 0.5]);
-
-            if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
-               // Get average price at buy
-               $avgPrice = $trade->price_at_buy ?? $trade->price ?? 0.5;
-               if ($avgPrice > 0) {
-                  // Get outcome
-                  $outcome = strtoupper($trade->outcome ?? ($trade->option === 'yes' ? 'YES' : 'NO'));
-
-                  // Get current price for the outcome
-                  // outcome_prices[0] = NO price, outcome_prices[1] = YES price
-                  $currentPrice = ($outcome === 'YES' && isset($outcomePrices[1]))
-                     ? $outcomePrices[1]
-                     : (($outcome === 'NO' && isset($outcomePrices[0]))
-                        ? $outcomePrices[0]
-                        : $avgPrice);
-
-                  // Calculate shares (token_amount)
-                  $shares = $trade->token_amount ?? ($trade->shares ?? 0);
-                  if ($shares <= 0) {
-                     $shares = $amountInvested / $avgPrice;
-                  }
-
-                  // Current value = shares * current_price
-                  $currentValue = $shares * $currentPrice;
-                  // Profit/Loss = current value - amount invested
-                  $profitLoss = $currentValue - $amountInvested;
-               }
-            }
-         }
-
-         // Skip if no valid profit/loss calculation
          if ($amountInvested <= 0) {
             continue;
          }
 
-         // Group by date (if multiple trades on same day, sum them)
+         $tradeStatus = strtoupper($trade->status ?? '');
+         $profitLoss = 0;
+
+         if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
+            // Win: profit = payout - cost
+            $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+            $profitLoss = $payout - $amountInvested;
+         } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
+            // Loss: lost the full cost
+            $profitLoss = -$amountInvested;
+         }
+
+         // Group by date
          if (!isset($dailyData[$date])) {
             $dailyData[$date] = [
                'date' => $date,

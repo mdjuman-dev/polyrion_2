@@ -374,11 +374,15 @@ class HomeController extends Controller
 
    function eventsByCategory($category, Request $request)
    {
-      // Get all events for this category to extract dynamic sub-categories
+      // Get all events for this category to extract dynamic sub-categories - Exclude ended events
       $categoryName = ucfirst(strtolower($category));
       $allCategoryEvents = Event::where('category', $categoryName)
          ->where('active', true)
          ->where('closed', false)
+         ->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+         })
          ->with('markets')
          ->get();
 

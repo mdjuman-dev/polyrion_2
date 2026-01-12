@@ -25,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleDatabaseAuthErrors::class,
         ]);
 
+        // Add query balancer middleware for performance monitoring
+        $middleware->web(append: [
+            \App\Http\Middleware\QueryBalancer::class,
+        ]);
+
         // Register Spatie permission middleware aliases
         // Use custom permission middleware that bypasses super admin
         $middleware->alias([

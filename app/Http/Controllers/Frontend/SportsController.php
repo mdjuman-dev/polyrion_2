@@ -15,10 +15,14 @@ class SportsController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all sports events to extract dynamic categories
+        // Get all sports events to extract dynamic categories - Exclude ended events
         $allSportsEvents = Event::where('category', 'Sports')
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with('markets')
             ->get();
 
@@ -42,10 +46,14 @@ class SportsController extends Controller
         $selectedCategory = $request->get('category', 'all');
         $selectedSubcategory = $request->get('subcategory', null);
 
-        // Get events filtered by sports category
+        // Get events filtered by sports category - Exclude ended events
         $eventsQuery = Event::where('category', 'Sports')
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with(['markets' => function ($query) {
                 $query->where('active', true)
                     ->orderBy('created_at', 'desc');

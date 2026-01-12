@@ -938,6 +938,56 @@
                icon.classList.add('fa-chevron-down');
             }
          }
+
+         // Countdown Timer Function
+         function updateCountdown() {
+            const countdownContainer = document.querySelector('.countdown-container');
+            if (!countdownContainer) {
+               return; // No countdown container found
+            }
+
+            const endDateStr = countdownContainer.getAttribute('data-end-date');
+            if (!endDateStr) {
+               return; // No end date found
+            }
+
+            const endDate = new Date(endDateStr);
+            const now = new Date();
+            const diff = endDate - now;
+
+            if (diff <= 0) {
+               // Timer has expired
+               document.getElementById('countdown-days').textContent = '00';
+               document.getElementById('countdown-hours').textContent = '00';
+               document.getElementById('countdown-minutes').textContent = '00';
+               return;
+            }
+
+            // Calculate time difference
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            // Update display with zero padding
+            document.getElementById('countdown-days').textContent = String(days).padStart(2, '0');
+            document.getElementById('countdown-hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('countdown-minutes').textContent = String(minutes).padStart(2, '0');
+         }
+
+         // Initialize countdown timer
+         document.addEventListener('DOMContentLoaded', function() {
+            // Update immediately
+            updateCountdown();
+            
+            // Update every minute (60000 milliseconds)
+            setInterval(updateCountdown, 60000);
+         });
+
+         // Also update when Livewire updates the page
+         document.addEventListener('livewire:load', function() {
+            updateCountdown();
+            setInterval(updateCountdown, 60000);
+         });
       </script>
    @endpush
 @endsection

@@ -46,9 +46,14 @@ class FinanceEventsGrid extends Component
 
     public function render()
     {
+        // Exclude ended events from frontend
         $query = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with(['markets' => function ($q) {
                 $q->where('active', true)
                     ->orderBy('created_at', 'desc');

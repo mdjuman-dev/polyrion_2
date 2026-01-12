@@ -41,7 +41,15 @@ class SavedEventsGrid extends Component
 
         $savedEventIds = SavedEvent::where('user_id', Auth::id())->pluck('event_id');
 
-        $query = Event::whereIn('id', $savedEventIds)->with('markets');
+        // Exclude ended events from saved events list
+        $query = Event::whereIn('id', $savedEventIds)
+            ->where('active', true)
+            ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
+            ->with('markets');
 
         if (!empty($this->search)) {
             $query->where(function ($q) {

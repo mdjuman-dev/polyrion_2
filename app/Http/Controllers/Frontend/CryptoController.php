@@ -14,10 +14,14 @@ class CryptoController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all crypto events
+        // Get all crypto events - Exclude ended events
         $allCryptoEvents = Event::where('category', 'Crypto')
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with('markets')
             ->get();
 
@@ -25,10 +29,14 @@ class CryptoController extends Controller
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedAsset = $request->get('asset', 'all');
 
-        // Get events filtered by crypto category
+        // Get events filtered by crypto category - Exclude ended events
         $eventsQuery = Event::where('category', 'Crypto')
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with(['markets' => function ($query) {
                 $query->where('active', true)
                     ->orderBy('created_at', 'desc');

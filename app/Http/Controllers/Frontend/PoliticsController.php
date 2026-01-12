@@ -14,10 +14,14 @@ class PoliticsController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all politics events to extract dynamic categories
+        // Get all politics events to extract dynamic categories - Exclude ended events
         $allPoliticsEvents = Event::whereIn('category', ['Politics', 'Geopolitics', 'Elections'])
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with('markets')
             ->get();
 
@@ -41,10 +45,14 @@ class PoliticsController extends Controller
         $selectedCategory = $request->get('category', 'all');
         $selectedCountry = $request->get('country', null);
 
-        // Get events filtered by politics category
+        // Get events filtered by politics category - Exclude ended events
         $eventsQuery = Event::whereIn('category', ['Politics', 'Geopolitics', 'Elections'])
             ->where('active', true)
             ->where('closed', false)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->with(['markets' => function ($query) {
                 $query->where('active', true)
                     ->orderBy('created_at', 'desc');
