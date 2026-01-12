@@ -63,6 +63,20 @@
             vertical-align: middle !important;
             display: inline-block !important;
             stroke-width: 2 !important;
+            color: rgba(255, 255, 255, 0.85) !important;
+            stroke: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .sidebar-menu>li.active>a>svg[data-feather],
+        .sidebar-menu>li.active>a>i[data-feather] {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+
+        .sidebar-menu>li:hover>a>svg[data-feather],
+        .sidebar-menu>li:hover>a>i[data-feather] {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
         }
 
         /* Treeview submenu icons - slightly smaller */
@@ -94,6 +108,20 @@
             float: none !important;
             text-align: left !important;
             line-height: normal !important;
+            color: rgba(255, 255, 255, 0.75) !important;
+            stroke: rgba(255, 255, 255, 0.75) !important;
+        }
+
+        .treeview-menu>li.active>a>svg[data-feather],
+        .treeview-menu>li.active>a>i[data-feather] {
+            color: #60a5fa !important;
+            stroke: #60a5fa !important;
+        }
+
+        .treeview-menu>li:hover>a>svg[data-feather],
+        .treeview-menu>li:hover>a>i[data-feather] {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
         }
 
         /* Override any large icon styles in treeview */
@@ -157,19 +185,7 @@
             flex-direction: row !important;
         }
 
-        /* Keep sidebar always open */
-        .sidebar {
-            position: relative !important;
-            display: block !important;
-        }
-
-        body.sidebar-collapse .sidebar {
-            display: block !important;
-        }
-
-        body.sidebar-mini:not(.sidebar-mini-expand-feature) .sidebar {
-            display: block !important;
-        }
+        /* Modern Sidebar & Header Styles - Moved to custom.css for better organization */
 
         /* Light skin menu open styles */
         .light-skin .sidebar-menu>li.menu-open>a {
@@ -229,8 +245,8 @@
                 <div class="app-menu">
                     <ul class="header-megamenu nav">
                         <li class="btn-group nav-item">
-                            <a href="index.html#" class="waves-effect waves-light nav-link push-btn btn-primary-light"
-                                data-toggle="push-menu" role="button">
+                            <a href="javascript:void(0)" class="waves-effect waves-light nav-link push-btn btn-primary-light sidebar-toggle-btn"
+                                data-toggle="push-menu" role="button" title="Toggle Sidebar">
                                 <i data-feather="align-left"></i>
                             </a>
                         </li>
@@ -718,6 +734,9 @@
     <script src="{{ asset('backend/assets/js/pages/dashboard32-chart.js') }}"></script>
     <script src="{{ asset('backend/assets/js/pages/widget-flot-charts.js') }}"></script>
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
+    
+    <!-- Iconify Icons CDN - Load after jQuery -->
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 
     <script>
         // Configure Toastr
@@ -1010,54 +1029,185 @@
     @livewireScripts
 
     <script>
-        // Fix Feather icon sizes after initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof feather !== 'undefined') {
-                // Replace icons with size constraints
-                feather.replace({
-                    width: 16,
-                    height: 16,
-                    'stroke-width': 2
+        // Initialize Iconify Icons for Sidebar
+        (function() {
+            function initIconifyIcons() {
+                // Check if Iconify is loaded
+                if (typeof Iconify !== 'undefined' || (window.Iconify && window.Iconify.getIcon)) {
+                    // Iconify is loaded, ensure all icons are visible and styled
+                    const icons = document.querySelectorAll('iconify-icon.sidebar-icon');
+                    icons.forEach(function(icon) {
+                        icon.style.display = 'inline-block';
+                        icon.style.visibility = 'visible';
+                        icon.style.opacity = '1';
+                        icon.style.width = '18px';
+                        icon.style.height = '18px';
+                        icon.style.verticalAlign = 'middle';
+                        icon.style.marginRight = '12px';
+                        icon.style.color = 'rgba(255, 255, 255, 0.85)';
+                    });
+                    
+                    // Force render if Iconify API is available
+                    if (window.Iconify && typeof window.Iconify.scan === 'function') {
+                        window.Iconify.scan();
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            // Try immediately if DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    let attempts = 0;
+                    const checkIconify = setInterval(function() {
+                        attempts++;
+                        if (initIconifyIcons() || attempts > 30) {
+                            clearInterval(checkIconify);
+                        }
+                    }, 100);
                 });
-
-                // Ensure all feather icons have proper size
+            } else {
+                // DOM already loaded
+                let attempts = 0;
+                const checkIconify = setInterval(function() {
+                    attempts++;
+                    if (initIconifyIcons() || attempts > 30) {
+                        clearInterval(checkIconify);
+                    }
+                }, 100);
+            }
+            
+            // Also try on window load
+            window.addEventListener('load', function() {
                 setTimeout(function() {
+                    initIconifyIcons();
+                }, 200);
+            });
+        })();
+
+        // Function to initialize sidebar icons (for feather icons - legacy support)
+        function initializeSidebarIcons() {
+            // First, ensure all icons are replaced
+            if (typeof feather !== 'undefined') {
+                // Replace all icons in sidebar
+                const sidebarIcons = document.querySelectorAll('.sidebar-menu i[data-feather], .treeview-menu i[data-feather]');
+                if (sidebarIcons.length > 0) {
+                    feather.replace({
+                        width: 18,
+                        height: 18,
+                        'stroke-width': 2.5
+                    });
+                }
+            }
+            
+            // Wait a bit for feather to replace icons, then style them
+            setTimeout(function() {
                     // Main sidebar menu icons
-                    document.querySelectorAll('.sidebar-menu > li > a > svg[data-feather]').forEach(
-                        function(svg) {
-                            svg.setAttribute('width', '16');
-                            svg.setAttribute('height', '16');
-                            svg.setAttribute('stroke-width', '2');
-                            svg.style.width = '16px';
-                            svg.style.height = '16px';
-                            svg.style.maxWidth = '16px';
-                            svg.style.maxHeight = '16px';
-                            svg.style.minWidth = '16px';
-                            svg.style.minHeight = '16px';
-                            svg.style.verticalAlign = 'middle';
-                            svg.style.marginRight = '10px';
-                            svg.style.display = 'inline-block';
+                    document.querySelectorAll('.sidebar-menu > li > a > svg[data-feather], .sidebar-menu > li > a > i[data-feather]').forEach(
+                        function(icon) {
+                            // If it's still an <i> tag, feather hasn't replaced it yet
+                            if (icon.tagName === 'I') {
+                                return; // Skip, will be handled by feather.replace
+                            }
+                            
+                            // It's an SVG, set properties
+                            icon.setAttribute('width', '18');
+                            icon.setAttribute('height', '18');
+                            icon.setAttribute('stroke-width', '2.5');
+                            icon.classList.add('sidebar-icon');
+                            icon.style.width = '18px';
+                            icon.style.height = '18px';
+                            icon.style.maxWidth = '18px';
+                            icon.style.maxHeight = '18px';
+                            icon.style.minWidth = '18px';
+                            icon.style.minHeight = '18px';
+                            icon.style.verticalAlign = 'middle';
+                            icon.style.marginRight = '12px';
+                            icon.style.display = 'inline-block';
+                            
+                            // Set icon color based on parent state
+                            const parentLi = icon.closest('li');
+                            const parentLink = icon.closest('a');
+                            
+                            if (parentLi && parentLi.classList.contains('active')) {
+                                icon.style.color = '#ffffff';
+                                icon.style.stroke = '#ffffff';
+                            } else {
+                                icon.style.color = 'rgba(255, 255, 255, 0.85)';
+                                icon.style.stroke = 'rgba(255, 255, 255, 0.85)';
+                            }
+                            
+                            // Add hover listener
+                            if (parentLink) {
+                                parentLink.addEventListener('mouseenter', function() {
+                                    icon.style.color = '#ffffff';
+                                    icon.style.stroke = '#ffffff';
+                                });
+                                parentLink.addEventListener('mouseleave', function() {
+                                    if (!parentLi || !parentLi.classList.contains('active')) {
+                                        icon.style.color = 'rgba(255, 255, 255, 0.85)';
+                                        icon.style.stroke = 'rgba(255, 255, 255, 0.85)';
+                                    }
+                                });
+                            }
                         });
 
                     // Treeview menu icons (submenu) - ensure they're small and inline
-                    document.querySelectorAll('.treeview-menu > li > a > svg[data-feather]').forEach(
-                        function(svg) {
-                            svg.setAttribute('width', '14');
-                            svg.setAttribute('height', '14');
-                            svg.setAttribute('stroke-width', '2');
-                            svg.style.width = '14px';
-                            svg.style.height = '14px';
-                            svg.style.maxWidth = '14px';
-                            svg.style.maxHeight = '14px';
-                            svg.style.minWidth = '14px';
-                            svg.style.minHeight = '14px';
-                            svg.style.verticalAlign = 'middle';
-                            svg.style.marginRight = '8px';
-                            svg.style.display = 'inline-block';
-                            svg.style.float = 'none';
-                            svg.style.textAlign = 'left';
-                            svg.style.lineHeight = 'normal';
-                            svg.style.flexShrink = '0';
+                    document.querySelectorAll('.treeview-menu > li > a > svg[data-feather], .treeview-menu > li > a > i[data-feather]').forEach(
+                        function(icon) {
+                            // If it's still an <i> tag, feather hasn't replaced it yet
+                            if (icon.tagName === 'I') {
+                                return; // Skip, will be handled by feather.replace
+                            }
+                            
+                            // It's an SVG, set properties
+                            icon.setAttribute('width', '16');
+                            icon.setAttribute('height', '16');
+                            icon.setAttribute('stroke-width', '2');
+                            icon.classList.add('sidebar-icon');
+                            icon.style.width = '16px';
+                            icon.style.height = '16px';
+                            icon.style.maxWidth = '16px';
+                            icon.style.maxHeight = '16px';
+                            icon.style.minWidth = '16px';
+                            icon.style.minHeight = '16px';
+                            icon.style.verticalAlign = 'middle';
+                            icon.style.marginRight = '10px';
+                            icon.style.display = 'inline-block';
+                            icon.style.float = 'none';
+                            icon.style.textAlign = 'left';
+                            icon.style.lineHeight = 'normal';
+                            icon.style.flexShrink = '0';
+                            
+                            // Set icon color based on parent state
+                            const parentLi = icon.closest('li');
+                            const parentLink = icon.closest('a');
+                            
+                            if (parentLi && parentLi.classList.contains('active')) {
+                                icon.style.color = '#60a5fa';
+                                icon.style.stroke = '#60a5fa';
+                            } else {
+                                icon.style.color = 'rgba(255, 255, 255, 0.75)';
+                                icon.style.stroke = 'rgba(255, 255, 255, 0.75)';
+                            }
+                            
+                            // Add hover listener
+                            if (parentLink) {
+                                parentLink.addEventListener('mouseenter', function() {
+                                    icon.style.color = '#ffffff';
+                                    icon.style.stroke = '#ffffff';
+                                });
+                                parentLink.addEventListener('mouseleave', function() {
+                                    if (parentLi && parentLi.classList.contains('active')) {
+                                        icon.style.color = '#60a5fa';
+                                        icon.style.stroke = '#60a5fa';
+                                    } else {
+                                        icon.style.color = 'rgba(255, 255, 255, 0.75)';
+                                        icon.style.stroke = 'rgba(255, 255, 255, 0.75)';
+                                    }
+                                });
+                            }
                         });
 
                     // Ensure treeview menu links use flexbox for proper alignment
@@ -1082,40 +1232,143 @@
                             svg.style.maxHeight = '16px';
                         }
                     });
-                }, 100);
+            }, 100);
+        }
 
-                // Re-run after a short delay to catch any dynamically loaded icons
-                setTimeout(function() {
-                    feather.replace({
-                        width: 16,
-                        height: 16,
-                        'stroke-width': 2
-                    });
-                }, 300);
+        // Initialize Feather icons - wait for both DOM and feather library
+        function initFeatherIcons() {
+            // Check if feather is available
+            if (typeof feather === 'undefined') {
+                // Wait for feather to load
+                let attempts = 0;
+                const checkFeather = setInterval(function() {
+                    attempts++;
+                    if (typeof feather !== 'undefined') {
+                        clearInterval(checkFeather);
+                        initializeSidebarIcons();
+                    } else if (attempts > 50) {
+                        clearInterval(checkFeather);
+                        console.warn('Feather icons library not loaded');
+                    }
+                }, 100);
+                return;
             }
+
+            // Feather is available, initialize
+            initializeSidebarIcons();
+            
+            // Re-initialize after a delay to catch any missed icons
+            setTimeout(function() {
+                if (typeof feather !== 'undefined') {
+                    feather.replace({
+                        width: 18,
+                        height: 18,
+                        'stroke-width': 2.5
+                    });
+                    setTimeout(initializeSidebarIcons, 100);
+                }
+            }, 500);
+        }
+
+        // Run on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFeatherIcons);
+        } else {
+            // DOM already loaded
+            initFeatherIcons();
+        }
+
+        // Also run on window load as fallback
+        window.addEventListener('load', function() {
+            setTimeout(initFeatherIcons, 200);
         });
 
-        // Keep sidebar always open
-        document.addEventListener('DOMContentLoaded', function() {
-            // Remove sidebar-collapse class if it exists
-            document.body.classList.remove('sidebar-collapse');
-
-            // Prevent sidebar toggle from collapsing
-            const sidebarToggle = document.querySelector('[data-toggle="push-menu"]');
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Keep sidebar open
-                    document.body.classList.remove('sidebar-collapse');
-                    return false;
-                });
-            }
-
-            // Ensure sidebar stays open on window resize
-            window.addEventListener('resize', function() {
-                document.body.classList.remove('sidebar-collapse');
+        // Also use jQuery ready if available (after template.js runs)
+        if (typeof jQuery !== 'undefined') {
+            jQuery(document).ready(function($) {
+                setTimeout(function() {
+                    if (typeof feather !== 'undefined') {
+                        feather.replace({
+                            width: 18,
+                            height: 18,
+                            'stroke-width': 2.5
+                        });
+                        setTimeout(initializeSidebarIcons, 150);
+                    }
+                }, 300);
             });
+        }
+        
+        // Re-initialize when sidebar state changes
+        if (document.body) {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        setTimeout(initializeSidebarIcons, 100);
+                    }
+                });
+            });
+            
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+
+        // Sidebar toggle functionality - working with existing pushMenu plugin
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for jQuery and pushMenu plugin to be ready
+            if (typeof jQuery !== 'undefined') {
+                jQuery(document).ready(function($) {
+                    // Initialize sidebar state from localStorage
+                    const sidebarState = localStorage.getItem('sidebarState');
+                    if (sidebarState === 'collapsed' && !$('body').hasClass('sidebar-collapse')) {
+                        $('body').addClass('sidebar-collapse');
+                    }
+
+                    // Listen for sidebar toggle events
+                    $(document).on('expanded.pushMenu collapsed.pushMenu', function() {
+                        // Save state to localStorage when sidebar state changes
+                        if ($('body').hasClass('sidebar-collapse')) {
+                            localStorage.setItem('sidebarState', 'collapsed');
+                        } else {
+                            localStorage.setItem('sidebarState', 'expanded');
+                        }
+                    });
+
+                    // Handle responsive behavior
+                    function handleResize() {
+                        if (window.innerWidth < 768) {
+                            // On mobile, ensure sidebar can be toggled
+                            if (!$('body').hasClass('sidebar-collapse')) {
+                                // Don't force collapse on mobile, let user control it
+                            }
+                        }
+                    }
+
+                    $(window).on('resize', handleResize);
+                    handleResize(); // Check on load
+                });
+            } else {
+                // Fallback if jQuery is not available
+                const sidebarState = localStorage.getItem('sidebarState');
+                if (sidebarState === 'collapsed') {
+                    document.body.classList.add('sidebar-collapse');
+                }
+
+                const sidebarToggle = document.querySelector('[data-toggle="push-menu"]');
+                if (sidebarToggle) {
+                    sidebarToggle.addEventListener('click', function(e) {
+                        setTimeout(function() {
+                            if (document.body.classList.contains('sidebar-collapse')) {
+                                localStorage.setItem('sidebarState', 'collapsed');
+                            } else {
+                                localStorage.setItem('sidebarState', 'expanded');
+                            }
+                        }, 100);
+                    });
+                }
+            }
 
             // Cache Clear Button with SweetAlert2 Confirmation
             const clearCacheBtn = document.getElementById('clear-cache-btn');

@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
@@ -201,126 +203,166 @@ class HomeController extends Controller
             '#ff8b94', // Coral
          ];
 
-         // Prepare seriesData for chart
+         // Prepare data for Highcharts Stock from outcome_prices table or trades
+         // Format: Each series contains [[timestamp_ms, value], ...]
+         $marketsToShow = $event->markets->take(4);
          $seriesData = [];
-         $labels = [];
-         $now = now();
-         $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date) : $now->copy()->subDays(30);
-
-         // Generate time labels (x-axis) - optimized to 12 points
-         $points = 12; // 12 data points for cleaner chart
-         $timeLabels = [];
-         $allTimes = [];
-
-         for ($i = $points; $i >= 0; $i--) {
-            $time = $now->copy()->subDays($i * 2); // 2 day intervals for 12 points
-            if ($time < $startDate)
-               continue;
-            $allTimes[] = $time;
-            $timeLabels[] = $time->format('M d');
-         }
-
-         // If no labels generated, create default ones
-         if (empty($timeLabels)) {
-            for ($i = 6; $i >= 0; $i--) {
-               $time = $now->copy()->subDays($i);
-               $timeLabels[] = $time->format('M d');
-               $allTimes[] = $time;
-            }
-         }
-
-         $labels = $timeLabels;
-
-         // Prepare data for each market (show up to 4 markets or all if less than 4)
-         $marketsToShow = $event->markets->take(4); // Limit to first 4 markets
 
          foreach ($marketsToShow as $index => $market) {
-            // Get current price - use YES price (prices[1]) for chart display
-            $currentPrice = 50;
-            if ($market->outcome_prices) {
-               $prices = json_decode($market->outcome_prices, true);
-               // Fix: prices[0] = NO, prices[1] = YES (Polymarket format)
-               // Use YES price (prices[1]) for chart, or best_ask if available
-               if (is_array($prices)) {
-                  if (isset($prices[1])) {
-                     $currentPrice = floatval($prices[1]) * 100; // YES price
-                  } elseif (isset($prices[0])) {
-                     // Fallback: convert NO price to YES (1 - NO)
-                     $currentPrice = (1 - floatval($prices[0])) * 100;
+            // Get outcomes for this market
+            $outcomes = [];
+            if ($market->outcomes) {
+               $outcomes = is_string($market->outcomes) ? json_decode($market->outcomes, true) : $market->outcomes;
+            }
+            
+            // If no outcomes, create default YES/NO
+            if (empty($outcomes) || !is_array($outcomes)) {
+               $outcomes = ['NO', 'YES'];
+            }
+
+            // Get price history for each outcome
+            foreach ($outcomes as $outcomeIndex => $outcomeName) {
+               $highchartsData = [];
+               
+               // Try to get price history from outcome_prices table if it exists
+               if (\Schema::hasTable('outcome_prices')) {
+                  // Check if outcomes table exists to get outcome_id
+                  if (\Schema::hasTable('outcomes')) {
+                     $outcome = \DB::table('outcomes')
+                        ->where('market_id', $market->id)
+                        ->where('name', $outcomeName)
+                        ->first();
+                     
+                     if ($outcome) {
+                        $priceHistory = \DB::table('outcome_prices')
+                           ->where('outcome_id', $outcome->id)
+                           ->orderBy('created_at', 'asc')
+                           ->get();
+                        
+                        foreach ($priceHistory as $priceRecord) {
+                           $timestamp = \Carbon\Carbon::parse($priceRecord->created_at)->timestamp * 1000;
+                           $price = floatval($priceRecord->price);
+                           
+                           // Ensure price is between 0 and 1, convert to percentage
+                           if ($price > 1) {
+                              $price = $price / 100; // If stored as percentage (0-100), convert to decimal
+                           }
+                           $price = max(0, min(1, $price)); // Clamp between 0 and 1
+                           $pricePercent = $price * 100; // Convert to percentage (0-100%)
+                           
+                           $highchartsData[] = [
+                              (int)$timestamp, // Ensure integer timestamp in milliseconds
+                              round((float)$pricePercent, 2) // Ensure numeric value, rounded to 2 decimals
+                           ];
+                        }
+                     }
                   }
                }
-            }
-
-            // Use best_ask if available (more accurate from order book)
-            if ($market->best_ask !== null && $market->best_ask > 0) {
-               $currentPrice = floatval($market->best_ask) * 100;
-            }
-
-            // Generate historical data points matching the labels (optimized - less random calculations)
-            $basePrice = $currentPrice;
-            $priceVariation = min(20, abs($basePrice - 50));
-            $dataPoints = [];
-
-            foreach ($allTimes as $timeIndex => $time) {
-               if ($time < $startDate) {
-                  $dataPoints[] = null;
+               
+               // Fallback: Use trades table for price history
+               if (empty($highchartsData) && \Schema::hasTable('trades')) {
+                  $trades = \DB::table('trades')
+                     ->where('market_id', $market->id)
+                     ->where('outcome', strtoupper($outcomeName))
+                     ->orderBy('created_at', 'asc')
+                     ->get();
+                  
+                  foreach ($trades as $trade) {
+                     $timestamp = \Carbon\Carbon::parse($trade->created_at)->timestamp * 1000;
+                     $price = floatval($trade->price_at_buy ?? $trade->price ?? 0.5);
+                     
+                     // Ensure price is between 0 and 1, convert to percentage
+                     if ($price > 1) {
+                        $price = $price / 100;
+                     }
+                     $price = max(0, min(1, $price));
+                     $pricePercent = $price * 100;
+                     
+                     $highchartsData[] = [
+                        (int)$timestamp,
+                        round((float)$pricePercent, 2)
+                     ];
+                  }
+               }
+               
+               // If still no data, use current price from outcome_prices JSON field
+               if (empty($highchartsData)) {
+                  $currentPrice = 50; // Default
+                  if ($market->outcome_prices) {
+                     $prices = is_string($market->outcome_prices) ? json_decode($market->outcome_prices, true) : $market->outcome_prices;
+                     if (is_array($prices) && isset($prices[$outcomeIndex])) {
+                        $currentPrice = floatval($prices[$outcomeIndex]) * 100;
+                     }
+                  }
+                  
+                  // Generate sample data points for last 30 days
+                  $now = now();
+                  $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date) : $now->copy()->subDays(30);
+                  $points = 30;
+                  
+                  for ($i = $points; $i >= 0; $i--) {
+                     $time = $startDate->copy()->addDays($i * (($now->diffInDays($startDate)) / $points));
+                     if ($time > $now) {
+                        $time = $now->copy();
+                     }
+                     
+                     $progress = ($i + 1) / ($points + 1);
+                     $price = 50 + ($currentPrice - 50) * $progress;
+                     $price = max(1, min(99, $price));
+                     
+                     $highchartsData[] = [
+                        (int)($time->timestamp * 1000),
+                        round((float)$price, 2)
+                     ];
+                  }
+               }
+               
+               // Ensure we have at least 2 data points
+               if (count($highchartsData) < 2 && count($highchartsData) > 0) {
+                  // Duplicate the last point
+                  $lastPoint = end($highchartsData);
+                  $highchartsData[] = [
+                     (int)(now()->timestamp * 1000),
+                     $lastPoint[1]
+                  ];
+               }
+               
+               // Skip if no data
+               if (empty($highchartsData)) {
                   continue;
                }
-
-               $progress = ($timeIndex + 1) / count($allTimes);
-               $targetPrice = 50 + ($basePrice - 50) * $progress;
-
-               // Simplified volatility calculation (removed rand() for performance)
-               $volatility = (($timeIndex % 3 - 1) / 3) * $priceVariation * 0.2; // Deterministic instead of random
-               $price = max(1, min(99, $targetPrice + $volatility));
-
-               $dataPoints[] = round($price, 1);
+               
+               // Format name
+               $currentPrice = end($highchartsData)[1];
+               $priceText = $currentPrice < 1 ? '<1%' : ($currentPrice >= 99 ? '>99%' : round($currentPrice, 1) . '%');
+               $outcomeDisplayName = $outcomeName;
+               if (strlen($outcomeDisplayName) > 35) {
+                  $outcomeDisplayName = substr($outcomeDisplayName, 0, 32) . '...';
+               }
+               
+               // Get color
+               $outcomeColor = $marketColors[($index * count($outcomes) + $outcomeIndex) % count($marketColors)];
+               if ($market->series_color) {
+                  // If market has series_color, use it with variations for outcomes
+                  $baseColor = $market->series_color;
+                  if (!str_starts_with($baseColor, '#')) {
+                     $baseColor = '#' . $baseColor;
+                  }
+                  $outcomeColor = $baseColor;
+               }
+               
+               // Format for Highcharts Stock
+               $seriesData[] = [
+                  'name' => $outcomeDisplayName . ' ' . $priceText,
+                  'color' => $outcomeColor,
+                  'data' => $highchartsData, // [[timestamp_ms, value], ...]
+                  'market_id' => $market->id,
+                  'outcome' => $outcomeName,
+               ];
             }
-
-            // Ensure last point is exactly current price
-            if (count($dataPoints) > 0) {
-               $dataPoints[count($dataPoints) - 1] = round($currentPrice, 1);
-            }
-
-            // Format name with current price percentage
-            $priceText = $currentPrice < 1 ? '<1%' : ($currentPrice >= 99 ? '>99%' : round($currentPrice, 1) . '%');
-            $marketName = $market->question;
-            if (strlen($marketName) > 40) {
-               $marketName = substr($marketName, 0, 37) . '...';
-            }
-
-            // Use series_color from database if available, otherwise use color palette
-            $marketColor = $market->series_color ?? $marketColors[$index % count($marketColors)];
-
-            // Ensure color is not empty and has # prefix
-            if (empty($marketColor) || trim($marketColor) === '') {
-               $marketColor = $marketColors[$index % count($marketColors)];
-            }
-            if (!str_starts_with($marketColor, '#')) {
-               $marketColor = '#' . $marketColor;
-            }
-
-            // Restore full data structure for chart compatibility
-            $seriesData[] = [
-               'name' => $marketName . ' ' . $priceText,
-               'color' => $marketColor,
-               'data' => $dataPoints,
-               'icon' => $market->icon ?? null,
-               'market_id' => $market->id,
-               'volume' => $market->volume ?? 0,
-               'volume24hr' => $market->volume24hr ?? 0,
-               'volume1wk' => $market->volume1wk ?? 0,
-               'volume1mo' => $market->volume1mo ?? 0,
-               'best_bid' => $market->best_bid,
-               'best_ask' => $market->best_ask,
-               'last_trade_price' => $market->last_trade_price,
-               'one_day_price_change' => $market->one_day_price_change,
-               'one_week_price_change' => $market->one_week_price_change,
-               'one_month_price_change' => $market->one_month_price_change,
-            ];
          }
 
-         return view('frontend.market_details', compact('event', 'seriesData', 'labels'));
+         return view('frontend.market_details', compact('event', 'seriesData'));
       } catch (\Illuminate\Database\QueryException $e) {
          \Log::error('Database connection failed in marketDetails: ' . $e->getMessage());
          return redirect()->route('home')

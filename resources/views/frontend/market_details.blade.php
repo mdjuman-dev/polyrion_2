@@ -16,11 +16,17 @@
 
       .poly-chart-wrapper {
          width: 100%;
+         min-height: 400px;
          height: 400px;
          background: #111b2b;
          border-radius: 8px;
          margin-bottom: 1rem;
          position: relative;
+      }
+      
+      #marketChart {
+         width: 100% !important;
+         height: 100% !important;
       }
 
       /* Medium screens (600px - 768px) - like 629px in image */
@@ -288,11 +294,10 @@
             </div>
 
 
-            <div class="chart-container" style="display: inline-block;">
-               <!-- Chart (Polymarket style) -->
-               <div id="polyChart" class="poly-chart-wrapper">
-               </div>
-
+            <div class="chart-container">
+               <!-- Highcharts Stock Chart -->
+               <div id="marketChart" class="poly-chart-wrapper" style="height: 500px;"></div>
+               
                <div class="chart-controls">
                   <button class="chart-btn" data-period="1h">1H</button>
                   <button class="chart-btn" data-period="6h">6H</button>
@@ -385,18 +390,15 @@
    </main>
 
    @push('script')
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"
-         integrity="sha512-k37wQcV4v2h6jgYf5IUz1MoSKPpDs630XGSmCaCCOXxy2awgAWKHGZWr9nMyGgk3IOxA1NxdkN8r1JHgkUtMoQ=="
-         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <script src="https://code.highcharts.com/stock/highstock.js"></script>
+      <script src="https://code.highcharts.com/modules/accessibility.js"></script>
    @endpush
 
    @push('script')
       <script>
-         // Data from Laravel backend
+         // Data from Laravel backend - already formatted for Highcharts Stock
          const seriesData = @json($seriesData ?? []);
-         const labels = @json($labels ?? []);
-         console.log(seriesData);
-
+         
          // Default color palette if color is missing
          const defaultColors = [
             '#ff7b2c', // Orange
@@ -412,301 +414,371 @@
          // Helper function to ensure valid color
          function ensureValidColor(color, index) {
             if (!color || color.trim() === '' || !color.match(/^#?[0-9A-Fa-f]{6}$/)) {
-               // Use default color based on index
                return defaultColors[index % defaultColors.length];
             }
-            // Ensure # prefix
             return color.startsWith('#') ? color : '#' + color;
          }
 
-         // Helper function to add opacity to hex color
-         function addOpacityToHex(hexColor, opacity) {
-            // Ensure valid color first
-            if (!hexColor || hexColor.trim() === '') {
-               hexColor = defaultColors[0]; // Fallback to first default color
+         // Helper function to convert hex to rgba
+         function hexToRgba(hex, opacity) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (!result) {
+               return `rgba(255, 123, 44, ${opacity})`; // Default orange fallback
             }
-
-            // Remove # if present
-            hexColor = hexColor.replace('#', '');
-
-            // Validate hex color format
-            if (!hexColor.match(/^[0-9A-Fa-f]{6}$/)) {
-               console.warn('Invalid hex color format:', hexColor, 'using fallback');
-               hexColor = 'ff7b2c'; // Default orange
-            }
-
-            // Convert hex to RGB
-            const r = parseInt(hexColor.substring(0, 2), 16);
-            const g = parseInt(hexColor.substring(2, 4), 16);
-            const b = parseInt(hexColor.substring(4, 6), 16);
-
-            // Validate RGB values
-            if (isNaN(r) || isNaN(g) || isNaN(b)) {
-               console.warn('Invalid RGB values, using fallback');
-               return `rgba(255, 123, 44, ${opacity / 255})`; // Default orange
-            }
-
-            // Convert opacity from 0-255 to 0-1
-            const opacityDecimal = opacity / 255;
-
-            // Return rgba format
-            return `rgba(${r}, ${g}, ${b}, ${opacityDecimal})`;
+            const r = parseInt(result[1], 16);
+            const g = parseInt(result[2], 16);
+            const b = parseInt(result[3], 16);
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
          }
 
-         // Wait for ECharts to load and DOM to be ready
-         function initPolyChart() {
-            if (typeof echarts === 'undefined') {
-               console.warn('ECharts not loaded yet, retrying...');
-               setTimeout(initPolyChart, 100);
+         let chartInstance = null;
+
+         // Initialize Highcharts Stock Chart
+         function initMarketChart() {
+            if (typeof Highcharts === 'undefined' || typeof Highcharts.stockChart === 'undefined') {
+               console.warn('Highcharts Stock not loaded yet, retrying...');
+               setTimeout(initMarketChart, 100);
                return;
             }
 
-            const chartElement = document.getElementById('polyChart');
+            const chartElement = document.getElementById('marketChart');
             if (!chartElement) {
                console.error('Chart element not found');
                return;
             }
 
+            console.log('Chart initialization started');
+            console.log('Series data:', seriesData);
+            
             if (!seriesData || seriesData.length === 0) {
-               console.warn('No series data available');
+               console.warn('No series data available', seriesData);
                chartElement.innerHTML =
-                  '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No market data available</p>';
+                  '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 2rem;">No market data available</p>';
                return;
             }
 
-            let chart = echarts.init(chartElement);
+            // Validate that we have data points
+            const hasValidData = seriesData.some(item => item.data && Array.isArray(item.data) && item.data.length > 0);
+            if (!hasValidData) {
+               console.warn('No valid data points in series', seriesData);
+               chartElement.innerHTML =
+                  '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 2rem;">No chart data available</p>';
+               return;
+            }
 
-            // Use 0-100% scale like in image
-            const yAxisMax = 100;
+            console.log('Initializing chart with data:', seriesData);
+            console.log('Chart container:', chartElement);
+            console.log('Container dimensions:', chartElement.offsetWidth, 'x', chartElement.offsetHeight);
+            
+            // Log data points for each series
+            seriesData.forEach((series, idx) => {
+               console.log(`Series ${idx} (${series.name}): ${series.data ? series.data.length : 0} data points`);
+               if (series.data && series.data.length > 0) {
+                  console.log(`  First point: [${series.data[0][0]}, ${series.data[0][1]}]`);
+                  console.log(`  Last point: [${series.data[series.data.length - 1][0]}, ${series.data[series.data.length - 1][1]}]`);
+               }
+            });
 
-            // Detect mobile device
+            // Detect mobile
             const isMobile = window.innerWidth <= 768;
-            const isSmallMobile = window.innerWidth <= 480;
 
-            let option = {
-               backgroundColor: "#111b2b",
+            // Destroy existing chart if any
+            if (chartInstance) {
+               chartInstance.destroy();
+            }
 
-               tooltip: {
-                  trigger: 'axis',
-                  backgroundColor: "#1d2b3a",
-                  borderColor: "#1d2b3a",
-                  borderWidth: 0,
-                  textStyle: {
-                     color: "#fff",
-                     fontSize: isMobile ? 11 : 12
-                  },
-                  padding: isMobile ? [6, 10] : [8, 12],
-                  formatter: function (params) {
-                     let result = '';
-                     params.forEach((param, index) => {
-                        if (param.value !== null && param.value !== undefined) {
-                           const color = param.color || '#fff';
-                           result += `<div style="margin-bottom: 4px;">
-                                                    <span style="display: inline-block; width: 8px; height: 8px; background: ${color}; border-radius: 50%; margin-right: 6px;"></span>
-                                                    <span style="color: #fff;">${param.seriesName}: </span>
-                                                    <span style="color: ${color}; font-weight: 600;">${param.value}%</span>
-                                                </div>`;
-                        }
-                     });
-                     if (params[0]) {
-                        result +=
-                           `<div style="margin-top: 6px; color: #9ab1c6; font-size: ${isMobile ? '10px' : '11px'};">${params[0].name}</div>`;
-                     }
-                     return result;
+            // Prepare series for Highcharts Stock
+            const chartSeries = seriesData.map((item, index) => {
+               const validColor = ensureValidColor(item.color, index);
+               const hex = validColor.replace('#', '');
+               const r = parseInt(hex.substring(0, 2), 16);
+               const g = parseInt(hex.substring(2, 4), 16);
+               const b = parseInt(hex.substring(4, 6), 16);
+
+               // Ensure data is in correct format and clean it
+               let chartData = item.data || [];
+               
+               // Clean and validate data: ensure timestamps are integers (milliseconds) and values are numeric
+               chartData = chartData.map(point => {
+                  if (!Array.isArray(point) || point.length !== 2) {
+                     return null;
                   }
-               },
-
-               legend: {
-                  show: false // Use custom legend with icons instead
-               },
-
-               grid: {
-                  left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
-                  right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
-                  bottom: isMobile ? "15%" : "12%",
-                  top: isMobile ? "12%" : "10%",
-                  containLabel: false
-               },
-
-               xAxis: {
-                  type: 'category',
-                  boundaryGap: false,
-                  data: labels,
-                  axisLine: {
-                     show: false
-                  },
-                  axisTick: {
-                     show: false
-                  },
-                  axisLabel: {
-                     color: "#9ab1c6",
-                     fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                     interval: 'auto',
-                     rotate: -45, // Always rotate labels like in the image
-                     margin: 12
+                  
+                  // Ensure timestamp is integer in milliseconds
+                  let timestamp = point[0];
+                  if (typeof timestamp === 'string') {
+                     timestamp = parseInt(timestamp);
+                  } else if (typeof timestamp === 'number') {
+                     timestamp = Math.floor(timestamp);
+                  } else {
+                     return null;
                   }
-               },
+                  
+                  // If timestamp is in seconds (less than year 2000 in milliseconds), convert to milliseconds
+                  if (timestamp < 946684800000) { // Jan 1, 2000 in milliseconds
+                     timestamp = timestamp * 1000;
+                  }
+                  
+                  // Ensure value is numeric and between 0-100
+                  let value = point[1];
+                  if (typeof value === 'string') {
+                     value = parseFloat(value);
+                  }
+                  if (isNaN(value) || value < 0 || value > 100) {
+                     return null;
+                  }
+                  value = Math.max(0, Math.min(100, parseFloat(value))); // Clamp to 0-100
+                  
+                  return [timestamp, parseFloat(value.toFixed(2))];
+               }).filter(point => point !== null); // Remove invalid points
+               
+               // Sort by timestamp to ensure chronological order
+               chartData.sort((a, b) => a[0] - b[0]);
+               
+               // Ensure minimum 2 data points
+               if (chartData.length < 2) {
+                  console.warn(`Series ${item.name} has less than 2 data points, skipping`);
+                  return null;
+               }
+               
+               console.log(`Prepared series ${index}: ${item.name} with ${chartData.length} data points`);
+               console.log(`  First: [${new Date(chartData[0][0]).toISOString()}, ${chartData[0][1]}]`);
+               console.log(`  Last: [${new Date(chartData[chartData.length - 1][0]).toISOString()}, ${chartData[chartData.length - 1][1]}]`);
 
-               yAxis: {
-                  type: 'value',
-                  min: 0,
-                  max: 100, // 0-100% scale like in image
-                  axisLine: {
-                     show: false
+               return {
+                  name: item.name,
+                  type: 'areaspline', // MUST be areaspline for Polymarket style
+                  color: validColor,
+                  lineWidth: 2, // Thin smooth lines
+                  marker: {
+                     enabled: false // No point markers
                   },
-                  axisTick: {
-                     show: false
-                  },
-                  axisLabel: {
-                     color: "#9ab1c6",
-                     fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                     formatter: '{value}%',
-                     margin: 10 // Add padding for Y-axis labels
-                  },
-                  splitLine: {
-                     show: true,
-                     lineStyle: {
-                        color: "rgba(154, 177, 198, 0.15)", // Faint grid lines like in image
-                        type: 'solid',
-                        width: 1
-                     }
-                  },
-                  splitNumber: 5 // Show 5 major grid lines (0, 20, 40, 60, 80, 100)
-               },
-
-               series: seriesData.map((item, index) => {
-                  // Ensure valid color
-                  const validColor = ensureValidColor(item.color, index);
-
-                  return {
-                     name: item.name,
-                     type: 'line',
-                     smooth: true,
-                     showSymbol: false,
-                     data: item.data,
-                     lineStyle: {
-                        width: 2,
-                        color: validColor
+                  data: chartData, // Format: [[timestamp_ms, value], ...]
+                  // Area fill with gradient and low opacity (Polymarket style)
+                  fillColor: {
+                     linearGradient: {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
                      },
-                     areaStyle: {
-                        show: true, // Show area for all markets (like image)
-                        color: {
-                           type: 'linear',
-                           x: 0,
-                           y: 0,
-                           x2: 0,
-                           y2: 1,
-                           colorStops: [{
-                              offset: 0,
-                              color: addOpacityToHex(validColor,
-                                 64) // 40 in hex = 64 in decimal, ~25% opacity
-                           },
-                           {
-                              offset: 1,
-                              color: addOpacityToHex(validColor,
-                                 5) // 05 in hex = 5 in decimal, ~2% opacity
+                     stops: [
+                        [0, `rgba(${r}, ${g}, ${b}, 0.2)`], // Top: 20% opacity
+                        [1, `rgba(${r}, ${g}, ${b}, 0.02)`] // Bottom: 2% opacity
+                     ]
+                  },
+                  fillOpacity: 0.3, // Low opacity area fill (Polymarket style)
+                  threshold: 0, // Fill from 0
+                  tooltip: {
+                     valueDecimals: 2,
+                     valueSuffix: '%'
+                  },
+                  enableMouseTracking: true,
+                  states: {
+                     hover: {
+                        lineWidth: 3,
+                        lineColor: validColor
+                     }
+                  },
+                  turboThreshold: 0 // Render all points for smooth spline curves
+               };
+            }).filter(series => series !== null); // Remove null series
+
+            // Validate we have series with data
+            if (chartSeries.length === 0) {
+               console.error('No valid chart series to display');
+               chartElement.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 2rem;">No chart data available</p>';
+               return;
+            }
+            
+            console.log(`Creating chart with ${chartSeries.length} series`);
+            
+            // Create Highcharts Stock Chart
+            try {
+               chartInstance = Highcharts.stockChart('marketChart', {
+                  chart: {
+                     backgroundColor: '#111b2b',
+                     height: isMobile ? 300 : 500,
+                     spacing: [10, 10, 10, 10]
+                  },
+
+                  title: {
+                     text: null
+                  },
+
+                  legend: {
+                     enabled: true,
+                     align: 'left',
+                     verticalAlign: 'top',
+                     itemStyle: {
+                        color: '#ffffff',
+                        fontSize: isMobile ? '11px' : '12px',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                     },
+                     itemHoverStyle: {
+                        color: '#9ab1c6'
+                     },
+                     itemHiddenStyle: {
+                        color: 'rgba(255, 255, 255, 0.3)'
+                     }
+                  },
+
+                  rangeSelector: {
+                     enabled: false // We use custom buttons instead
+                  },
+
+                  navigator: {
+                     enabled: false
+                  },
+
+                  scrollbar: {
+                     enabled: false
+                  },
+
+                  xAxis: {
+                     type: 'datetime',
+                     labels: {
+                        style: {
+                           color: '#9ab1c6',
+                           fontSize: isMobile ? '10px' : '11px'
+                        }
+                     },
+                     lineColor: 'rgba(154, 177, 198, 0.2)',
+                     tickColor: 'rgba(154, 177, 198, 0.2)'
+                  },
+
+                  yAxis: {
+                     min: 0,
+                     max: 100,
+                     title: {
+                        text: null
+                     },
+                     labels: {
+                        style: {
+                           color: '#9ab1c6',
+                           fontSize: isMobile ? '10px' : '11px'
+                        },
+                        format: '{value}%'
+                     },
+                     gridLineColor: 'rgba(154, 177, 198, 0.15)',
+                     lineColor: 'rgba(154, 177, 198, 0.2)',
+                     plotLines: [{
+                        value: 50,
+                        color: 'rgba(154, 177, 198, 0.3)',
+                        width: 1,
+                        dashStyle: 'dash',
+                        zIndex: 5,
+                        label: {
+                           text: '50%',
+                           align: 'right',
+                           x: -10,
+                           style: {
+                              color: '#9ab1c6',
+                              fontSize: isMobile ? '10px' : '11px'
                            }
-                           ]
+                        }
+                     }]
+                  },
+
+                  tooltip: {
+                     backgroundColor: '#1d2b3a',
+                     borderColor: '#1d2b3a',
+                     borderWidth: 0,
+                     style: {
+                        color: '#ffffff',
+                        fontSize: isMobile ? '11px' : '12px'
+                     },
+                     shared: true,
+                     split: false,
+                     formatter: function() {
+                        let tooltip = '<div style="margin-bottom: 6px; color: #9ab1c6; font-size: ' + (isMobile ? '10px' : '11px') + ';">' + 
+                                   Highcharts.dateFormat('%b %e, %Y %H:%M', this.x) + '</div>';
+                        
+                        this.points.forEach(point => {
+                           const color = point.color || '#ffffff';
+                           tooltip += '<div style="margin-bottom: 4px;">';
+                           tooltip += '<span style="display: inline-block; width: 8px; height: 8px; background: ' + color + 
+                                      '; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>';
+                           tooltip += '<span style="color: #fff;">' + point.series.name + ': </span>';
+                           tooltip += '<span style="color: ' + color + '; font-weight: 600;">' + point.y.toFixed(2) + '%</span>';
+                           tooltip += '</div>';
+                        });
+                        return tooltip;
+                     }
+                  },
+
+               plotOptions: {
+                  areaspline: {
+                     // Polymarket-style areaspline configuration
+                     lineWidth: 2, // Thin smooth lines
+                     marker: {
+                        enabled: false // No point markers
+                     },
+                     states: {
+                        hover: {
+                           lineWidth: 3,
+                           brightness: 0.1
                         }
                      },
-                     emphasis: {
-                        focus: 'series',
-                        lineStyle: {
-                           width: 3
-                        }
+                     fillOpacity: 0.3, // Low opacity area fill
+                     threshold: 0, // Fill from 0
+                     enableMouseTracking: true,
+                     turboThreshold: 0 // Render all points for smooth spline curves
+                  }
+               },
+
+               series: chartSeries,
+
+               credits: {
+                  enabled: false
+               }
+            }, function(chart) {
+               // Callback after chart is created
+               console.log('Chart callback executed', chart);
+               if (chart && chart.series) {
+                  console.log('Chart has', chart.series.length, 'series');
+                  chart.series.forEach((s, idx) => {
+                     console.log(`Chart series ${idx}: ${s.name}, points: ${s.points ? s.points.length : 0}`);
+                  });
+               }
+            });
+
+               console.log('Chart created successfully', chartInstance);
+               if (chartSeries.length === 0) {
+                  console.error('No series data to display');
+               } else {
+                  console.log('Chart series count:', chartSeries.length);
+                  chartSeries.forEach((series, idx) => {
+                     console.log(`Series ${idx}: ${series.name}, data points: ${series.data ? series.data.length : 0}`);
+                     if (series.data && series.data.length > 0) {
+                        console.log(`  Data range: ${new Date(series.data[0][0]).toISOString()} to ${new Date(series.data[series.data.length - 1][0]).toISOString()}`);
+                        console.log(`  Value range: ${Math.min(...series.data.map(d => d[1]))}% to ${Math.max(...series.data.map(d => d[1]))}%`);
                      }
-                  };
-               })
-            };
-
-            chart.setOption(option);
-
-            // Handle resize with mobile detection
-            function handleResize() {
-               chart.resize();
-               // Update chart options on resize if mobile state changed
-               const wasMobile = isMobile;
-               const nowMobile = window.innerWidth <= 768;
-               if (wasMobile !== nowMobile) {
-                  // Reinitialize with new mobile settings
-                  initPolyChart();
+                  });
                }
+               
+               // Force chart to redraw
+               if (chartInstance) {
+                  chartInstance.reflow();
+               }
+            } catch (error) {
+               console.error('Error creating chart:', error);
+               chartElement.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 2rem;">Error loading chart. Please refresh the page.</p>';
             }
 
-            window.addEventListener("resize", handleResize);
-
-            // Create custom legend with icons
-            function createCustomLegend(data) {
-               const legendContainer = document.getElementById('chart-legend-custom');
-               if (!legendContainer || !data || data.length <= 1) {
-                  if (legendContainer) legendContainer.style.display = 'none';
-                  return;
-               }
-
-               const isMobile = window.innerWidth <= 768;
-               const isSmallMobile = window.innerWidth <= 480;
-
-               legendContainer.style.display = 'flex';
-               legendContainer.style.flexWrap = 'wrap';
-               legendContainer.style.gap = isMobile ? (isSmallMobile ? '8px' : '12px') : '16px';
-               legendContainer.style.padding = isMobile ? '8px 0' : '12px 0';
-               legendContainer.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
-               legendContainer.style.marginBottom = isMobile ? '12px' : '16px';
-               legendContainer.innerHTML = '';
-
-               data.forEach((item, index) => {
-                  const legendItem = document.createElement('div');
-                  legendItem.style.display = 'flex';
-                  legendItem.style.alignItems = 'center';
-                  legendItem.style.gap = isMobile ? '6px' : '8px';
-                  legendItem.style.cursor = 'pointer';
-                  legendItem.style.padding = isMobile ? '3px 6px' : '4px 8px';
-                  legendItem.style.borderRadius = '4px';
-                  legendItem.style.transition = 'background-color 0.2s';
-
-                  const colorBox = document.createElement('div');
-                  colorBox.style.width = isMobile ? '10px' : '12px';
-                  colorBox.style.height = isMobile ? '10px' : '12px';
-                  colorBox.style.borderRadius = '2px';
-                  colorBox.style.backgroundColor = item.color;
-                  colorBox.style.flexShrink = '0';
-
-                  const label = document.createElement('span');
-                  label.style.color = '#ffffff';
-                  label.style.fontSize = isMobile ? (isSmallMobile ? '10px' : '11px') : '12px';
-                  label.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                  // Truncate long names on mobile
-                  let displayName = item.name;
-                  if (isSmallMobile && displayName.length > 20) {
-                     displayName = displayName.substring(0, 17) + '...';
-                  } else if (isMobile && displayName.length > 30) {
-                     displayName = displayName.substring(0, 27) + '...';
-                  }
-                  label.textContent = displayName;
-
-                  legendItem.appendChild(colorBox);
-                  legendItem.appendChild(label);
-
-                  // Hover effect (only on non-touch devices)
-                  if (!('ontouchstart' in window)) {
-                     legendItem.addEventListener('mouseenter', () => {
-                        legendItem.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                     });
-                     legendItem.addEventListener('mouseleave', () => {
-                        legendItem.style.backgroundColor = 'transparent';
-                     });
-                  }
-
-                  legendContainer.appendChild(legendItem);
-               });
-            }
-
-            createCustomLegend(seriesData);
-
-            // Store chart instance globally for period filtering
-            window.polyChart = chart;
+            // Store chart instance globally
+            window.marketChart = chartInstance;
             window.originalSeriesData = seriesData;
-            window.originalLabels = labels;
+            
+            console.log('Chart initialization complete');
+
+            // Handle window resize
+            function handleResize() {
+               if (chartInstance) {
+                  chartInstance.reflow();
+               }
+            }
+            window.addEventListener('resize', handleResize);
 
             // Handle chart period button clicks
             const chartButtons = document.querySelectorAll('.chart-btn');
@@ -721,197 +793,66 @@
                   this.classList.add('active');
 
                   const period = this.getAttribute('data-period');
-                  console.log('Chart filter button clicked:', period);
-
                   if (period) {
                      filterChartByPeriod(period);
-                  } else {
-                     console.warn('No period attribute found on button');
                   }
                });
             });
          }
 
-         // Filter chart data by period
+         // Filter chart data by period using Highcharts xAxis.setExtremes
          function filterChartByPeriod(period) {
-            console.log('filterChartByPeriod called with period:', period);
-
-            if (!window.polyChart) {
-               console.error('Chart instance not found');
+            if (!chartInstance || !window.originalSeriesData) {
                return;
             }
 
-            if (!window.originalSeriesData || !window.originalLabels) {
-               console.error('Original chart data not found');
-               return;
-            }
-
-            const chart = window.polyChart;
-            const originalData = window.originalSeriesData;
-            const originalLabels = window.originalLabels;
-
-            // Detect mobile for responsive grid
-            const isMobile = window.innerWidth <= 768;
-            const isSmallMobile = window.innerWidth <= 480;
-
-            // Calculate how many data points to show based on period
-            // Since labels are date-based (typically 2 days apart), adjust accordingly
-            let dataPointsToShow = originalLabels.length;
+            const now = new Date().getTime();
+            let timeRange = 0;
 
             switch (period) {
                case '1h':
-                  // For 1 hour, show last 3-4 points (since labels are typically 2 days apart)
-                  // This will show approximately last 6-8 days of data
-                  dataPointsToShow = Math.min(4, originalLabels.length);
+                  timeRange = 60 * 60 * 1000; // 1 hour
                   break;
                case '6h':
-                  // For 6 hours, show last 5-6 points
-                  dataPointsToShow = Math.min(6, originalLabels.length);
+                  timeRange = 6 * 60 * 60 * 1000; // 6 hours
                   break;
                case '1d':
-                  // For 1 day, show last 7-8 points
-                  dataPointsToShow = Math.min(8, originalLabels.length);
+                  timeRange = 24 * 60 * 60 * 1000; // 1 day
                   break;
                case '1w':
-                  // For 1 week, show last 10-12 points
-                  dataPointsToShow = Math.min(12, originalLabels.length);
+                  timeRange = 7 * 24 * 60 * 60 * 1000; // 1 week
                   break;
                case '1m':
-                  // For 1 month, show last 15-20 points
-                  dataPointsToShow = Math.min(20, originalLabels.length);
+                  timeRange = 30 * 24 * 60 * 60 * 1000; // 1 month
                   break;
                case 'all':
                default:
-                  dataPointsToShow = originalLabels.length; // Show all
-                  break;
+                  // Show all data - reset extremes
+                  chartInstance.xAxis[0].setExtremes(null, null);
+                  return;
             }
 
-            // Ensure minimum 2 points are shown for any filter
-            if (dataPointsToShow < 2 && originalLabels.length >= 2) {
-               dataPointsToShow = 2;
-            }
+            const cutoffTime = now - timeRange;
+            chartInstance.xAxis[0].setExtremes(cutoffTime, now);
+         }
 
-            // Get the last N data points
-            const startIndex = Math.max(0, originalLabels.length - dataPointsToShow);
-            const filteredLabels = originalLabels.slice(startIndex);
-
-            // Filter series data
-            const filteredSeriesData = originalData.map(item => ({
-               ...item,
-               data: item.data ? item.data.slice(startIndex) : []
-            }));
-
-            // Debug log
-            console.log('Filter applied:', {
-               period: period,
-               totalPoints: originalLabels.length,
-               showingPoints: dataPointsToShow,
-               startIndex: startIndex,
-               filteredLabels: filteredLabels,
-               filteredDataLength: filteredSeriesData[0]?.data?.length || 0
-            });
-
-            // Recalculate y-axis max
-            let maxValue = 0;
-            filteredSeriesData.forEach(item => {
-               if (item.data && Array.isArray(item.data)) {
-                  const itemMax = Math.max(...item.data.filter(v => v !== null && v !== undefined));
-                  if (itemMax > maxValue) {
-                     maxValue = itemMax;
-                  }
+         // Initialize chart when DOM is ready and Highcharts is loaded
+         function waitForHighcharts() {
+            if (typeof Highcharts !== 'undefined' && typeof Highcharts.stockChart !== 'undefined') {
+               if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', initMarketChart);
+               } else {
+                  // Small delay to ensure DOM is fully ready
+                  setTimeout(initMarketChart, 100);
                }
-            });
-            // Always use 0-100% scale like in image
-            const yAxisMax = 100;
-
-            // Update chart with Polymarket style
-            chart.setOption({
-               grid: {
-                  left: isMobile ? (isSmallMobile ? "10%" : "8%") : "5%",
-                  right: isMobile ? (isSmallMobile ? "8%" : "6%") : "5%",
-                  bottom: isMobile ? "15%" : "12%",
-                  top: isMobile ? "12%" : "10%",
-                  containLabel: false
-               },
-               xAxis: {
-                  data: filteredLabels,
-                  axisLabel: {
-                     fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                     rotate: -45, // Always rotate labels like in the image
-                     margin: 12
-                  }
-               },
-               yAxis: {
-                  max: 100, // 0-100% scale like in image
-                  axisLabel: {
-                     fontSize: isMobile ? (isSmallMobile ? 9 : 10) : 11,
-                     margin: 10 // Add padding for Y-axis labels
-                  },
-                  splitLine: {
-                     show: true,
-                     lineStyle: {
-                        color: "rgba(154, 177, 198, 0.15)", // Faint grid lines like in image
-                        type: 'solid',
-                        width: 1
-                     }
-                  },
-                  splitNumber: 5 // Show 5 major grid lines (0, 20, 40, 60, 80, 100)
-               },
-               series: filteredSeriesData.map((item, index) => {
-                  // Ensure valid color
-                  const validColor = ensureValidColor(item.color, index);
-
-                  return {
-                     name: item.name,
-                     type: 'line',
-                     smooth: true,
-                     showSymbol: false,
-                     data: item.data,
-                     lineStyle: {
-                        width: 2,
-                        color: validColor
-                     },
-                     areaStyle: {
-                        show: true,
-                        color: {
-                           type: 'linear',
-                           x: 0,
-                           y: 0,
-                           x2: 0,
-                           y2: 1,
-                           colorStops: [{
-                              offset: 0,
-                              color: addOpacityToHex(validColor,
-                                 64) // 40 in hex = 64 in decimal, ~25% opacity
-                           },
-                           {
-                              offset: 1,
-                              color: addOpacityToHex(validColor,
-                                 5) // 05 in hex = 5 in decimal, ~2% opacity
-                           }
-                           ]
-                        }
-                     },
-                     emphasis: {
-                        focus: 'series',
-                        lineStyle: {
-                           width: 3
-                        }
-                     }
-                  };
-               })
-            }, true);
+            } else {
+               setTimeout(waitForHighcharts, 100);
+            }
          }
-
-         // Initialize chart when DOM is ready
-         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPolyChart);
-         } else {
-            initPolyChart();
-         }
+         
+         waitForHighcharts();
       </script>
    @endpush
-
    @push('script')
       <script>
          // Polymarket-style trading calculation (moved to blade file for better control)
