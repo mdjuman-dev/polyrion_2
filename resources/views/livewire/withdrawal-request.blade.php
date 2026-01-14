@@ -30,7 +30,11 @@ new class extends Component {
    public function mount($has_withdrawal_password = null)
    {
       $user = Auth::user();
-      $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']);
+      // Get main wallet for withdrawals
+      $wallet = Wallet::firstOrCreate(
+         ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
+         ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
+      );
       $this->wallet_balance = $wallet->balance;
       $this->currency = $wallet->currency;
       $this->min_withdrawal = 10;

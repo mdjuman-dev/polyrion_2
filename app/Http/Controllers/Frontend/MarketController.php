@@ -49,8 +49,10 @@ class MarketController extends Controller
                 $request->amount
             );
 
-            // Get updated wallet balance
-            $wallet = \App\Models\Wallet::where('user_id', $user->id)->first();
+            // Get updated main wallet balance
+            $wallet = \App\Models\Wallet::where('user_id', $user->id)
+                ->where('wallet_type', \App\Models\Wallet::TYPE_MAIN)
+                ->first();
 
             return response()->json([
                 'success' => true,

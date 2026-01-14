@@ -29,10 +29,10 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // Optimize: Select only necessary columns and eager load wallet with select
+        // Optimize: Select only necessary columns and eager load main wallet with select
         $query = User::select(['id', 'name', 'email', 'username', 'number', 'profile_image', 'created_at', 'balance'])
-            ->with(['wallet' => function($q) {
-                $q->select(['id', 'user_id', 'balance', 'locked_balance', 'currency']);
+            ->with(['mainWallet' => function($q) {
+                $q->select(['id', 'user_id', 'wallet_type', 'balance', 'locked_balance', 'currency']);
             }]);
 
         // Search functionality
@@ -64,8 +64,11 @@ class UserController extends Controller
         try {
         // Optimize: Load only necessary relationships with select
         $user = User::with([
-            'wallet' => function($q) {
-                $q->select(['id', 'user_id', 'balance', 'locked_balance', 'currency']);
+            'mainWallet' => function($q) {
+                $q->select(['id', 'user_id', 'wallet_type', 'balance', 'locked_balance', 'currency']);
+            },
+            'earningWallet' => function($q) {
+                $q->select(['id', 'user_id', 'wallet_type', 'balance', 'currency']);
             },
             'trades' => function($q) {
                 $q->select(['id', 'user_id', 'market_id', 'amount_invested', 'amount', 'status', 'payout', 'payout_amount', 'created_at'])
@@ -106,8 +109,11 @@ class UserController extends Controller
         $totalDeposits = $user->deposits()->where('status', 'completed')->sum('amount') ?? 0;
         $totalWithdrawals = $user->withdrawals()->where('status', 'approved')->sum('amount') ?? 0;
         
-        $walletBalance = $user->wallet ? $user->wallet->balance : 0;
-        $lockedBalance = $user->wallet ? $user->wallet->locked_balance : 0;
+        $mainWallet = $user->mainWallet;
+        $earningWallet = $user->earningWallet;
+        $walletBalance = $mainWallet ? $mainWallet->balance : 0;
+        $lockedBalance = $mainWallet ? $mainWallet->locked_balance : 0;
+        $earningBalance = $earningWallet ? $earningWallet->balance : 0;
 
         // All User Activities (for activity log) - Optimized: Limit to last 100 records
         // Reuse trades query to avoid duplicate queries
@@ -183,9 +189,17 @@ class UserController extends Controller
             ]);
         }
         
-        // Add wallet transactions as activities - Limit to last 30 transactions
-        if ($user->wallet) {
-            $walletTransactions = WalletTransaction::where('wallet_id', $user->wallet->id)
+        // Add wallet transactions as activities - Limit to last 30 transactions from both wallets
+        $walletIds = collect();
+        if ($mainWallet) {
+            $walletIds->push($mainWallet->id);
+        }
+        if ($earningWallet) {
+            $walletIds->push($earningWallet->id);
+        }
+        
+        if ($walletIds->isNotEmpty()) {
+            $walletTransactions = WalletTransaction::whereIn('wallet_id', $walletIds)
                 ->orWhere('user_id', $user->id)
                 ->select(['id', 'type', 'amount', 'description', 'created_at'])
                 ->latest()
@@ -217,7 +231,9 @@ class UserController extends Controller
             'total_payouts' => $totalPayouts,
             'total_deposits' => $totalDeposits,
             'total_withdrawals' => $totalWithdrawals,
-            'wallet_balance' => $walletBalance,
+            'main_wallet_balance' => $walletBalance,
+            'earning_wallet_balance' => $earningBalance,
+            'wallet_balance' => $walletBalance, // For backward compatibility
             'locked_balance' => $lockedBalance,
         ];
 
@@ -422,10 +438,10 @@ class UserController extends Controller
             
             $admin = Auth::guard('admin')->user();
 
-            // Get or create wallet
+            // Get or create main wallet
             $wallet = Wallet::lockForUpdate()
                 ->firstOrCreate(
-                    ['user_id' => $user->id],
+                    ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                     ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
                 );
 

@@ -27,8 +27,9 @@ new class extends Component {
     {
         $user = Auth::user();
         if ($user) {
+            // Get main wallet for deposits
             $wallet = Wallet::firstOrCreate(
-                ['user_id' => $user->id],
+                ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                 ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
             );
             $this->wallet_balance = $wallet->balance;

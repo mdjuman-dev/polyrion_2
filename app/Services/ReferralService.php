@@ -99,10 +99,22 @@ class ReferralService
 
                 // Only process if commission amount is greater than 0
                 if ($commissionAmount > 0) {
-                    // Update referrer's balance
-                    $balanceBefore = (float) ($referrer->balance ?? 0);
-                    $referrer->balance = $balanceBefore + $commissionAmount;
-                    $referrer->save();
+                    // Get or create earning wallet for referral commission
+                    $earningWallet = \App\Models\Wallet::firstOrCreate(
+                        ['user_id' => $referrer->id, 'wallet_type' => \App\Models\Wallet::TYPE_EARNING],
+                        ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
+                    );
+
+                    // Update referrer's earning wallet balance
+                    $balanceBefore = (float) $earningWallet->balance;
+                    $earningWallet->balance = $balanceBefore + $commissionAmount;
+                    $earningWallet->save();
+
+                    // Also update user model balance for backward compatibility (if exists)
+                    if ($referrer->balance !== null) {
+                        $referrer->balance = ($referrer->balance ?? 0) + $commissionAmount;
+                        $referrer->save();
+                    }
 
                     // Create referral log entry
                     ReferralLog::create([

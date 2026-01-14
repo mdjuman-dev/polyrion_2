@@ -43,6 +43,18 @@ class AppServiceProvider extends ServiceProvider
             // Get all settings at once (cached) to reduce queries
             $allSettings = GlobalSetting::getAllSettings();
             
+            // Load both wallets for authenticated user
+            $mainWallet = null;
+            $earningWallet = null;
+            if ($authUser) {
+               $mainWallet = \App\Models\Wallet::where('user_id', $authUser->id)
+                  ->where('wallet_type', \App\Models\Wallet::TYPE_MAIN)
+                  ->first();
+               $earningWallet = \App\Models\Wallet::where('user_id', $authUser->id)
+                  ->where('wallet_type', \App\Models\Wallet::TYPE_EARNING)
+                  ->first();
+            }
+            
             $view->with([
                'appName' => $allSettings['app_name'] ?? config('app.name', 'Polyrion'),
                'appUrl' => $allSettings['app_url'] ?? config('app.url', url('/')),
@@ -53,6 +65,8 @@ class AppServiceProvider extends ServiceProvider
                'tawkWidgetCode' => $allSettings['tawk_widget_code'] ?? null,
                'authUser' => $authUser, // Safe user variable
                'socialMediaLinks' => $socialMediaLinks,
+               'authUserMainWallet' => $mainWallet, // Main wallet for header display
+               'authUserEarningWallet' => $earningWallet, // Earning wallet for header display
             ]);
          } catch (\Illuminate\Database\QueryException $e) {
             // If database connection fails, use default values

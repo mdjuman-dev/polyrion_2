@@ -129,10 +129,10 @@ class DepositController extends Controller
                     ->with('error', 'Invalid deposit amount: ' . $deposit->amount);
             }
 
-            // Get or create wallet
+            // Get or create main wallet for deposits
             $wallet = Wallet::lockForUpdate()
                 ->firstOrCreate(
-                    ['user_id' => $user->id],
+                    ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                     ['balance' => 0, 'currency' => $deposit->currency ?? 'USDT', 'status' => 'active']
                 );
 

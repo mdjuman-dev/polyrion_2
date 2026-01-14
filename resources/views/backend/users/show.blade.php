@@ -334,7 +334,7 @@
                                                     @if ($user->email_verified_at)
                                                         <span class="badge bg-success">Yes</span>
                                                         <small
-                                                            class="text-muted ms-2">({{ $user->email_verified_at->format('M d, Y') }})</small>
+                                                            class="text-muted ms-2">({{ $user->email_verified_at ? $user->email_verified_at->format('M d, Y') : 'N/A' }})</small>
                                                     @else
                                                         <span class="badge bg-warning">No</span>
                                                     @endif
@@ -344,13 +344,13 @@
                                                 <td style="padding: 15px 0;"><strong
                                                         style="color: #6b7280;">Joined</strong></td>
                                                 <td class="text-end" style="padding: 15px 0; color: #1f2937;">
-                                                    {{ $user->created_at->format('M d, Y h:i A') }}</td>
+                                                    {{ $user->created_at ? $user->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                                             </tr>
                                             <tr style="border-bottom: 1px solid #e5e7eb;">
                                                 <td style="padding: 15px 0;"><strong style="color: #6b7280;">Last
                                                         Updated</strong></td>
                                                 <td class="text-end" style="padding: 15px 0; color: #1f2937;">
-                                                    {{ $user->updated_at->format('M d, Y h:i A') }}</td>
+                                                    {{ $user->updated_at ? $user->updated_at->format('M d, Y h:i A') : 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 15px 0;"><strong style="color: #6b7280;">Wallet Password</strong></td>

@@ -1,0 +1,282 @@
+/*! Language Switcher Styles - Production Optimized */
+.language-switcher {
+    position: relative;
+    display: inline-block;
+    margin: 0 0.5rem;
+}
+
+.language-switcher-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary, #f3f4f6);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary, #1f2937);
+    min-width: 120px;
+    justify-content: space-between;
+}
+
+.language-switcher-button:hover {
+    background: var(--hover, #e5e7eb);
+    border-color: var(--primary-color, #3b82f6);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.language-switcher-button:active {
+    transform: translateY(0);
+}
+
+.language-switcher-button-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.language-flag {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.language-name {
+    font-weight: 500;
+}
+
+.language-switcher-button i {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    transition: transform 0.2s ease;
+}
+
+.language-switcher-dropdown.active ~ .language-switcher-button i {
+    transform: rotate(180deg);
+}
+
+.language-switcher-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    margin-top: 0.25rem;
+}
+
+.language-switcher-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.language-switcher-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.language-switcher-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-secondary, #f3f4f6);
+    border-radius: 4px;
+}
+
+.language-switcher-dropdown::-webkit-scrollbar-thumb {
+    background: var(--text-secondary, #9ca3af);
+    border-radius: 4px;
+}
+
+.language-switcher-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-primary, #6b7280);
+}
+
+.language-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    color: var(--text-primary, #1f2937);
+    font-size: 0.875rem;
+}
+
+.language-item:last-child {
+    border-bottom: none;
+}
+
+.language-item:hover {
+    background: var(--hover, #f3f4f6);
+}
+
+.language-item.active {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color, #3b82f6);
+    font-weight: 600;
+}
+
+.language-item.active::after {
+    content: '✓';
+    margin-left: auto;
+    color: var(--primary-color, #3b82f6);
+    font-weight: bold;
+}
+
+.language-item-flag {
+    font-size: 1.2rem;
+    line-height: 1;
+    min-width: 24px;
+    text-align: center;
+}
+
+.language-item-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Mobile styles */
+@media (max-width: 991px) {
+    .language-switcher {
+        margin: 0 0.25rem;
+    }
+    
+    .language-switcher-button {
+        min-width: 60px;
+        padding: 0.4rem 0.6rem;
+        justify-content: center;
+    }
+    
+    .language-switcher-button .language-name {
+        display: none;
+    }
+    
+    .language-switcher-dropdown {
+        right: 0;
+        left: auto;
+        min-width: 180px;
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+@media (max-width: 576px) {
+    .language-switcher-button {
+        min-width: 50px;
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .language-switcher-button .language-name {
+        display: none;
+    }
+}
+
+/* Dark mode support */
+.dark-theme .language-switcher-button,
+.light-mode .language-switcher-button {
+    background: var(--card-bg);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+.dark-theme .language-switcher-dropdown,
+.light-mode .language-switcher-dropdown {
+    background: var(--card-bg);
+    border-color: var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .language-item,
+.light-mode .language-item {
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+.dark-theme .language-item:hover,
+.light-mode .language-item:hover {
+    background: var(--hover);
+}
+
+/* Language Search Box */
+.language-search-box {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    position: sticky;
+    top: 0;
+    background: var(--card-bg, #ffffff);
+    z-index: 1;
+}
+
+.language-search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: var(--bg-secondary, #f3f4f6);
+    color: var(--text-primary, #1f2937);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.language-search-input:focus {
+    border-color: var(--primary-color, #3b82f6);
+    background: var(--card-bg, #ffffff);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Show More Button */
+.language-show-more {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-top: 1px solid var(--border, #e5e7eb);
+    color: var(--primary-color, #3b82f6);
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.language-show-more:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.language-show-more i {
+    font-size: 0.875rem;
+}
+
+/* Hide Google Translate default UI */
+#google_translate_element {
+    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+.goog-te-banner-frame,
+.skiptranslate {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+body {
+    top: 0 !important;
+}
+

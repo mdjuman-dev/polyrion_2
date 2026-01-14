@@ -110,7 +110,22 @@ class User extends Authenticatable
 
     public function wallet()
     {
-        return $this->hasOne(Wallet::class);
+        return $this->hasOne(Wallet::class)->where('wallet_type', Wallet::TYPE_MAIN);
+    }
+
+    public function mainWallet()
+    {
+        return $this->hasOne(Wallet::class)->where('wallet_type', Wallet::TYPE_MAIN);
+    }
+
+    public function earningWallet()
+    {
+        return $this->hasOne(Wallet::class)->where('wallet_type', Wallet::TYPE_EARNING);
+    }
+
+    public function wallets()
+    {
+        return $this->hasMany(Wallet::class);
     }
 
 

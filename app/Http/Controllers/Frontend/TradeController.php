@@ -57,8 +57,10 @@ class TradeController extends Controller
             // Use TradeService to create trade
             $trade = $this->tradeService->createTrade($user, $market, $outcome, $amount);
 
-            // Get updated wallet balance
-            $wallet = Wallet::where('user_id', $user->id)->first();
+            // Get updated main wallet balance
+            $wallet = Wallet::where('user_id', $user->id)
+                ->where('wallet_type', Wallet::TYPE_MAIN)
+                ->first();
 
             // Calculate potential payout (for display purposes)
             $potentialPayout = $trade->token_amount * 1.00;
@@ -139,8 +141,8 @@ class TradeController extends Controller
                 $q->select(['id', 'title', 'slug']);
             }
         ])
-        ->orderBy('created_at', 'desc')
-        ->paginate(20);
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
         // Calculate statistics - optimize with base query
         $baseQuery = Trade::where('user_id', $user->id);
@@ -197,8 +199,8 @@ class TradeController extends Controller
                 $q->select(['id', 'title', 'slug']);
             }
         ])
-        ->orderBy('created_at', 'desc')
-        ->paginate(20);
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
         // Calculate statistics - optimize with base query
         $baseQuery = Trade::where('user_id', $user->id);
@@ -237,8 +239,8 @@ class TradeController extends Controller
         ->with(['user' => function($q) {
             $q->select(['id', 'name', 'email']);
         }])
-        ->orderBy('created_at', 'desc')
-        ->paginate(50);
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
 
         return response()->json([
             'success' => true,
@@ -261,7 +263,7 @@ class TradeController extends Controller
             'status', 'payout', 'payout_amount', 'settled_at', 'created_at', 'updated_at'
         ])
         ->where('id', $id)
-        ->where('user_id', $user->id) // Only allow users to see their own trades
+            ->where('user_id', $user->id) // Only allow users to see their own trades
         ->with([
             'market' => function($q) {
                 $q->select(['id', 'event_id', 'question', 'slug']);
@@ -273,7 +275,7 @@ class TradeController extends Controller
                 $q->select(['id', 'name', 'email']);
             }
         ])
-        ->firstOrFail();
+            ->firstOrFail();
 
         return response()->json([
             'success' => true,

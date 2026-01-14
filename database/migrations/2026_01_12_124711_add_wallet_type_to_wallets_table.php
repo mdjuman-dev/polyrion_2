@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wallets', function (Blueprint $table) {
-            //
+            $table->string('wallet_type', 20)->default('main')->after('user_id');
+            $table->index(['user_id', 'wallet_type']);
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wallets', function (Blueprint $table) {
-            //
+            $table->dropIndex(['user_id', 'wallet_type']);
+            $table->dropColumn('wallet_type');
         });
     }
 };

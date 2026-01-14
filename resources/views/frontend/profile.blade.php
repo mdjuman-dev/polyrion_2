@@ -7,36 +7,43 @@
     <main>
         <div class="container mt-5">
             <div class="row d-flex justify-content-between m-auto">
-                <!-- Left Column - Portfolio -->
+                <!-- Left Column - Wallets -->
                 <div class="col-lg-6 col-md-12 mb-4">
+                    <!-- Main Wallet -->
                     <div class="portfolio-panel"
-                        style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative;">
+                        style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
                         <!-- Header -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-ban" style="color: var(--text-secondary); font-size: 0.875rem;"></i>
+                                <i class="fas fa-wallet" style="color: #3b82f6; font-size: 0.875rem;"></i>
                                 <span
-                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Portfolio</span>
+                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Main Wallet</span>
                             </div>
                             <!-- Balance Badge -->
                             <div
-                                style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
-                                <i class="fas fa-stack" style="color: #10b981; font-size: 0.75rem;"></i>
+                                style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+                                <i class="fas fa-dollar-sign" style="color: #3b82f6; font-size: 0.75rem;"></i>
                                 <span
-                                    style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">${{ number_format($balance, 2) }}</span>
+                                    style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">${{ number_format($mainBalance ?? 0, 2) }}</span>
                             </div>
                         </div>
 
                         <!-- Current Value -->
                         <div style="margin-bottom: 0.5rem;">
-                            <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
-                                ${{ number_format($balance + $portfolio, 2) }}
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
+                                ${{ number_format(($mainBalance ?? 0) + $portfolio, 2) }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                Balance + Portfolio
                             </div>
                         </div>
 
-                        <!-- Timeframe -->
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Today</div>
+                        <!-- Description -->
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            <i class="fas fa-info-circle" style="font-size: 0.7rem;"></i>
+                            <span>For trading & deposits</span>
+                        </div>
 
                         <!-- Action Buttons -->
                         <div style="display: flex; gap: 0.75rem;">
@@ -56,61 +63,128 @@
                             </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right Column - Profit/Loss  -->
-                <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="profit-loss-panel"
+                    <!-- Earning Wallet -->
+                    <div class="earning-panel"
                         style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative;">
                         <!-- Header -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-arrow-up" style="color: #10b981; font-size: 0.875rem;"></i>
+                                <i class="fas fa-trophy" style="color: #10b981; font-size: 0.875rem;"></i>
                                 <span
-                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Profit/Loss</span>
+                                    style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Earning Wallet</span>
                             </div>
-                            <!-- Time Filters -->
-                            <div style="display: flex; gap: 0.4rem;">
-                                <button type="button" class="pl-time-filter" data-pl-period="1D"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1D</button>
-                                <button type="button" class="pl-time-filter" data-pl-period="1W"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1W</button>
-                                <button type="button" class="pl-time-filter active" data-pl-period="1M"
-                                    style="padding: 0.35rem 0.6rem; background: rgba(59, 130, 246, 0.2); color: var(--text-primary); border: none; border-radius: 4px; font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">1M</button>
-                                <button type="button" class="pl-time-filter" data-pl-period="ALL"
-                                    style="padding: 0.35rem 0.6rem; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">ALL</button>
+                            <!-- Balance Badge -->
+                            <div
+                                style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+                                <i class="fas fa-coins" style="color: #10b981; font-size: 0.75rem;"></i>
+                                <span
+                                    style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">${{ number_format($earningBalance ?? 0, 2) }}</span>
                             </div>
                         </div>
 
                         <!-- Current Value -->
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
-                                <span id="profitLossAmount">${{ number_format($stats['total_profit_loss'] ?? 0, 2) }}</span>
+                        <div style="margin-bottom: 0.5rem;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;">
+                                ${{ number_format($earningBalance ?? 0, 2) }}
                             </div>
-                            <i class="fas fa-info-circle" style="color: var(--text-secondary); font-size: 0.875rem; cursor: pointer;"
-                                title="Cumulative Profit/Loss for the selected time period"></i>
                         </div>
 
-                        <!-- Timeframe -->
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;" id="profitLossTimeframe">Past
-                            Month</div>
-
-                        <!-- Polyrion Logo -->
-                        <div
-                            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
-                            <div
-                                style="width: 24px; height: 24px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; color: #ffffff;">
-                                PM</div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Polyrion</span>
+                        <!-- Description -->
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            <i class="fas fa-info-circle" style="font-size: 0.7rem;"></i>
+                            <span>Trade wins, referrals & earnings</span>
                         </div>
 
-                        <!-- Chart Canvas -->
-                        <div style="height: 200px; position: relative; margin-top: 0.5rem;">
-                            <canvas id="profitLossChart"></canvas>
-                            <div id="profitLossNoData" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-secondary); font-size: 0.875rem;">
-                                <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                                <div>No completed trades yet</div>
+                        <!-- Transfer Buttons -->
+                        <div style="display: flex; gap: 0.75rem; {{ $transferHistoryCount > 0 ? '' : 'flex-direction: column;' }}">
+                            <button onclick="transferEarningToMain()"
+                                style="{{ $transferHistoryCount > 0 ? 'flex: 1;' : 'width: 100%;' }} background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>Transfer to Main Wallet</span>
+                            </button>
+                            @if($transferHistoryCount > 0)
+                            <button onclick="openTransferHistoryModal()"
+                                style="flex: 1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                                onmouseover="this.style.background='var(--hover)'; this.style.borderColor='#10b981'; this.style.color='#10b981'"
+                                onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'">
+                                <i class="fas fa-history"></i>
+                                <span>History</span>
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Total Markets Chart  -->
+                <div class="col-lg-6 col-md-12 mb-4">
+                    <div class="profit-loss-panel"
+                        style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative;">
+                        <!-- Top Section -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                            <!-- Left: Profit/Loss Display -->
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-arrow-up" style="color: #10b981; font-size: 0.75rem;"></i>
+                                    <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-secondary);">Profit/Loss</span>
+                                    <i class="fas fa-info-circle" style="color: var(--text-secondary); font-size: 0.7rem; cursor: pointer; opacity: 0.6;" 
+                                       title="Your total profit/loss from trades"></i>
+                                </div>
+                                <div style="font-size: 2rem; font-weight: 700; color: {{ ($stats30Days['net_profit_loss'] ?? 0) >= 0 ? '#10b981' : '#ef4444' }}; line-height: 1.2; margin-bottom: 0.25rem;" id="profitLossValue">
+                                    ${{ number_format($stats30Days['net_profit_loss'] ?? 0, 2) }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);" id="profitLossTimeframe">
+                                    Last 30 Days
+                                </div>
+                            </div>
+
+                            <!-- Right: Time Filters & Branding -->
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1rem;">
+                                <!-- Time Filter Buttons -->
+                                <div style="display: flex; gap: 0.25rem; background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.25rem;">
+                                    <button class="pl-time-filter active" data-period="30" 
+                                        style="padding: 0.4rem 0.6rem; font-size: 0.7rem; font-weight: 600; border: none; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-radius: 4px; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" 
+                                        onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
+                                        30D
+                                    </button>
+                                    <button class="pl-time-filter" data-period="7"
+                                        style="padding: 0.4rem 0.6rem; font-size: 0.7rem; font-weight: 600; border: none; background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                                        onmouseout="this.style.background='transparent'">
+                                        7D
+                                    </button>
+                                    <button class="pl-time-filter" data-period="1"
+                                        style="padding: 0.4rem 0.6rem; font-size: 0.7rem; font-weight: 600; border: none; background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                                        onmouseout="this.style.background='transparent'">
+                                        1D
+                                    </button>
+                                    <button class="pl-time-filter" data-period="all"
+                                        style="padding: 0.4rem 0.6rem; font-size: 0.7rem; font-weight: 600; border: none; background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                                        onmouseout="this.style.background='transparent'">
+                                        ALL
+                                    </button>
+                                </div>
+
+                                <!-- Polyrion Logo -->
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.65rem; color: #ffffff;">
+                                        PM
+                                    </div>
+                                    <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 500;">Polyrion</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom: Chart Bar Placeholder -->
+                        <div style="height: 60px; position: relative; margin-top: 1rem; border-radius: 6px; overflow: hidden;">
+                            <div id="profitLossChartBar" style="width: 100%; height: 100%; border-radius: 6px; position: relative;">
+                                <!-- Chart will be rendered here -->
+                                <canvas id="profitLossMiniChart" width="400" height="60" style="width: 100%; height: 100%; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -1294,51 +1368,94 @@
                                     </div>
                                 </div>
 
-                                <!-- Recent Commissions -->
-                                @if(!empty($referralStats['recent_commissions']))
+                                <!-- Commission History -->
                                 <div>
-                                    <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem;">
-                                        Recent Commissions
+                                    <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                                        <span>Commission History</span>
+                                        <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary);">
+                                            Total: ${{ number_format($referralStats['total_commissions'] ?? 0, 2) }}
+                                        </span>
                                     </h4>
+                                    @if($referralCommissionHistory && $referralCommissionHistory->count() > 0)
                                     <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-                                        <table style="width: 100%; border-collapse: collapse;">
-                                            <thead>
-                                                <tr style="background: var(--card-bg); border-bottom: 1px solid var(--border);">
-                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Date</th>
-                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Source</th>
-                                                    <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Level</th>
-                                                    <th style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($referralStats['recent_commissions'] as $commission)
-                                                <tr style="border-bottom: 1px solid var(--border);">
-                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
-                                                        {{ \Carbon\Carbon::parse($commission['created_at'])->format('M d, Y') }}
-                                                    </td>
-                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
-                                                        {{ $commission['source_user'] }}
-                                                    </td>
-                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
-                                                        <span style="background: rgba(255, 177, 26, 0.15); color: #ffb11a; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
-                                                            Level {{ $commission['level'] }}
-                                                        </span>
-                                                    </td>
-                                                    <td style="padding: 0.75rem; font-size: 0.875rem; color: #10b981; font-weight: 600; text-align: right;">
-                                                        +${{ number_format($commission['amount'], 2) }}
-                                                    </td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                        <div style="max-height: 500px; overflow-y: auto;">
+                                            <table style="width: 100%; border-collapse: collapse;">
+                                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 10;">
+                                                    <tr style="border-bottom: 1px solid var(--border);">
+                                                        <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Date</th>
+                                                        <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Referred User</th>
+                                                        <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Trade Amount</th>
+                                                        <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Level</th>
+                                                        <th style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Rate</th>
+                                                        <th style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Commission</th>
+                                                        <th style="padding: 0.75rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($referralCommissionHistory as $commission)
+                                                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                            {{ $commission->created_at->format('M d, Y') }}<br>
+                                                            <span style="font-size: 0.75rem; color: var(--text-secondary);">{{ $commission->created_at->format('h:i A') }}</span>
+                                                        </td>
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                            @if($commission->fromUser)
+                                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                                    <i class="fas fa-user" style="color: var(--text-secondary); font-size: 0.75rem;"></i>
+                                                                    <span>{{ $commission->fromUser->name ?? 'N/A' }}</span>
+                                                                </div>
+                                                                @if($commission->trade)
+                                                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                                                        Trade #{{ $commission->trade->id }}
+                                                                    </div>
+                                                                @endif
+                                                            @else
+                                                                <span style="color: var(--text-secondary);">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                            ${{ number_format($commission->trade_amount ?? ($commission->trade->amount_invested ?? $commission->trade->amount ?? 0), 2) }}
+                                                        </td>
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                            <span style="background: rgba(255, 177, 26, 0.15); color: #ffb11a; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                                                                Level {{ $commission->level }}
+                                                            </span>
+                                                        </td>
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary);">
+                                                            {{ number_format($commission->percentage_applied, 2) }}%
+                                                        </td>
+                                                        <td style="padding: 0.75rem; font-size: 0.875rem; color: #10b981; font-weight: 600; text-align: right;">
+                                                            +${{ number_format($commission->amount, 2) }}
+                                                        </td>
+                                                        <td style="padding: 0.75rem; text-align: center;">
+                                                            @if($commission->status === 'completed')
+                                                                <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                                                                    <i class="fas fa-check-circle"></i> Completed
+                                                                </span>
+                                                            @elseif($commission->status === 'pending')
+                                                                <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                                                                    <i class="fas fa-clock"></i> Pending
+                                                                </span>
+                                                            @else
+                                                                <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                                                                    <i class="fas fa-times-circle"></i> Cancelled
+                                                                </span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
+                                    @else
+                                    <div style="text-align: center; padding: 2rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;">
+                                        <i class="fas fa-inbox" style="font-size: 2rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">No commission history yet.</p>
+                                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Commission is earned when your referred users place winning trades!</p>
+                                    </div>
+                                    @endif
                                 </div>
-                                @else
-                                <div style="text-align: center; padding: 2rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;">
-                                    <i class="fas fa-inbox" style="font-size: 2rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
-                                    <p style="color: var(--text-secondary);">No commissions yet. Start referring friends to earn!</p>
-                                </div>
-                                @endif
                             </div>
                         </div>
 
@@ -2226,6 +2343,344 @@
         ])
     </div>
 
+    <!-- Transfer Modal -->
+    <div class="transfer-modal-overlay" id="transferModalOverlay">
+        <div class="transfer-modal-popup" id="transferModalPopup">
+        <div class="transfer-modal-header">
+            <h3>Transfer to Main Wallet</h3>
+            <button type="button" class="transfer-modal-close" onclick="closeTransferModal()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="transfer-modal-content">
+            <form id="transferForm" class="transfer-form-container">
+                <div class="transfer-balance-info">
+                    <div class="balance-item">
+                        <span class="balance-label">Available Balance</span>
+                        <span class="balance-value" id="transferAvailableBalance">${{ number_format($earningBalance ?? 0, 2) }} USDT</span>
+                    </div>
+                </div>
+
+                <div class="transfer-input-group">
+                    <label class="transfer-input-label">Amount <span style="color: #ef4444;">*</span></label>
+                    <div class="transfer-input-wrapper">
+                        <span class="transfer-currency">$</span>
+                        <input type="number" id="transferAmount" step="0.01" placeholder="0.00" class="transfer-input ps-4" min="0.01" max="{{ $earningBalance ?? 0 }}" value="{{ $earningBalance ?? 0 }}">
+                    </div>
+                    <p id="transferAmountError" style="color: #ef4444; font-size: 0.85rem; display: none; margin-top: 0.5rem;"></p>
+                </div>
+
+                <div class="transfer-quick-amounts">
+                    <button type="button" class="quick-amount-btn" data-percent="25">25%</button>
+                    <button type="button" class="quick-amount-btn" data-percent="50">50%</button>
+                    <button type="button" class="quick-amount-btn" data-percent="75">75%</button>
+                    <button type="button" class="quick-amount-btn" data-percent="100">100%</button>
+                </div>
+
+                <div class="transfer-input-group">
+                    <label class="transfer-input-label">Wallet Password <span style="color: #ef4444;">*</span></label>
+                    <div class="transfer-input-wrapper">
+                        <input type="password" id="transferWalletPassword" class="transfer-input" placeholder="Enter your wallet password" required>
+                        <button type="button" class="transfer-password-toggle" id="transferPasswordToggle" onclick="toggleTransferPassword()" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye" id="transferPasswordIcon"></i>
+                        </button>
+                    </div>
+                    <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+                        <i class="fas fa-info-circle"></i> Enter your wallet password to confirm transfer
+                    </small>
+                    <p id="transferPasswordError" style="color: #ef4444; font-size: 0.85rem; display: none; margin-top: 0.5rem;"></p>
+                </div>
+
+                <div class="transfer-submit-section">
+                    <button type="submit" id="transferSubmitBtn" class="transfer-submit-btn">
+                        <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <!-- Transfer History Modal -->
+    <div class="transfer-modal-overlay" id="transferHistoryModalOverlay">
+        <div class="transfer-modal-popup" id="transferHistoryModalPopup" style="max-width: 700px;">
+            <div class="transfer-modal-header">
+                <h3>Transfer History</h3>
+                <button type="button" class="transfer-modal-close" onclick="closeTransferHistoryModal()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="transfer-modal-content">
+                <div id="transferHistoryContent" style="min-height: 200px;">
+                    <div style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Transfer Modal Styles - Matching Deposit Modal */
+        .transfer-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .transfer-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .transfer-modal-popup {
+            background: var(--card-bg);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            transform: scale(0.9) translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            position: relative;
+            margin: auto;
+        }
+
+        .transfer-modal-overlay.active .transfer-modal-popup {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .transfer-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .transfer-modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .transfer-modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .transfer-modal-close:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .transfer-modal-content {
+            padding: 24px;
+        }
+
+        .transfer-balance-info {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .transfer-balance-info .balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transfer-balance-info .balance-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .transfer-balance-info .balance-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .transfer-input-group {
+            margin-bottom: 20px;
+        }
+
+        .transfer-input-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .transfer-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .transfer-currency {
+            position: absolute;
+            left: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            z-index: 1;
+        }
+
+        .transfer-input {
+            width: 100%;
+            padding: 14px 16px 14px 32px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .transfer-input:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .transfer-input-wrapper input.transfer-input {
+            padding-left: 16px;
+            padding-right: 48px;
+        }
+
+        .transfer-password-toggle {
+            position: absolute;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+
+        .transfer-password-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .transfer-password-toggle:focus {
+            outline: none;
+            background: var(--bg-secondary);
+        }
+
+        .transfer-quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .transfer-quick-amounts .quick-amount-btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .transfer-quick-amounts .quick-amount-btn:hover {
+            background: var(--hover);
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .transfer-quick-amounts .quick-amount-btn.active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .transfer-submit-section {
+            margin-top: 24px;
+        }
+
+        .transfer-submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .transfer-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .transfer-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .transfer-submit-btn i {
+            font-size: 1rem;
+        }
+    </style>
+
     <style>
         .modal-overlay {
             position: fixed;
@@ -2305,6 +2760,33 @@
 
         .btn-save:hover {
             background: var(--);
+        }
+
+        /* Positions Tab Fixed Height */
+        #positions-tab {
+            display: flex;
+            flex-direction: column;
+            max-height: 600px;
+            overflow: hidden;
+        }
+        
+        #positions-tab .positions-controls {
+            flex-shrink: 0;
+        }
+        
+        #positions-tab .positions-table-container,
+        #positions-tab .positions-cards-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+        
+        #positions-tab .positions-table-container table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--card-bg);
         }
 
         /* MARKET Table Responsive Styles */
@@ -3775,47 +4257,850 @@
         </script>
 
         <script>
-            // Profit/Loss Time Filter Handler
+            // Trade Stats Time Filter Handler
             (function() {
+                // Store stats data
+                const statsData = {
+                    '30': @json($stats30Days ?? []),
+                    '7': null, // Will be loaded via AJAX
+                    'all': null // Will be loaded via AJAX
+                };
+
+                // Update stats display
+                function updateStatsDisplay(period) {
+                    const stats = statsData[period];
+                    if (!stats) {
+                        // Load stats via AJAX
+                        loadStatsForPeriod(period);
+                        return;
+                    }
+
+                    // Update all stat elements
+                    document.getElementById('winTradesCount').textContent = stats.win_trades || 0;
+                    document.getElementById('winTradesAmount').textContent = '$' + parseFloat(stats.total_payout || 0).toFixed(2);
+                    document.getElementById('lossTradesCount').textContent = stats.loss_trades || 0;
+                    document.getElementById('lossTradesAmount').textContent = '$' + parseFloat(stats.total_loss || 0).toFixed(2);
+                    document.getElementById('netProfitLoss').textContent = '$' + parseFloat(stats.net_profit_loss || 0).toFixed(2);
+                    document.getElementById('netProfitLoss').style.color = (stats.net_profit_loss || 0) >= 0 ? '#10b981' : '#ef4444';
+                    document.getElementById('totalProfit').textContent = '$' + parseFloat(stats.total_profit || 0).toFixed(2);
+                    document.getElementById('totalLoss').textContent = '$' + parseFloat(stats.total_loss || 0).toFixed(2);
+                    document.getElementById('totalTradesCount').textContent = stats.total_trades || 0;
+                    document.getElementById('pendingTradesCount').textContent = stats.pending_trades || 0;
+                    document.getElementById('winRateDisplay').textContent = 'Win Rate: ' + (stats.win_rate || 0) + '%';
+                }
+
+                // Load stats for a specific period
+                function loadStatsForPeriod(period) {
+                    fetch('{{ route("profile.index") }}?stats_period=' + period, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.stats) {
+                            statsData[period] = data.stats;
+                            updateStatsDisplay(period);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading stats:', error);
+                    });
+                }
+
+                // Handle time filter button clicks
+                document.querySelectorAll('.time-filter-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const period = this.getAttribute('data-period');
+                        
+                        // Update active state
+                        document.querySelectorAll('.time-filter-btn').forEach(b => {
+                            b.classList.remove('active');
+                            b.style.background = 'transparent';
+                            b.style.color = 'var(--text-secondary)';
+                            b.style.borderColor = 'var(--border)';
+                        });
+                        
+                        this.classList.add('active');
+                        this.style.background = period === '30' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                        this.style.color = period === '30' ? '#3b82f6' : '#10b981';
+                        this.style.borderColor = period === '30' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)';
+                        
+                        // Update stats
+                        updateStatsDisplay(period);
+                    });
+                });
+            })();
+        </script>
+
+        <script>
+            // Markets Chart Initialization (kept for backward compatibility if needed elsewhere)
+            let marketsChart = null;
+            
+            function initMarketsChart() {
+                const ctx = document.getElementById('marketsChart');
+                if (!ctx) {
+                    // Chart element removed, skip initialization
+                    return;
+                }
+
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js not loaded yet, retrying...');
+                    setTimeout(() => initMarketsChart(), 100);
+                    return;
+                }
+
+                // Destroy existing chart if any
+                if (marketsChart) {
+                    marketsChart.destroy();
+                    marketsChart = null;
+                }
+
+                try {
+                    // Chart data from backend
+                    const chartData = @json($marketsChartData ?? ['labels' => [], 'markets' => []]);
+                    
+                    // Create gradient
+                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 200);
+                    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+                    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+
+                    marketsChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels || [],
+                            datasets: [{
+                                label: 'Markets',
+                                data: chartData.markets || [],
+                                borderColor: '#10b981',
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.5,
+                                borderWidth: 2.5,
+                                pointRadius: 0,
+                                pointHoverRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { 
+                                    enabled: true,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 8,
+                                    titleFont: { size: 11 },
+                                    bodyFont: { size: 11 },
+                                    cornerRadius: 6,
+                                    displayColors: false
+                                }
+                            },
+                            scales: {
+                                x: { 
+                                    display: false,
+                                    grid: { display: false }
+                                },
+                                y: { 
+                                    display: false,
+                                    grid: { display: false }
+                                }
+                            },
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            }
+                        }
+                    });
+                    console.log('Markets chart initialized successfully');
+                } catch (e) {
+                    console.error('Error initializing Markets chart:', e);
+                }
+            }
+
+            // Initialize markets chart when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(initMarketsChart, 500); // Wait a bit for Chart.js to load
+                });
+            } else {
+                setTimeout(initMarketsChart, 500);
+            }
+
+            // Also try on window load
+            window.addEventListener('load', function() {
+                if (!marketsChart) {
+                    setTimeout(initMarketsChart, 500);
+                }
+            });
+        </script>
+
+        <script>
+            // Transfer Modal Functions
+            const earningBalance = {{ $earningBalance ?? 0 }};
+            
+            function openTransferModal() {
+                const modal = document.getElementById('transferModalPopup');
+                const overlay = document.getElementById('transferModalOverlay');
+                
+                if (earningBalance <= 0) {
+                    if (typeof showError !== 'undefined') {
+                        showError('No balance available in earning wallet.', 'Transfer Failed');
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.error('No balance available in earning wallet.', 'Transfer Failed');
+                    } else {
+                        alert('No balance available in earning wallet.');
+                    }
+                    return;
+                }
+                
+                // Reset form
+                document.getElementById('transferAmount').value = earningBalance;
+                document.getElementById('transferWalletPassword').value = '';
+                document.getElementById('transferAmountError').style.display = 'none';
+                document.getElementById('transferPasswordError').style.display = 'none';
+                document.querySelectorAll('.quick-amount-btn').forEach(btn => btn.classList.remove('active'));
+                
+                modal.classList.add('active');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            function closeTransferModal() {
+                const modal = document.getElementById('transferModalPopup');
+                const overlay = document.getElementById('transferModalOverlay');
+                
+                modal.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            
+            // Make functions globally accessible
+            window.transferEarningToMain = openTransferModal;
+            window.openTransferModal = openTransferModal;
+            window.closeTransferModal = closeTransferModal;
+            
+            // Initialize event listeners when DOM is ready
+            document.addEventListener('DOMContentLoaded', function() {
+                // Quick amount buttons
+                document.querySelectorAll('.transfer-quick-amounts .quick-amount-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const percent = parseFloat(this.getAttribute('data-percent'));
+                        const amount = (earningBalance * percent / 100).toFixed(2);
+                        document.getElementById('transferAmount').value = amount;
+                        document.querySelectorAll('.quick-amount-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+                
+                // Close modal on overlay click
+                document.getElementById('transferModalOverlay').addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeTransferModal();
+                    }
+                });
+                
+                // Close modal on escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && document.getElementById('transferModalPopup').classList.contains('active')) {
+                        closeTransferModal();
+                    }
+                });
+                
+                // Form submission
+                document.getElementById('transferForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const amount = parseFloat(document.getElementById('transferAmount').value);
+                    const walletPassword = document.getElementById('transferWalletPassword').value;
+                    
+                    // Validation
+                    let isValid = true;
+                    const amountError = document.getElementById('transferAmountError');
+                    const passwordError = document.getElementById('transferPasswordError');
+                    
+                    amountError.style.display = 'none';
+                    passwordError.style.display = 'none';
+                    
+                    if (!amount || amount <= 0) {
+                        amountError.textContent = 'Please enter a valid amount';
+                        amountError.style.display = 'block';
+                        isValid = false;
+                    } else if (amount > earningBalance) {
+                        amountError.textContent = `Amount cannot exceed available balance: $${earningBalance.toFixed(2)}`;
+                        amountError.style.display = 'block';
+                        isValid = false;
+                    }
+                    
+                    if (!walletPassword || walletPassword.trim() === '') {
+                        passwordError.textContent = 'Wallet password is required';
+                        passwordError.style.display = 'block';
+                        isValid = false;
+                    }
+                    
+                    if (!isValid) {
+                        return;
+                    }
+                    
+                    // Disable submit button
+                    const btn = document.getElementById('transferSubmitBtn');
+                    const originalHtml = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    
+                    // Perform transfer
+                    performTransfer(amount, walletPassword, btn, originalHtml);
+                });
+            });
+            
+            function transferEarningToMain() {
+                openTransferModal();
+            }
+            
+            // Toggle password visibility
+            function toggleTransferPassword() {
+                const passwordInput = document.getElementById('transferWalletPassword');
+                const passwordIcon = document.getElementById('transferPasswordIcon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    passwordIcon.classList.remove('fa-eye');
+                    passwordIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    passwordIcon.classList.remove('fa-eye-slash');
+                    passwordIcon.classList.add('fa-eye');
+                }
+            }
+            
+            // Make function globally accessible
+            window.toggleTransferPassword = toggleTransferPassword;
+            
+            // Transfer History Modal Functions
+            function openTransferHistoryModal() {
+                const modal = document.getElementById('transferHistoryModalPopup');
+                const overlay = document.getElementById('transferHistoryModalOverlay');
+                
+                overlay.classList.add('active');
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // Load transfer history
+                loadTransferHistory();
+            }
+            
+            function closeTransferHistoryModal() {
+                const modal = document.getElementById('transferHistoryModalPopup');
+                const overlay = document.getElementById('transferHistoryModalOverlay');
+                
+                modal.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            
+            function loadTransferHistory() {
+                const content = document.getElementById('transferHistoryContent');
+                content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; padding: 2rem;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                
+                fetch('{{ route("wallet.transfer.history") }}', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTransferHistory(data.history);
+                    } else {
+                        content.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Failed to load transfer history.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Transfer history error:', error);
+                    content.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Failed to load transfer history.</div>';
+                });
+            }
+            
+            function renderTransferHistory(history) {
+                const content = document.getElementById('transferHistoryContent');
+                
+                if (!history || history.length === 0) {
+                    content.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No transfer history found.</div>';
+                    return;
+                }
+                
+                let html = '<div style="max-height: 500px; overflow-y: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                html += '<thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 10; border-bottom: 2px solid var(--border);">';
+                html += '<tr>';
+                html += '<th style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Type</th>';
+                html += '<th style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Amount</th>';
+                html += '<th style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Balance After</th>';
+                html += '<th style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Date</th>';
+                html += '</tr>';
+                html += '</thead>';
+                html += '<tbody>';
+                
+                history.forEach(function(item) {
+                    const isTransferOut = item.type === 'transfer_out';
+                    const typeColor = isTransferOut ? '#ef4444' : '#10b981';
+                    const typeIcon = isTransferOut ? 'fa-arrow-up' : 'fa-arrow-down';
+                    const typeText = isTransferOut ? 'Transfer Out' : 'Transfer In';
+                    
+                    html += '<tr style="border-bottom: 1px solid var(--border);">';
+                    html += '<td style="padding: 1rem;">';
+                    html += '<div style="display: flex; align-items: center; gap: 0.5rem;">';
+                    html += '<i class="fas ' + typeIcon + '" style="color: ' + typeColor + ';"></i>';
+                    html += '<span style="font-weight: 600; color: var(--text-primary);">' + typeText + '</span>';
+                    html += '</div>';
+                    html += '</td>';
+                    html += '<td style="padding: 1rem; text-align: right;">';
+                    html += '<span style="font-weight: 700; color: ' + typeColor + '; font-size: 1rem;">';
+                    html += (isTransferOut ? '-' : '+') + '$' + parseFloat(item.amount).toFixed(2);
+                    html += '</span>';
+                    html += '</td>';
+                    html += '<td style="padding: 1rem; text-align: right; color: var(--text-secondary);">';
+                    html += '$' + parseFloat(item.balance_after).toFixed(2);
+                    html += '</td>';
+                    html += '<td style="padding: 1rem;">';
+                    html += '<div style="color: var(--text-primary); font-weight: 500;">' + item.created_at + '</div>';
+                    html += '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">' + item.created_at_human + '</div>';
+                    html += '</td>';
+                    html += '</tr>';
+                });
+                
+                html += '</tbody>';
+                html += '</table>';
+                html += '</div>';
+                
+                content.innerHTML = html;
+            }
+            
+            // Make functions globally accessible
+            window.openTransferHistoryModal = openTransferHistoryModal;
+            window.closeTransferHistoryModal = closeTransferHistoryModal;
+            
+            // Close modal on overlay click
+            document.addEventListener('DOMContentLoaded', function() {
+                const historyOverlay = document.getElementById('transferHistoryModalOverlay');
+                if (historyOverlay) {
+                    historyOverlay.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            closeTransferHistoryModal();
+                        }
+                    });
+                }
+                
+                // Close modal on Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && document.getElementById('transferHistoryModalPopup') && document.getElementById('transferHistoryModalPopup').classList.contains('active')) {
+                        closeTransferHistoryModal();
+                    }
+                });
+            });
+
+            function performTransfer(amount, walletPassword, btn, originalHtml) {
+                // Make API call
+                fetch('{{ route("wallet.transfer.earning.to.main") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: amount,
+                        wallet_password: walletPassword
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Network error occurred');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Close modal
+                        closeTransferModal();
+                        
+                        // Show success message
+                        if (typeof showSuccess !== 'undefined') {
+                            showSuccess(`$${amount.toFixed(2)} successfully transferred to Main Wallet`, 'Transfer Successful');
+                        } else if (typeof toastr !== 'undefined') {
+                            toastr.success(`$${amount.toFixed(2)} successfully transferred to Main Wallet`, 'Transfer Successful');
+                        } else {
+                            alert(`Transfer successful! $${amount.toFixed(2)} transferred to Main Wallet`);
+                        }
+                        
+                        // Reload page after delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        // Re-enable button
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                        
+                        // Show error
+                        const passwordError = document.getElementById('transferPasswordError');
+                        const amountError = document.getElementById('transferAmountError');
+                        
+                        if (data.message && data.message.includes('password')) {
+                            if (passwordError) {
+                                passwordError.textContent = data.message;
+                                passwordError.style.display = 'block';
+                            }
+                        } else {
+                            if (amountError) {
+                                amountError.textContent = data.message || 'Transfer failed. Please try again.';
+                                amountError.style.display = 'block';
+                            }
+                        }
+                        
+                        if (typeof showError !== 'undefined') {
+                            showError(data.message || 'Transfer failed. Please try again.', 'Transfer Failed');
+                        } else if (typeof toastr !== 'undefined') {
+                            toastr.error(data.message || 'Transfer failed. Please try again.', 'Transfer Failed');
+                        } else {
+                            alert('Transfer failed: ' + (data.message || 'An error occurred. Please try again.'));
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Transfer error:', error);
+                    
+                    // Re-enable button
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
+                    
+                    // Show error
+                    const amountError = document.getElementById('transferAmountError');
+                    const passwordError = document.getElementById('transferPasswordError');
+                    
+                    if (amountError) {
+                        amountError.textContent = error.message || 'Network error. Please try again.';
+                        amountError.style.display = 'block';
+                    }
+                    
+                    if (passwordError) {
+                        passwordError.style.display = 'none';
+                    }
+                    
+                    if (typeof showError !== 'undefined') {
+                        showError(error.message || 'Network error. Please check your connection and try again.', 'Transfer Failed');
+                    } else if (typeof toastr !== 'undefined') {
+                        toastr.error(error.message || 'Network error. Please try again.', 'Transfer Failed');
+                    } else {
+                        alert('Transfer failed: ' + (error.message || 'Please try again.'));
+                    }
+                });
+            }
+        </script>
+
+        <script>
+            // Profit/Loss Time Filter Handler with Real Data and Chart
+            (function() {
+                // Store stats and chart data
+                const statsData = {
+                    '30': @json($stats30Days ?? []),
+                    '7': null,
+                    '1': null,
+                    'all': null
+                };
+
+                const chartData = {
+                    '30': @json($initialChartData30Days ?? []),
+                    '7': null,
+                    '1': null,
+                    'all': null
+                };
+
+                const timeframeMap = {
+                    '1': 'Past Day',
+                    '7': 'Past Week',
+                    '30': 'Last 30 Days',
+                    'all': 'All Time'
+                };
+
+                let miniChart = null;
+
+                // Update stats and chart display
+                function updateStatsDisplay(period) {
+                    const stats = statsData[period];
+                    const chart = chartData[period];
+                    
+                    if (!stats || !chart) {
+                        // Load stats and chart via AJAX
+                        loadStatsForPeriod(period);
+                        return;
+                    }
+
+                    // Update profit/loss value
+                    const netPL = parseFloat(stats.net_profit_loss || 0);
+                    const plElement = document.getElementById('profitLossValue');
+                    if (plElement) {
+                        plElement.textContent = '$' + netPL.toFixed(2);
+                        plElement.style.color = netPL >= 0 ? '#10b981' : '#ef4444';
+                    }
+
+                    // Update timeframe text
+                    const timeframeElement = document.getElementById('profitLossTimeframe');
+                    if (timeframeElement) {
+                        timeframeElement.textContent = timeframeMap[period] || 'Last 30 Days';
+                    }
+
+                    // Update mini chart with real data
+                    updateMiniChart(chart, stats, period);
+                }
+
+                // Update mini chart with real data
+                function updateMiniChart(chartDataArray, stats, period) {
+                    console.log('updateMiniChart called', { chartDataArray, stats, period });
+                    
+                    const canvas = document.getElementById('profitLossMiniChart');
+                    if (!canvas) {
+                        console.error('Canvas element not found: profitLossMiniChart');
+                        return;
+                    }
+
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js not loaded, retrying...');
+                        // Retry after Chart.js loads
+                        setTimeout(() => updateMiniChart(chartDataArray, stats, period), 100);
+                        return;
+                    }
+
+                    // Destroy existing chart
+                    if (miniChart) {
+                        miniChart.destroy();
+                        miniChart = null;
+                    }
+
+                    if (!chartDataArray || chartDataArray.length === 0) {
+                        console.warn('No chart data available');
+                        // Show placeholder or empty state
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.font = '12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+                        return;
+                    }
+
+                    console.log('Chart data:', chartDataArray);
+
+                    // Extract labels and values from chart data
+                    const labels = chartDataArray.map(item => item.label || item.date || '');
+                    const values = chartDataArray.map(item => parseFloat(item.value || 0));
+
+                    console.log('Extracted data:', { labels, values });
+
+                    // Determine color based on final value
+                    const finalValue = values[values.length - 1] || 0;
+                    const borderColor = finalValue >= 0 ? '#10b981' : '#ef4444';
+                    
+                    // Ensure canvas has proper dimensions
+                    const container = canvas.parentElement;
+                    if (container) {
+                        const rect = container.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            canvas.width = rect.width;
+                            canvas.height = rect.height;
+                        }
+                    }
+                    
+                    // Create gradient like dashboard chart
+                    const ctx = canvas.getContext('2d');
+                    const chartHeight = canvas.height || 60;
+                    const gradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
+                    if (finalValue >= 0) {
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.3)');
+                        gradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+                    }
+
+                    console.log('Creating chart with data:', { labels: labels.length, values: values.length });
+
+                    // Dashboard-style chart configuration
+                    try {
+                        miniChart = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'P/L',
+                                data: values,
+                                borderColor: borderColor,
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.5,
+                                borderWidth: 2.5,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: borderColor,
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { 
+                                    enabled: true,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 8,
+                                    titleFont: { size: 11 },
+                                    bodyFont: { size: 11 },
+                                    cornerRadius: 6,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return '$' + parseFloat(context.parsed.y).toFixed(2);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { 
+                                    display: false,
+                                    grid: { display: false }
+                                },
+                                y: { 
+                                    display: false,
+                                    grid: { display: false }
+                                }
+                            },
+                            elements: {
+                                point: { 
+                                    radius: 0,
+                                    hoverRadius: 4
+                                },
+                                line: { 
+                                    borderWidth: 2.5,
+                                    tension: 0.5
+                                }
+                            },
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeInOutQuart'
+                            }
+                        }
+                    });
+                    console.log('Chart created successfully');
+                    } catch (error) {
+                        console.error('Error creating chart:', error);
+                    }
+                }
+
+                // Load stats and chart for a specific period
+                function loadStatsForPeriod(period) {
+                    fetch('{{ route("profile.index") }}?stats_period=' + period, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.stats) {
+                            statsData[period] = data.stats;
+                        }
+                        if (data.chartData) {
+                            chartData[period] = data.chartData;
+                        }
+                        updateStatsDisplay(period);
+                    })
+                    .catch(error => {
+                        console.error('Error loading stats:', error);
+                    });
+                }
+
+                // Handle time filter button clicks
                 const plFilters = document.querySelectorAll('.pl-time-filter');
                 plFilters.forEach(btn => {
                     btn.addEventListener('click', function() {
                         // Remove active class from all buttons
-                        plFilters.forEach(b => b.classList.remove('active'));
+                        plFilters.forEach(b => {
+                            b.classList.remove('active');
+                            b.style.background = 'transparent';
+                            b.style.color = 'var(--text-secondary)';
+                        });
+                        
                         // Add active class to clicked button
                         this.classList.add('active');
-
-                        // Update button styles
-                        plFilters.forEach(b => {
-                            b.style.background = 'transparent';
-                            b.style.color = '#9ca3af';
-                            b.style.fontWeight = '500';
-                        });
                         this.style.background = 'rgba(59, 130, 246, 0.2)';
-                        this.style.color = '#ffffff';
-                        this.style.fontWeight = '600';
+                        this.style.color = '#3b82f6';
 
-                        const period = this.getAttribute('data-pl-period');
-                        console.log('Profit/Loss filter changed to:', period);
-
-                        // Update timeframe text
-                        const timeframeMap = {
-                            '1D': 'Today',
-                            '1W': 'Past Week',
-                            '1M': 'Past Month',
-                            'ALL': 'All Time'
-                        };
-
-                        const timeframeEl = document.getElementById('profitLossTimeframe');
-                        if (timeframeEl) {
-                            timeframeEl.textContent = timeframeMap[period] || 'Past Month';
-                        }
-
-                        // Update chart with new timeframe
-                        if (typeof initProfitLossChart === 'function') {
-                            initProfitLossChart(period);
-                        }
+                        const period = this.getAttribute('data-period');
+                        
+                        // Update stats and chart
+                        updateStatsDisplay(period);
                     });
+                });
+
+                // Initialize with 30 days data on page load
+                function initializeChart() {
+                    console.log('Initializing profit/loss chart...');
+                    const canvas = document.getElementById('profitLossMiniChart');
+                    if (!canvas) {
+                        console.error('Canvas not found, retrying...');
+                        setTimeout(initializeChart, 200);
+                        return;
+                    }
+
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js not loaded, waiting...');
+                        setTimeout(initializeChart, 200);
+                        return;
+                    }
+
+                    const stats = statsData['30'];
+                    const chart = chartData['30'];
+                    
+                    console.log('Initial data:', { stats, chart });
+                    
+                    if (chart && chart.length > 0) {
+                        updateMiniChart(chart, stats || {}, '30');
+                    } else if (stats) {
+                        // If we have stats but no chart data, try to load it
+                        console.log('No initial chart data, loading...');
+                        loadStatsForPeriod('30');
+                    } else {
+                        console.warn('No initial data available');
+                    }
+                }
+
+                // Try multiple initialization methods
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(initializeChart, 500);
+                    });
+                } else {
+                    setTimeout(initializeChart, 500);
+                }
+
+                // Also try on window load
+                window.addEventListener('load', function() {
+                    setTimeout(initializeChart, 1000);
                 });
             })();
 
@@ -4096,3 +5381,4 @@
             }
         @endpush
     @endsection
+

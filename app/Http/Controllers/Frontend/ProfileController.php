@@ -16,15 +16,33 @@ use App\Services\ReferralService;
 
 class ProfileController extends Controller
 {
-   function profile()
+   function profile(Request $request)
    {
       $user = Auth::user();
+      
+      // Check if this is an AJAX request for stats
+      if ($request->ajax() && $request->has('stats_period')) {
+         $period = $request->get('stats_period');
+         $stats = $this->getTradeStatsForPeriod($user, $period);
+         $chartData = $this->getProfitLossChartDataForPeriod($user, $period);
+         return response()->json([
+            'stats' => $stats,
+            'chartData' => $chartData
+         ]);
+      }
 
-      // Optimize: Load only wallet (not all trades at once)
-      $user->load('wallet');
+      // Load both wallets
+      $user->load(['mainWallet', 'earningWallet']);
 
-      $wallet = $user->wallet;
-      $balance = $wallet ? $wallet->balance : 0;
+      $mainWallet = $user->mainWallet;
+      $earningWallet = $user->earningWallet;
+      $mainBalance = $mainWallet ? $mainWallet->balance : 0;
+      $earningBalance = $earningWallet ? $earningWallet->balance : 0;
+      $totalBalance = $mainBalance + $earningBalance;
+      
+      // For backward compatibility, use main wallet as primary wallet
+      $wallet = $mainWallet;
+      $balance = $mainBalance;
 
       $profileImage = $user->profile_image
          ? asset('storage/' . $user->profile_image)
@@ -38,12 +56,48 @@ class ProfileController extends Controller
             SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN 1 ELSE 0 END) as win_trades,
             SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN 1 ELSE 0 END) as loss_trades,
             SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as total_payout,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_wins,
+            SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_losses,
             MAX(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as biggest_win
+         ')
+         ->first();
+
+      // Get stats for last 30 days
+      $thirtyDaysAgo = now()->subDays(30);
+      $stats30DaysQuery = \App\Models\Trade::where('user_id', $user->id)
+         ->where('created_at', '>=', $thirtyDaysAgo)
+         ->selectRaw('
+            COUNT(*) as total_trades,
+            SUM(CASE WHEN UPPER(status) = "PENDING" THEN 1 ELSE 0 END) as pending_trades,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN 1 ELSE 0 END) as win_trades,
+            SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN 1 ELSE 0 END) as loss_trades,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as total_payout,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_wins,
+            SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_losses,
+            SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN (COALESCE(payout, payout_amount, 0) - COALESCE(amount_invested, amount, 0)) ELSE 0 END) as total_profit,
+            SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_loss
          ')
          ->first();
 
       $totalTrades = $statsQuery->total_trades ?? 0;
       $biggestWin = $statsQuery->biggest_win ?? 0;
+      
+      // Last 30 days stats
+      $stats30Days = [
+         'total_trades' => $stats30DaysQuery->total_trades ?? 0,
+         'win_trades' => $stats30DaysQuery->win_trades ?? 0,
+         'loss_trades' => $stats30DaysQuery->loss_trades ?? 0,
+         'pending_trades' => $stats30DaysQuery->pending_trades ?? 0,
+         'total_payout' => $stats30DaysQuery->total_payout ?? 0,
+         'total_invested_wins' => $stats30DaysQuery->total_invested_wins ?? 0,
+         'total_invested_losses' => $stats30DaysQuery->total_invested_losses ?? 0,
+         'total_profit' => $stats30DaysQuery->total_profit ?? 0,
+         'total_loss' => $stats30DaysQuery->total_loss ?? 0,
+         'net_profit_loss' => ($stats30DaysQuery->total_profit ?? 0) - ($stats30DaysQuery->total_loss ?? 0),
+         'win_rate' => ($stats30DaysQuery->total_trades ?? 0) > 0 
+            ? round((($stats30DaysQuery->win_trades ?? 0) / ($stats30DaysQuery->total_trades ?? 1)) * 100, 2) 
+            : 0,
+      ];
 
       // Optimize: Get only recent trades (last 100) with limited columns for positions
       $trades = \App\Models\Trade::where('user_id', $user->id)
@@ -156,10 +210,25 @@ class ProfileController extends Controller
       $referralService = new ReferralService();
       $referralStats = $referralService->getUserReferralStats($user);
       
+      // Get referral commission history
+      $referralCommissionService = new \App\Services\ReferralCommissionService();
+      $referralCommissionHistory = $referralCommissionService->getReferrerCommissionHistory($user, 50);
+      
       // Generate referral link
       $referralLink = route('referral.link', ['username' => $user->username]);
 
-      return view('frontend.profile', compact('user', 'wallet', 'balance', 'portfolio', 'profileImage', 'stats', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet', 'kycVerification', 'referralStats', 'referralLink'));
+      // Get markets chart data (last 7 days) - similar to dashboard
+      $marketsChartData = $this->getMarketsChartData();
+
+      // Get initial chart data for 30 days
+      $initialChartData30Days = $this->getProfitLossChartDataForPeriod($user, '30');
+
+      // Check if user has transfer history
+      $transferHistoryCount = \App\Models\WalletTransaction::where('user_id', $user->id)
+         ->whereIn('type', ['transfer_in', 'transfer_out'])
+         ->count();
+
+      return view('frontend.profile', compact('user', 'wallet', 'mainWallet', 'earningWallet', 'balance', 'mainBalance', 'earningBalance', 'totalBalance', 'portfolio', 'profileImage', 'stats', 'stats30Days', 'trades', 'activePositions', 'withdrawals', 'deposits', 'allActivity', 'profitLossData', 'initialChartData30Days', 'hasWithdrawalPassword', 'binanceWallet', 'metamaskWallet', 'kycVerification', 'referralStats', 'referralCommissionHistory', 'referralLink', 'marketsChartData', 'transferHistoryCount'));
    }
 
    function settings()
@@ -836,5 +905,200 @@ class ProfileController extends Controller
       }
 
       return $totalProfitLoss;
+   }
+
+   /**
+    * Get markets chart data for last 7 days (similar to dashboard)
+    */
+   private function getMarketsChartData()
+   {
+      $startDate = now()->subDays(7)->startOfDay();
+      $endDate = now()->endOfDay();
+      
+      $labels = [];
+      $marketsData = [];
+      
+      $currentDate = clone $startDate;
+      while ($currentDate <= $endDate) {
+         $periodStart = clone $currentDate;
+         $periodEnd = (clone $currentDate)->endOfDay();
+         
+         $labels[] = $periodStart->format('M d');
+         
+         // Markets created in this period
+         $marketsData[] = \App\Models\Market::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+         
+         $currentDate->addDay();
+      }
+      
+      return [
+         'labels' => $labels,
+         'markets' => $marketsData,
+      ];
+   }
+
+   /**
+    * Get trade stats for a specific time period
+    */
+   private function getTradeStatsForPeriod($user, $period)
+   {
+      $query = \App\Models\Trade::where('user_id', $user->id);
+      
+      if ($period === '1') {
+         $query->where('created_at', '>=', now()->subDay());
+      } elseif ($period === '7') {
+         $query->where('created_at', '>=', now()->subDays(7));
+      } elseif ($period === '30') {
+         $query->where('created_at', '>=', now()->subDays(30));
+      }
+      // 'all' period doesn't need date filter
+      
+      $statsQuery = $query->selectRaw('
+         COUNT(*) as total_trades,
+         SUM(CASE WHEN UPPER(status) = "PENDING" THEN 1 ELSE 0 END) as pending_trades,
+         SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN 1 ELSE 0 END) as win_trades,
+         SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN 1 ELSE 0 END) as loss_trades,
+         SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(payout, payout_amount, 0) ELSE 0 END) as total_payout,
+         SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_wins,
+         SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_invested_losses,
+         SUM(CASE WHEN UPPER(status) IN ("WON", "WIN") THEN (COALESCE(payout, payout_amount, 0) - COALESCE(amount_invested, amount, 0)) ELSE 0 END) as total_profit,
+         SUM(CASE WHEN UPPER(status) IN ("LOST", "LOSS") THEN COALESCE(amount_invested, amount, 0) ELSE 0 END) as total_loss
+      ')->first();
+      
+      $totalTrades = $statsQuery->total_trades ?? 0;
+      $winRate = $totalTrades > 0 
+         ? round((($statsQuery->win_trades ?? 0) / $totalTrades) * 100, 2) 
+         : 0;
+      
+      return [
+         'total_trades' => $totalTrades,
+         'win_trades' => $statsQuery->win_trades ?? 0,
+         'loss_trades' => $statsQuery->loss_trades ?? 0,
+         'pending_trades' => $statsQuery->pending_trades ?? 0,
+         'total_payout' => $statsQuery->total_payout ?? 0,
+         'total_invested_wins' => $statsQuery->total_invested_wins ?? 0,
+         'total_invested_losses' => $statsQuery->total_invested_losses ?? 0,
+         'total_profit' => $statsQuery->total_profit ?? 0,
+         'total_loss' => $statsQuery->total_loss ?? 0,
+         'net_profit_loss' => ($statsQuery->total_profit ?? 0) - ($statsQuery->total_loss ?? 0),
+         'win_rate' => $winRate,
+      ];
+   }
+
+   /**
+    * Get profit/loss chart data for a specific time period
+    */
+   private function getProfitLossChartDataForPeriod($user, $period)
+   {
+      $query = \App\Models\Trade::where('user_id', $user->id)
+         ->whereIn('status', ['WON', 'WIN', 'won', 'win', 'LOST', 'LOSS', 'lost', 'loss']);
+      
+      // Determine date range
+      $startDate = null;
+      if ($period === '1') {
+         $startDate = now()->subDay();
+      } elseif ($period === '7') {
+         $startDate = now()->subDays(7);
+      } elseif ($period === '30') {
+         $startDate = now()->subDays(30);
+      } else {
+         // 'all' - limit to last 90 days for performance
+         $startDate = now()->subDays(90);
+      }
+      
+      if ($startDate) {
+         $query->where('created_at', '>=', $startDate);
+      }
+      
+      $trades = $query->select([
+         'id', 'status', 'amount_invested', 'amount',
+         'payout', 'payout_amount', 'settled_at', 'created_at'
+      ])
+      ->orderBy('created_at', 'asc')
+      ->get();
+      
+      if ($trades->isEmpty()) {
+         return [];
+      }
+      
+      // Calculate daily profit/loss
+      $dailyData = [];
+      foreach ($trades as $trade) {
+         $tradeDate = $trade->settled_at ?? $trade->created_at;
+         $date = $tradeDate->format('Y-m-d');
+         
+         $amountInvested = $trade->amount_invested ?? $trade->amount ?? 0;
+         if ($amountInvested <= 0) {
+            continue;
+         }
+         
+         $tradeStatus = strtoupper($trade->status ?? '');
+         $profitLoss = 0;
+         
+         if ($tradeStatus === 'WON' || $tradeStatus === 'WIN') {
+            $payout = $trade->payout ?? $trade->payout_amount ?? 0;
+            $profitLoss = $payout - $amountInvested;
+         } elseif ($tradeStatus === 'LOST' || $tradeStatus === 'LOSS') {
+            $profitLoss = -$amountInvested;
+         }
+         
+         if (!isset($dailyData[$date])) {
+            $dailyData[$date] = 0;
+         }
+         $dailyData[$date] += $profitLoss;
+      }
+      
+      if (empty($dailyData)) {
+         return [];
+      }
+      
+      // Generate chart data points
+      $chartData = [];
+      $cumulative = 0;
+      
+      // Determine date range for chart
+      $firstDate = \Carbon\Carbon::parse(min(array_keys($dailyData)));
+      $lastDate = now();
+      
+      if ($period === '1') {
+         // For 1D, show hourly data
+         $current = $firstDate->copy()->startOfDay();
+         while ($current <= $lastDate) {
+            $dateStr = $current->format('Y-m-d');
+            $hour = $current->format('H');
+            
+            // Add daily profit/loss if exists
+            if (isset($dailyData[$dateStr])) {
+               $cumulative += $dailyData[$dateStr];
+            }
+            
+            $chartData[] = [
+               'label' => $current->format('H:i'),
+               'value' => round($cumulative, 2),
+            ];
+            
+            $current->addHour();
+            if ($current->diffInHours($lastDate) > 24) break;
+         }
+      } else {
+         // For 7D, 30D, ALL - show daily data
+         $current = $firstDate->copy();
+         while ($current <= $lastDate) {
+            $dateStr = $current->format('Y-m-d');
+            
+            if (isset($dailyData[$dateStr])) {
+               $cumulative += $dailyData[$dateStr];
+            }
+            
+            $chartData[] = [
+               'label' => $current->format('M d'),
+               'value' => round($cumulative, 2),
+            ];
+            
+            $current->addDay();
+         }
+      }
+      
+      return $chartData;
    }
 }

@@ -101,6 +101,14 @@
                             </a>
                         </li>
                         @endif
+                        @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage payment settings', 'admin')))
+                        <li class="{{ request()->routeIs('admin.payment.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.payment.settings') }}">
+                                <iconify-icon icon="mdi:credit-card-multiple" class="sidebar-icon"></iconify-icon>
+                                <span>Payment Settings</span>
+                            </a>
+                        </li>
+                        @endif
                 @endif
 
                 <!-- Content & Pages Section -->

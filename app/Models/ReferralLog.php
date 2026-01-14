@@ -13,12 +13,15 @@ class ReferralLog extends Model
         'source_user_id', // Keep for backward compatibility
         'trade_id',
         'amount',
+        'trade_amount',
         'level',
         'percentage_applied',
+        'status',
     ];
 
     protected $casts = [
         'amount' => 'decimal:8',
+        'trade_amount' => 'decimal:8',
         'percentage_applied' => 'decimal:2',
         'level' => 'integer',
         'trade_id' => 'integer',

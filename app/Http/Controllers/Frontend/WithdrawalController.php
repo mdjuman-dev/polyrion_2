@@ -20,8 +20,9 @@ class WithdrawalController extends Controller
     public function index()
     {
         $user = Auth::user();
+        // Get main wallet for withdrawals
         $wallet = Wallet::firstOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
             ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
         );
 
@@ -64,9 +65,10 @@ class WithdrawalController extends Controller
                 ], 400);
             }
 
+            // Get main wallet for withdrawals
             $wallet = Wallet::lockForUpdate()
                 ->firstOrCreate(
-                    ['user_id' => $user->id],
+                    ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                     ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
                 );
 

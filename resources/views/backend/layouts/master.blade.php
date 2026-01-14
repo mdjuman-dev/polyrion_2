@@ -27,6 +27,80 @@
     <!-- Style-->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/skin_color.css') }}">
+    
+    <!-- Toastr Z-Index Override - Highest Priority -->
+    <style>
+        /* Toastr Container - Highest z-index to appear above all modals */
+        #toast-container,
+        #toast-container.toast-top-right,
+        #toast-container.toast-top-left,
+        #toast-container.toast-top-center,
+        #toast-container.toast-bottom-right,
+        #toast-container.toast-bottom-left,
+        #toast-container.toast-bottom-center,
+        .toast-container,
+        .toast-top-right,
+        .toast-top-left,
+        .toast-top-center,
+        .toast-bottom-right,
+        .toast-bottom-left,
+        .toast-bottom-center {
+            z-index: 10000000 !important;
+            position: fixed !important;
+        }
+        
+        /* Individual Toast Messages */
+        .toast,
+        #toast-container .toast,
+        .toast-container .toast {
+            z-index: 10000001 !important;
+            position: relative !important;
+        }
+        
+        /* Make Toastr Messages Slimmer */
+        #toast-container .toast,
+        .toast-container .toast,
+        .toast {
+            padding: 8px 12px !important;
+            min-height: auto !important;
+            height: auto !important;
+            margin-bottom: 8px !important;
+        }
+        
+        #toast-container .toast-title,
+        .toast-container .toast-title,
+        .toast-title {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            margin-bottom: 4px !important;
+            line-height: 1.3 !important;
+        }
+        
+        #toast-container .toast-message,
+        .toast-container .toast-message,
+        .toast-message {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+            margin: 0 !important;
+        }
+        
+        #toast-container .toast-close-button,
+        .toast-container .toast-close-button,
+        .toast-close-button {
+            font-size: 14px !important;
+            line-height: 1 !important;
+            padding: 0 !important;
+            margin-top: -2px !important;
+            margin-right: -2px !important;
+            width: 18px !important;
+            height: 18px !important;
+        }
+        
+        /* Ensure toastr appears above all modals and overlays */
+        body > #toast-container {
+            z-index: 10000000 !important;
+        }
+    </style>
     <link rel="stylesheet" href="{{ asset('backend/assets/css/custom.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/css/admin-theme.css') }}">
     <style>
@@ -687,6 +761,15 @@
             "showMethod": "fadeIn",
             "hideMethod": "fadeOut"
         };
+        
+        // Ensure toastr container has highest z-index
+        setTimeout(function() {
+            const toastContainer = document.getElementById('toast-container');
+            if (toastContainer) {
+                toastContainer.style.zIndex = '10000000';
+                toastContainer.style.position = 'fixed';
+            }
+        }, 100);
 
         // Custom Confirmation Function using SweetAlert2
         function confirmAction(message, callback) {

@@ -8,6 +8,7 @@ use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ReferralSettingsController extends Controller
 {
@@ -26,15 +27,28 @@ class ReferralSettingsController extends Controller
     {
         $settings = ReferralSetting::orderBy('level')->get();
         
-        // Ensure all 3 levels exist
+        // Ensure all 3 levels exist with trade_volume commission type
         $levels = [1, 2, 3];
+        $hasCommissionTypeColumn = Schema::hasColumn('referral_settings', 'commission_type');
+        
         foreach ($levels as $level) {
-            if (!$settings->where('level', $level)->first()) {
-                ReferralSetting::create([
+            $existing = $settings->where('level', $level)->first();
+            if (!$existing) {
+                $data = [
                     'level' => $level,
-                    'commission_percent' => $level === 1 ? 10.00 : ($level === 2 ? 5.00 : 2.00),
+                    'commission_percent' => $level === 1 ? 5.00 : ($level === 2 ? 3.00 : 1.00),
                     'is_active' => true,
-                ]);
+                ];
+                
+                if ($hasCommissionTypeColumn) {
+                    $data['commission_type'] = 'trade_volume';
+                }
+                
+                ReferralSetting::create($data);
+            } elseif ($hasCommissionTypeColumn && !$existing->commission_type) {
+                // Update existing settings without commission_type
+                $existing->commission_type = 'trade_volume';
+                $existing->save();
             }
         }
 
@@ -61,29 +75,56 @@ class ReferralSettingsController extends Controller
         DB::beginTransaction();
 
         try {
+            $hasCommissionTypeColumn = \Schema::hasColumn('referral_settings', 'commission_type');
+            
             // Update Level 1
-            $level1 = ReferralSetting::where('level', 1)->firstOrFail();
+            $level1Query = ReferralSetting::where('level', 1);
+            if ($hasCommissionTypeColumn) {
+                $level1Query->where('commission_type', 'trade_volume');
+            }
+            $level1 = $level1Query->firstOrFail();
             $level1->commission_percent = $request->level_1_percent;
             $level1->is_active = $request->has('level_1_active') ? true : false;
+            if ($hasCommissionTypeColumn) {
+                $level1->commission_type = 'trade_volume';
+            }
             $level1->save();
 
             // Update Level 2
-            $level2 = ReferralSetting::where('level', 2)->firstOrFail();
+            $level2Query = ReferralSetting::where('level', 2);
+            if ($hasCommissionTypeColumn) {
+                $level2Query->where('commission_type', 'trade_volume');
+            }
+            $level2 = $level2Query->firstOrFail();
             $level2->commission_percent = $request->level_2_percent;
             $level2->is_active = $request->has('level_2_active') ? true : false;
+            if ($hasCommissionTypeColumn) {
+                $level2->commission_type = 'trade_volume';
+            }
             $level2->save();
 
             // Update Level 3
-            $level3 = ReferralSetting::where('level', 3)->firstOrFail();
+            $level3Query = ReferralSetting::where('level', 3);
+            if ($hasCommissionTypeColumn) {
+                $level3Query->where('commission_type', 'trade_volume');
+            }
+            $level3 = $level3Query->firstOrFail();
             $level3->commission_percent = $request->level_3_percent;
             $level3->is_active = $request->has('level_3_active') ? true : false;
+            if ($hasCommissionTypeColumn) {
+                $level3->commission_type = 'trade_volume';
+            }
             $level3->save();
 
             DB::commit();
 
-            // Clear referral settings cache
+            // Clear referral settings cache (both deposit and trade commission caches)
             $referralService = new ReferralService();
             $referralService->clearCache();
+            // Also clear trade commission cache
+            \Illuminate\Support\Facades\Cache::forget('referral_settings_trade_volume');
+            // Clear cache using job's method
+            \App\Jobs\ProcessTradeCommission::clearCache();
 
             Log::info('Referral settings updated by admin', [
                 'admin_id' => auth('admin')->id(),

@@ -160,18 +160,26 @@ class SettlementService
                         continue;
                     }
 
-                    $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+                    // Get or create earning wallet for trade winnings
+                    $wallet = Wallet::where('user_id', $user->id)
+                        ->where('wallet_type', Wallet::TYPE_EARNING)
+                        ->lockForUpdate()
+                        ->first();
                     if (!$wallet) {
                         try {
                             $wallet = Wallet::create([
                                 'user_id' => $user->id,
+                                'wallet_type' => Wallet::TYPE_EARNING,
                                 'balance' => 0,
                                 'currency' => 'USDT',
                                 'status' => 'active'
                             ]);
                         } catch (\Illuminate\Database\QueryException $e) {
                             if ($e->getCode() == 23000) {
-                                $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+                                $wallet = Wallet::where('user_id', $user->id)
+                                    ->where('wallet_type', Wallet::TYPE_EARNING)
+                                    ->lockForUpdate()
+                                    ->first();
                             } else {
                                 throw $e;
                             }
@@ -208,6 +216,7 @@ class SettlementService
                                 'payout' => $payout,
                                 'shares' => $shares,
                                 'profit' => $payout - ($trade->amount_invested ?? $trade->amount ?? 0),
+                                'wallet_type' => Wallet::TYPE_EARNING,
                             ]
                         ]);
                     } catch (\Exception $e) {

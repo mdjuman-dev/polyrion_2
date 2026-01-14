@@ -53,8 +53,84 @@
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
     <!-- Custom Styles (Production Optimized) -->
     <link rel="stylesheet" href="{{ asset('frontend/assets/css/custom.min.css') }}">
+    <!-- Language Switcher Styles -->
+    <link rel="stylesheet" href="{{ asset('frontend/assets/css/language-switcher.min.css') }}">
     @livewireStyles
     @stack('style')
+    
+    <!-- Toastr Z-Index Override - Highest Priority -->
+    <style>
+        /* Toastr Container - Highest z-index to appear above all modals */
+        #toast-container,
+        #toast-container.toast-top-right,
+        #toast-container.toast-top-left,
+        #toast-container.toast-top-center,
+        #toast-container.toast-bottom-right,
+        #toast-container.toast-bottom-left,
+        #toast-container.toast-bottom-center,
+        .toast-container,
+        .toast-top-right,
+        .toast-top-left,
+        .toast-top-center,
+        .toast-bottom-right,
+        .toast-bottom-left,
+        .toast-bottom-center {
+            z-index: 10000000 !important;
+            position: fixed !important;
+        }
+        
+        /* Individual Toast Messages */
+        .toast,
+        #toast-container .toast,
+        .toast-container .toast {
+            z-index: 10000001 !important;
+            position: relative !important;
+        }
+        
+        /* Make Toastr Messages Slimmer */
+        #toast-container .toast,
+        .toast-container .toast,
+        .toast {
+            padding: 8px 12px !important;
+            min-height: auto !important;
+            height: auto !important;
+            margin-bottom: 8px !important;
+        }
+        
+        #toast-container .toast-title,
+        .toast-container .toast-title,
+        .toast-title {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            margin-bottom: 4px !important;
+            line-height: 1.3 !important;
+        }
+        
+        #toast-container .toast-message,
+        .toast-container .toast-message,
+        .toast-message {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+            margin: 0 !important;
+        }
+        
+        #toast-container .toast-close-button,
+        .toast-container .toast-close-button,
+        .toast-close-button {
+            font-size: 14px !important;
+            line-height: 1 !important;
+            padding: 0 !important;
+            margin-top: -2px !important;
+            margin-right: -2px !important;
+            width: 18px !important;
+            height: 18px !important;
+        }
+        
+        /* Ensure toastr appears above all modals and overlays */
+        body > #toast-container {
+            z-index: 10000000 !important;
+        }
+    </style>
     
     <!-- Page Loader Styles -->
     <style>
@@ -189,25 +265,110 @@
                     <div class="header-actions d-flex align-items-center justify-content-end">
                         @if (auth()->check())
                             @php
-                                $wallet = $authUser?->wallet;
-                                $portfolio = $wallet->portfolio ?? 0;
-                                $cash = $wallet->balance ?? 0;
+                                $mainWallet = $authUserMainWallet ?? $authUser?->mainWallet;
+                                $earningWallet = $authUserEarningWallet ?? $authUser?->earningWallet;
+                                $mainBalance = $mainWallet ? $mainWallet->balance : 0;
+                                $earningBalance = $earningWallet ? $earningWallet->balance : 0;
                             @endphp
 
-                            <div class="wallet-summary">
-                                <div class="wallet-item">
-                                    <span class="wallet-label">Cash</span>
-                                    <span class="wallet-value">${{ number_format($cash, 2) }}</span>
+                            <div class="wallet-summary" style="display: flex; gap: 0.75rem; align-items: center;">
+                                <div class="wallet-item" style="display: flex; flex-direction: column; align-items: flex-end; padding: 0.4rem 0.75rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; cursor: pointer;" 
+                                     onclick="toggleWalletDisplay()" 
+                                     id="walletToggle"
+                                     title="Click to switch between Main and Earning wallet">
+                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <i class="fas fa-wallet" style="font-size: 0.75rem; color: #3b82f6;"></i>
+                                        <span class="wallet-label" style="font-size: 0.7rem; font-weight: 600; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px;" id="walletLabel">Main</span>
+                                    </div>
+                                    <span class="wallet-value" style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);" id="walletBalance">${{ number_format($mainBalance, 2) }}</span>
+                                </div>
+                                
+                                <div class="wallet-item earning-wallet-item" style="display: flex; flex-direction: column; align-items: flex-end; padding: 0.4rem 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; cursor: pointer;" 
+                                     onclick="toggleWalletDisplay()" 
+                                     id="earningWalletToggle"
+                                     title="Click to switch between Main and Earning wallet">
+                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <i class="fas fa-trophy" style="font-size: 0.75rem; color: #10b981;"></i>
+                                        <span class="wallet-label" style="font-size: 0.7rem; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">Earning</span>
+                                    </div>
+                                    <span class="wallet-value" style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">${{ number_format($earningBalance, 2) }}</span>
                                 </div>
                             </div>
 
                             <button class="btn-header btn-deposit" id="depositBtn">
                                 Deposit
                             </button>
+                            
+                            <script>
+                                // Store wallet balances in JavaScript
+                                window.mainWalletBalance = {{ $mainBalance }};
+                                window.earningWalletBalance = {{ $earningBalance }};
+                                window.currentWalletView = 'main'; // 'main' or 'earning'
+                                
+                                function toggleWalletDisplay() {
+                                    const mainWalletEl = document.getElementById('walletToggle');
+                                    const earningWalletEl = document.getElementById('earningWalletToggle');
+                                    
+                                    if (window.currentWalletView === 'main') {
+                                        // Switch to earning view
+                                        window.currentWalletView = 'earning';
+                                        mainWalletEl.style.opacity = '0.5';
+                                        mainWalletEl.style.transform = 'scale(0.95)';
+                                        earningWalletEl.style.opacity = '1';
+                                        earningWalletEl.style.transform = 'scale(1.05)';
+                                        earningWalletEl.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+                                        mainWalletEl.style.boxShadow = 'none';
+                                    } else {
+                                        // Switch to main view
+                                        window.currentWalletView = 'main';
+                                        earningWalletEl.style.opacity = '0.5';
+                                        earningWalletEl.style.transform = 'scale(0.95)';
+                                        mainWalletEl.style.opacity = '1';
+                                        mainWalletEl.style.transform = 'scale(1.05)';
+                                        mainWalletEl.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+                                        earningWalletEl.style.boxShadow = 'none';
+                                    }
+                                    
+                                    // Update userBalance for trading panel
+                                    if (typeof window.userBalance !== 'undefined') {
+                                        window.userBalance = window.currentWalletView === 'main' 
+                                            ? window.mainWalletBalance 
+                                            : window.earningWalletBalance;
+                                    }
+                                }
+                                
+                                // Initialize wallet display on page load
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const mainWalletEl = document.getElementById('walletToggle');
+                                    const earningWalletEl = document.getElementById('earningWalletToggle');
+                                    
+                                    if (mainWalletEl && earningWalletEl) {
+                                        // Set initial state - main wallet highlighted
+                                        mainWalletEl.style.transition = 'all 0.3s ease';
+                                        earningWalletEl.style.transition = 'all 0.3s ease';
+                                        mainWalletEl.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+                                        earningWalletEl.style.opacity = '0.7';
+                                    }
+                                });
+                            </script>
                         @else
                             <a href="{{ route('login') }}" id="loginBtn" class="btn-header">Log In</a>
                             <a href="{{ route('register') }}" class="btn-header btn-sign-up">Sign Up</a>
                         @endif
+
+                        <!-- Language Switcher -->
+                        <div class="language-switcher" id="languageSwitcher">
+                            <button class="language-switcher-button" type="button" aria-label="Select Language">
+                                <span class="language-switcher-button-content">
+                                    <span class="language-flag">🇺🇸</span>
+                                    <span class="language-name">English</span>
+                                </span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="language-switcher-dropdown">
+                                <!-- Languages will be loaded dynamically by JavaScript -->
+                            </div>
+                        </div>
 
                         <div class="header-menu-wrapper">
                             @if (auth()->check())
@@ -280,6 +441,14 @@
                                         </button>
                                     </div>
 
+                                    <div class="header-menu-item d-flex align-items-center justify-content-between w-100" id="headerMenuLanguageItem" style="cursor: pointer;">
+                                        <span class="header-menu-icon">
+                                            <i class="fas fa-language" style="color: #3b82f6;"></i>
+                                        </span>
+                                        <span class="header-menu-label">Change Language</span>
+                                        <i class="fas fa-chevron-right" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
+                                    </div>
+
                                     <div class="header-menu-divider"></div>
 
                                     <a href="{{ route('terms-of-use') }}">
@@ -345,6 +514,18 @@
                         </div>
                         <div class="col-7">
                             <div class="header-actions d-flex align-items-center justify-content-end">
+                                <!-- Language Switcher (Mobile) -->
+                                <div class="language-switcher" id="languageSwitcherMobile" style="margin-right: 0.5rem;">
+                                    <button class="language-switcher-button" type="button" aria-label="Select Language" style="min-width: 80px; padding: 0.4rem 0.6rem;">
+                                        <span class="language-switcher-button-content">
+                                            <span class="language-flag">🇺🇸</span>
+                                        </span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                                    </button>
+                                    <div class="language-switcher-dropdown">
+                                        <!-- Languages will be loaded dynamically by JavaScript -->
+                                    </div>
+                                </div>
 
                                 <div class="header-menu-wrapper">
                                     @if (auth()->check())
@@ -403,6 +584,14 @@
                                                 </button>
                                             </div>
 
+                                            <div class="header-menu-item d-flex align-items-center justify-content-between w-100" id="headerMenuLanguageItemMobile" style="cursor: pointer;">
+                                                <span class="header-menu-icon">
+                                                    <i class="fas fa-language" style="color: #3b82f6;"></i>
+                                                </span>
+                                                <span class="header-menu-label">Change Language</span>
+                                                <i class="fas fa-chevron-right" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
+                                            </div>
+
                                             <div class="header-menu-divider"></div>
 
                                             <a href="#">
@@ -449,6 +638,9 @@
         </div>
     </div>
 
+    <!-- Google Translate Element (Hidden) -->
+    <div id="google_translate_element" style="display: none !important; visibility: hidden !important; position: absolute !important; left: -9999px !important;"></div>
+
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav d-lg-none d-flex">
         <a href="{{ route('home') }}" class="mobile-nav-item active">
@@ -463,9 +655,21 @@
             <i class="fas fa-sync-alt"></i>
             <span>Breaking</span>
         </a>
-        <a href="{{ route('profile.index') }}" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>${{ $authUser?->wallet?->balance ?? '0.00' }}</span>
+        <a href="{{ route('profile.index') }}" class="mobile-nav-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-wallet" style="font-size: 0.9rem;"></i>
+                <span style="font-size: 0.7rem; font-weight: 600;">Main</span>
+            </div>
+            <span style="font-size: 0.85rem; font-weight: 700;">${{ number_format(($authUserMainWallet ?? $authUser?->mainWallet)?->balance ?? 0, 2) }}</span>
+            @php
+                $earningBalance = ($authUserEarningWallet ?? $authUser?->earningWallet)?->balance ?? 0;
+            @endphp
+            @if($earningBalance > 0)
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem;">
+                <i class="fas fa-trophy" style="font-size: 0.7rem; color: #10b981;"></i>
+                <span style="font-size: 0.65rem; color: #10b981; font-weight: 600;">${{ number_format($earningBalance, 2) }}</span>
+            </div>
+            @endif
         </a>
     </div>
 
@@ -536,6 +740,12 @@
                     <span class="header-menu-switch-knob"></span>
                 </span>
             </button>
+        </div>
+        <div class="more-menu-divider"></div>
+        <div class="more-menu-links">
+            <a href="#" id="sidebarMenuLanguageItem" style="cursor: pointer;">
+                <i class="fas fa-language" style="color: #3b82f6;"></i> Change Language
+            </a>
         </div>
         <div class="more-menu-divider"></div>
 
@@ -635,6 +845,9 @@
     <!-- Frontend App JS (Production Optimized) -->
     <script src="{{ asset('frontend/assets/js/frontend-app.min.js') }}"></script>
     
+    <!-- Google Translate Integration -->
+    <script src="{{ asset('frontend/assets/js/google-translate.min.js') }}"></script>
+    
     <!-- Page Loader Script -->
     <script>
         // Page Loader - Hide when page is fully loaded
@@ -693,8 +906,8 @@
         // Initialize user balance for trading panel
         @auth
         @php
-            $userWallet = $authUser?->wallet;
-            $userBalance = $userWallet ? $userWallet->balance : 0;
+            $userMainWallet = $authUserMainWallet ?? $authUser?->mainWallet;
+            $userBalance = $userMainWallet ? $userMainWallet->balance : 0;
         @endphp
         window.userBalance = {{ $userBalance }};
         @else
@@ -2631,6 +2844,15 @@
                 "showMethod": "fadeIn",
                 "hideMethod": "fadeOut"
             };
+            
+            // Ensure toastr container has highest z-index
+            setTimeout(function() {
+                const toastContainer = document.getElementById('toast-container');
+                if (toastContainer) {
+                    toastContainer.style.zIndex = '10000000';
+                    toastContainer.style.position = 'fixed';
+                }
+            }, 100);
         }
 
         // Define showSuccess function

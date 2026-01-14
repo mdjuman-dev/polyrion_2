@@ -171,7 +171,9 @@ class MetaMaskController extends Controller
                 ->first();
 
             if ($existingCompletedDeposit) {
-                $wallet = Wallet::where('user_id', $user->id)->first();
+                $wallet = Wallet::where('user_id', $user->id)
+                    ->where('wallet_type', Wallet::TYPE_MAIN)
+                    ->first();
                 Log::warning('Duplicate transaction hash attempt - already completed', [
                     'user_id' => $user->id,
                     'tx_hash' => $txHash,
@@ -214,7 +216,9 @@ class MetaMaskController extends Controller
 
             // Check if this deposit already has this transaction ID and is completed
             if ($deposit->transaction_id === $txHash && $deposit->status === 'completed') {
-                $wallet = Wallet::where('user_id', $user->id)->first();
+                $wallet = Wallet::where('user_id', $user->id)
+                    ->where('wallet_type', Wallet::TYPE_MAIN)
+                    ->first();
                 return response()->json([
                     'success' => false,
                     'message' => 'This transaction has already been processed for this deposit.',
@@ -248,7 +252,9 @@ class MetaMaskController extends Controller
 
             DB::commit();
 
-            $wallet = Wallet::where('user_id', $user->id)->first();
+            $wallet = Wallet::where('user_id', $user->id)
+                ->where('wallet_type', Wallet::TYPE_MAIN)
+                ->first();
 
             Log::info('MetaMask transaction verified and processed', [
                 'user_id' => $user->id,
@@ -694,10 +700,10 @@ class MetaMaskController extends Controller
             throw new \Exception('Invalid deposit amount: ' . $deposit->amount);
         }
 
-        // Get or create wallet
+        // Get or create main wallet
         $wallet = Wallet::lockForUpdate()
             ->firstOrCreate(
-                ['user_id' => $user->id],
+                ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                 ['balance' => 0, 'currency' => $deposit->currency ?? 'USDT', 'status' => 'active']
             );
 

@@ -14,12 +14,12 @@ use InvalidArgumentException;
 class TradeService
 {
    /**
-    * Validate user has enough balance
+    * Validate user has enough balance in main wallet
     */
    public function validateBalance(User $user, float $amount): bool
    {
       $wallet = Wallet::firstOrCreate(
-         ['user_id' => $user->id],
+         ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
          ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
       );
 
@@ -134,10 +134,10 @@ class TradeService
       // Check market liquidity (warning only, doesn't block)
       $this->checkMarketLiquidity($market, $amount);
 
-      // Validate balance
+      // Validate balance in main wallet
       if (!$this->validateBalance($user, $amount)) {
          $wallet = Wallet::firstOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
             ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
          );
          throw new InvalidArgumentException('Insufficient balance. Your balance: $' . number_format($wallet->balance, 2) . ', Required: $' . number_format($amount, 2));
@@ -162,9 +162,9 @@ class TradeService
          throw new InvalidArgumentException('Trade amount too small. Minimum tokens: 0.0001');
       }
 
-      // Get or create wallet
+      // Get or create main wallet
       $wallet = Wallet::firstOrCreate(
-         ['user_id' => $user->id],
+         ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
          ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
       );
 
@@ -214,14 +214,22 @@ class TradeService
 
          DB::commit();
 
-         // Dispatch job to process trade-based referral commission (async)
+         // Process referral commission immediately when trade is placed
+         // Commission is calculated from FULL trade amount (no deduction from user)
+         // Process synchronously to ensure immediate execution
          try {
-            \App\Jobs\ProcessTradeCommission::dispatch($trade);
+            $commissionJob = new \App\Jobs\ProcessTradeCommission($trade);
+            $commissionJob->handle(); // Execute immediately, don't queue
+            
+            Log::info('ProcessTradeCommission processed synchronously', [
+               'trade_id' => $trade->id,
+            ]);
          } catch (\Exception $e) {
             // Log error but don't fail the trade creation
-            Log::error('Failed to dispatch ProcessTradeCommission job', [
+            Log::error('Failed to process trade commission', [
                'trade_id' => $trade->id,
                'error' => $e->getMessage(),
+               'trace' => $e->getTraceAsString(),
             ]);
          }
 
@@ -265,13 +273,14 @@ class TradeService
       DB::beginTransaction();
 
       try {
-         $wallet = Wallet::firstOrCreate(
-            ['user_id' => $trade->user_id],
+         // Get or create earning wallet for trade winnings
+         $earningWallet = Wallet::firstOrCreate(
+            ['user_id' => $trade->user_id, 'wallet_type' => Wallet::TYPE_EARNING],
             ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
          );
 
          if ($trade->outcome === $finalOutcome) {
-            // Trade WON
+            // Trade WON - add payout to earning wallet
             $payout = $trade->token_amount * 1.00; // Full payout at $1.00 per token
 
             $trade->status = 'WON';
@@ -280,19 +289,19 @@ class TradeService
             $trade->settled_at = now();
             $trade->save();
 
-            // Add payout to wallet
-            $balanceBefore = $wallet->balance;
-            $wallet->balance += $payout;
-            $wallet->save();
+            // Add payout to earning wallet
+            $balanceBefore = $earningWallet->balance;
+            $earningWallet->balance += $payout;
+            $earningWallet->save();
 
-            // Create wallet transaction
+            // Create wallet transaction for earning wallet
             WalletTransaction::create([
                'user_id' => $trade->user_id,
-               'wallet_id' => $wallet->id,
+               'wallet_id' => $earningWallet->id,
                'type' => 'trade_payout',
                'amount' => $payout,
                'balance_before' => $balanceBefore,
-               'balance_after' => $wallet->balance,
+               'balance_after' => $earningWallet->balance,
                'reference_type' => Trade::class,
                'reference_id' => $trade->id,
                'description' => "Trade payout: {$trade->outcome} on market: {$market->question}",
@@ -302,6 +311,7 @@ class TradeService
                   'outcome' => $trade->outcome,
                   'payout' => $payout,
                   'profit' => $payout - $trade->amount_invested,
+                  'wallet_type' => Wallet::TYPE_EARNING,
                ]
             ]);
 

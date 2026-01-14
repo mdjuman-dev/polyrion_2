@@ -836,10 +836,10 @@ class BinancePayController extends Controller
             throw new \Exception('Invalid deposit amount: ' . $deposit->amount);
         }
 
-        // Get or create wallet with lock to prevent race conditions
+        // Get or create main wallet with lock to prevent race conditions
         $wallet = Wallet::lockForUpdate()
             ->firstOrCreate(
-                ['user_id' => $user->id],
+                ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                 ['balance' => 0, 'currency' => $deposit->currency ?? 'USDT', 'status' => 'active']
             );
 
@@ -1007,7 +1007,9 @@ class BinancePayController extends Controller
 
             // Check if already processed
             if ($deposit->status === 'completed') {
-                $wallet = Wallet::where('user_id', $user->id)->first();
+                $wallet = Wallet::where('user_id', $user->id)
+                    ->where('wallet_type', Wallet::TYPE_MAIN)
+                    ->first();
                 return response()->json([
                     'success' => false,
                     'message' => 'This payment has already been processed.',
@@ -1027,7 +1029,9 @@ class BinancePayController extends Controller
 
             DB::commit();
 
-            $wallet = Wallet::where('user_id', $user->id)->first();
+            $wallet = Wallet::where('user_id', $user->id)
+                ->where('wallet_type', Wallet::TYPE_MAIN)
+                ->first();
 
             return response()->json([
                 'success' => true,

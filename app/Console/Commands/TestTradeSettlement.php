@@ -47,10 +47,10 @@ class TestTradeSettlement extends Command
             );
             $this->info("✓ User created/found: {$user->name} (ID: {$user->id})");
 
-            // Step 2: Add initial balance to wallet
-            $this->info('Step 2: Setting up wallet...');
+            // Step 2: Add initial balance to main wallet
+            $this->info('Step 2: Setting up main wallet...');
             $wallet = Wallet::firstOrCreate(
-                ['user_id' => $user->id],
+                ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                 ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
             );
             $initialBalance = 100.00;

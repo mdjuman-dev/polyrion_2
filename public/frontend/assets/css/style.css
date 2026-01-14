@@ -5810,7 +5810,7 @@ input:checked + .toggle-slider:before {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1050;
+    z-index: 10000000 !important;
 }
 
 .toast {

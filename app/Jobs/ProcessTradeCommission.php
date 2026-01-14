@@ -14,6 +14,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ProcessTradeCommission implements ShouldQueue
 {
@@ -48,6 +49,10 @@ class ProcessTradeCommission implements ShouldQueue
     public function handle(): void
     {
         try {
+            Log::info('ProcessTradeCommission job started', [
+                'trade_id' => $this->trade->id,
+            ]);
+
             // Reload trade with relationships to ensure we have latest data
             $this->trade->refresh();
             $this->trade->load('user');
@@ -72,17 +77,30 @@ class ProcessTradeCommission implements ShouldQueue
                 return;
             }
 
+            Log::info('Trader found', [
+                'trade_id' => $this->trade->id,
+                'trader_id' => $trader->id,
+                'trader_referrer_id' => $trader->referrer_id,
+            ]);
+
             // Check if trader has a referrer
             if (!$trader->referrer_id) {
-                Log::debug('Trade commission processing skipped: Trader has no referrer', [
+                Log::info('Trade commission processing skipped: Trader has no referrer', [
                     'trade_id' => $this->trade->id,
                     'trader_id' => $trader->id,
                 ]);
                 return;
             }
 
-            // Get trade amount (use amount_invested or amount field)
+            // Get trade amount (use amount_invested or amount field) - FULL AMOUNT, no deduction
             $tradeAmount = (float) ($this->trade->amount_invested ?? $this->trade->amount ?? 0);
+
+            Log::info('Trade amount calculated', [
+                'trade_id' => $this->trade->id,
+                'trade_amount' => $tradeAmount,
+                'amount_invested' => $this->trade->amount_invested,
+                'amount' => $this->trade->amount,
+            ]);
 
             if ($tradeAmount <= 0) {
                 Log::warning('Trade commission processing skipped: Invalid trade amount', [
@@ -95,9 +113,16 @@ class ProcessTradeCommission implements ShouldQueue
             // Fetch active referral settings for trade_volume type (cached)
             $settings = $this->getReferralSettings();
 
+            Log::info('Referral settings fetched', [
+                'trade_id' => $this->trade->id,
+                'settings_count' => count($settings),
+                'settings' => $settings,
+            ]);
+
             if (empty($settings)) {
                 Log::warning('Trade commission processing skipped: No active referral settings found', [
                     'trade_id' => $this->trade->id,
+                    'all_settings' => ReferralSetting::all()->toArray(),
                 ]);
                 return;
             }
@@ -116,10 +141,18 @@ class ProcessTradeCommission implements ShouldQueue
                 // OPTIMIZED: Build referral chain upfront to reduce database queries
                 $referralChain = $this->buildReferralChain($trader);
                 
+                Log::info('Referral chain built', [
+                    'trade_id' => $this->trade->id,
+                    'trader_id' => $trader->id,
+                    'chain_levels' => array_keys($referralChain),
+                    'chain_count' => count($referralChain),
+                ]);
+                
                 if (empty($referralChain)) {
-                    Log::info('No referral chain found for trader', [
+                    Log::warning('No referral chain found for trader', [
                         'trade_id' => $this->trade->id,
                         'trader_id' => $trader->id,
+                        'trader_referrer_id' => $trader->referrer_id,
                     ]);
                     return;
                 }
@@ -154,20 +187,21 @@ class ProcessTradeCommission implements ShouldQueue
                             continue;
                         }
 
-                        // Update referrer's balance atomically using DB increment for better performance
-                        $balanceBefore = (float) ($referrer->balance ?? 0);
+                        // Get or create earning wallet for referral commission
+                        $earningWallet = \App\Models\Wallet::lockForUpdate()
+                            ->firstOrCreate(
+                                ['user_id' => $referrer->id, 'wallet_type' => \App\Models\Wallet::TYPE_EARNING],
+                                ['balance' => 0, 'currency' => 'USDT', 'status' => 'active']
+                            );
                         
-                        // Use DB::increment for atomic update (more efficient)
-                        DB::table('users')
-                            ->where('id', $referrer->id)
-                            ->increment('balance', $commissionAmount);
-                        
-                        // Refresh to get updated balance
-                        $referrer->refresh();
-                        $balanceAfter = (float) $referrer->balance;
+                        // Update earning wallet balance atomically
+                        $balanceBefore = (float) $earningWallet->balance;
+                        $earningWallet->balance += $commissionAmount;
+                        $earningWallet->save();
+                        $balanceAfter = (float) $earningWallet->balance;
 
                         // Prepare log entry (batch insert for better performance)
-                        $commissionLogs[] = [
+                        $logEntry = [
                             'user_id' => $referrer->id, // referrer_id
                             'from_user_id' => $trader->id, // referred_user_id
                             'trade_id' => $this->trade->id,
@@ -177,6 +211,16 @@ class ProcessTradeCommission implements ShouldQueue
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
+                        
+                        // Add optional columns if they exist
+                        if (Schema::hasColumn('referral_logs', 'trade_amount')) {
+                            $logEntry['trade_amount'] = $tradeAmount;
+                        }
+                        if (Schema::hasColumn('referral_logs', 'status')) {
+                            $logEntry['status'] = 'completed'; // Commission is completed when trade is placed
+                        }
+                        
+                        $commissionLogs[] = $logEntry;
 
                         $commissionsDistributed++;
                         $totalCommission += $commissionAmount;
@@ -260,10 +304,26 @@ class ProcessTradeCommission implements ShouldQueue
     private function getReferralSettings(): array
     {
         return Cache::remember(self::CACHE_KEY, self::CACHE_DURATION, function () {
-            $settings = ReferralSetting::where('is_active', true)
-                ->where('commission_type', 'trade_volume')
-                ->orderBy('level')
-                ->get();
+            // First check if commission_type column exists
+            $hasCommissionType = \Schema::hasColumn('referral_settings', 'commission_type');
+            
+            $query = ReferralSetting::where('is_active', true);
+            
+            // Only filter by commission_type if column exists
+            if ($hasCommissionType) {
+                $query->where('commission_type', 'trade_volume');
+            } else {
+                // If column doesn't exist, get all active settings (backward compatibility)
+                Log::warning('commission_type column not found in referral_settings, using all active settings');
+            }
+            
+            $settings = $query->orderBy('level')->get();
+
+            Log::info('Referral settings fetched from database', [
+                'has_commission_type_column' => $hasCommissionType,
+                'settings_count' => $settings->count(),
+                'settings' => $settings->toArray(),
+            ]);
 
             $result = [];
             foreach ($settings as $setting) {
@@ -272,6 +332,16 @@ class ProcessTradeCommission implements ShouldQueue
 
             return $result;
         });
+    }
+    
+    /**
+     * Clear cache for referral settings
+     * Call this when settings are updated
+     */
+    public static function clearCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+        Log::info('Referral settings cache cleared');
     }
 
     /**

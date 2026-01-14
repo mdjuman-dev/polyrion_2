@@ -66,6 +66,8 @@ Route::post('/password/update', [ProfileController::class, 'updatePassword'])->m
 // Wallet routes
 Route::controller(WalletController::class)->prefix('wallet')->name('wallet.')->middleware(['auth'])->group(function () {
     Route::post('/deposit', 'deposit')->name('deposit');
+    Route::post('/transfer-earning-to-main', 'transferEarningToMain')->name('transfer.earning.to.main');
+    Route::get('/transfer-history', 'getTransferHistory')->name('transfer.history');
 });
 
 // Withdrawal routes - Redirect to profile page (withdrawal handled via modal)

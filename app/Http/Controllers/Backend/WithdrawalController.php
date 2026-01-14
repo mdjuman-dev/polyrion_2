@@ -48,7 +48,7 @@ class WithdrawalController extends Controller
          $query->whereHas('user', function ($q) use ($search) {
             $q->select(['id', 'name', 'email'])
               ->where('email', 'like', "%{$search}%")
-              ->orWhere('name', 'like', "%{$search}%");
+               ->orWhere('name', 'like', "%{$search}%");
          });
       }
 
@@ -159,11 +159,11 @@ class WithdrawalController extends Controller
 
          $admin = Auth::guard('admin')->user();
 
-         // Refund the amount back to user's wallet
+         // Refund the amount back to user's main wallet
          $user = $withdrawal->user;
          $wallet = Wallet::lockForUpdate()
             ->firstOrCreate(
-               ['user_id' => $user->id],
+               ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
                ['balance' => 0, 'status' => 'active', 'currency' => $withdrawal->currency]
             );
 
