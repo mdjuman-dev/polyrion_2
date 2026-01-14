@@ -82,34 +82,97 @@
             $prices = is_string($market->outcome_prices ?? null) 
                 ? json_decode($market->outcome_prices, true) 
                 : ($market->outcome_prices ?? []);
-            // Polymarket format - prices[0] = NO, prices[1] = YES
+            
+            // Get actual outcomes from market
+            $outcomes = is_string($market->outcomes) 
+                ? json_decode($market->outcomes, true) 
+                : ($market->outcomes ?? ['Yes', 'No']);
+            
+            // Default to Yes/No if outcomes array is empty or invalid
+            if (empty($outcomes) || !is_array($outcomes)) {
+               $outcomes = ['Yes', 'No'];
+            }
+            
+            // Get first and second outcome
+            $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+            $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
+            
+            // Polymarket format - prices[0] = second outcome, prices[1] = first outcome
             // Prices from Polymarket API are stored as decimals (0-1 range)
-            $yesPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
-            $noPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
+            $firstPrice = isset($prices[1]) ? floatval($prices[1]) : 0.5;
+            $secondPrice = isset($prices[0]) ? floatval($prices[0]) : 0.5;
 
             // Use bestAsk/bestBid if available (more accurate from Polymarket API order book)
             // best_ask and best_bid are stored as decimals (0-1 range)
             if ($market->best_ask !== null && $market->best_ask > 0) {
-               $yesPrice = floatval($market->best_ask);
+               $firstPrice = floatval($market->best_ask);
+               // If we have best_ask, calculate complementary second price
+               // But only if best_bid is not available
+               if ($market->best_bid === null || $market->best_bid <= 0) {
+                  $secondPrice = 1.0 - $firstPrice;
+               }
             }
             if ($market->best_bid !== null && $market->best_bid > 0) {
-               // bestBid is for YES, so NO price = 1 - bestBid
-               $noPrice = 1 - floatval($market->best_bid);
+               // bestBid is for first outcome, so second outcome price = 1 - bestBid
+               $secondPrice = 1.0 - floatval($market->best_bid);
+               // If we have best_bid, calculate complementary first price
+               // But only if best_ask is not available
+               if ($market->best_ask === null || $market->best_ask <= 0) {
+                  $firstPrice = 1.0 - $secondPrice;
+               }
             }
 
-            // Ensure prices are in valid range (0-1 for decimal format)
-            $yesPrice = max(0.001, min(0.999, $yesPrice));
-            $noPrice = max(0.001, min(0.999, $noPrice));
+            // Ensure prices are complementary (firstPrice + secondPrice = 1.0)
+            // This is critical for binary markets
+            $priceSum = $firstPrice + $secondPrice;
+            if (abs($priceSum - 1.0) > 0.01) {
+               // If prices don't sum to 1, make them complementary
+               // Use firstPrice as base and calculate secondPrice
+               $firstPrice = max(0.001, min(0.999, $firstPrice));
+               $secondPrice = 1.0 - $firstPrice;
+            } else {
+               // Ensure prices are in valid range (0.001 - 0.999)
+               $firstPrice = max(0.001, min(0.999, $firstPrice));
+               $secondPrice = max(0.001, min(0.999, $secondPrice));
+               // Re-normalize to ensure they sum to 1.0
+               $priceSum = $firstPrice + $secondPrice;
+               if ($priceSum > 0) {
+                  $firstPrice = $firstPrice / $priceSum;
+                  $secondPrice = $secondPrice / $priceSum;
+               }
+            }
 
             // Format prices in cents (Polymarket style) - prices are already decimals
-            $yesPriceCents = number_format($yesPrice * 100, 1);
-            $noPriceCents = number_format($noPrice * 100, 1);
+            // Show at least 1 decimal place, but don't round to 0.1 if actual price is different
+            $firstPriceCents = $firstPrice * 100;
+            $secondPriceCents = $secondPrice * 100;
+            
+            // Format with appropriate precision
+            // If price is very small (< 1¢), show 2 decimal places
+            // If price is larger, show 1 decimal place
+            if ($firstPriceCents < 1) {
+               $firstPriceCentsDisplay = number_format($firstPriceCents, 2, '.', '');
+            } else {
+               $firstPriceCentsDisplay = number_format($firstPriceCents, 1, '.', '');
+            }
+            
+            if ($secondPriceCents < 1) {
+               $secondPriceCentsDisplay = number_format($secondPriceCents, 2, '.', '');
+            } else {
+               $secondPriceCentsDisplay = number_format($secondPriceCents, 1, '.', '');
+            }
+            
+            // Remove trailing zeros
+            $firstPriceCentsDisplay = rtrim(rtrim($firstPriceCentsDisplay, '0'), '.');
+            $secondPriceCentsDisplay = rtrim(rtrim($secondPriceCentsDisplay, '0'), '.');
          @endphp
-         <button class="outcome-btn-yes active" id="yesBtn" data-price="{{ $yesPrice }}">
-            Yes {{ $yesPriceCents }}¢
+         <button class="outcome-btn-yes active" id="yesBtn" data-price="{{ $firstPrice }}" 
+            data-outcome="{{ $firstOutcome }}" data-outcome-index="0">
+            {{ $firstOutcome }} {{ $firstPriceCentsDisplay }}¢
          </button>
-         <button class="outcome-btn-no" id="noBtn" data-price="{{ $noPrice }}">
-            No {{ $noPriceCents }}¢
+         <button class="outcome-btn-no" id="noBtn" data-price="{{ $secondPrice }}"
+            data-outcome="{{ $secondOutcome }}" data-outcome-index="1">
+            {{ $secondOutcome }} {{ $secondPriceCentsDisplay }}¢
          </button>
       </div>
    </div>

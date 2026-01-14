@@ -4,7 +4,14 @@
     </div>
 @else
     @php
-        $isMultiMarket = $event->markets->count() > 1;
+        $activeMarkets = $event->markets->filter(function($market) {
+            return $market->active && !$market->closed;
+        });
+        $isMultiMarket = $activeMarkets->count() > 1;
+        $singleMarket = $activeMarkets->count() === 1 ? $activeMarkets->first() : null;
+        $marketLink = $singleMarket && $singleMarket->slug 
+            ? route('market.single', $singleMarket->slug) 
+            : route('market.details', $event->slug);
     @endphp
 
     @if ($isMultiMarket)
@@ -41,6 +48,15 @@
                         $outcomes = is_string($market->outcomes) 
                             ? json_decode($market->outcomes, true) 
                             : ($market->outcomes ?? []);
+                        
+                        // Default to Yes/No if outcomes array is empty or invalid
+                        if (empty($outcomes) || !is_array($outcomes)) {
+                           $outcomes = ['Yes', 'No'];
+                        }
+                        
+                        // Get first and second outcome
+                        $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+                        $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
                     @endphp
 
                     @if ($outcomes !== null)
@@ -48,8 +64,8 @@
                             <span class="market-card-outcome-label "
                                 style="color:#fff">{{ $market->groupItem_title }}</span>
                             <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                            <button class="market-card-yes-btn">{{ 'Yes' }}</button>
-                            <button class="market-card-no-btn">{{ 'No' }}</button>
+                            <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
+                            <button class="market-card-no-btn">{{ $secondOutcome }}</button>
                         </div>
                     @endif
                 @endforeach
@@ -94,6 +110,15 @@
                 $outcomes = is_string($market->outcomes) 
                     ? json_decode($market->outcomes, true) 
                     : ($market->outcomes ?? []);
+                
+                // Default to Yes/No if outcomes array is empty or invalid
+                if (empty($outcomes) || !is_array($outcomes)) {
+                   $outcomes = ['Yes', 'No'];
+                }
+                
+                // Get first and second outcome
+                $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+                $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
             }
         @endphp
 
@@ -105,7 +130,7 @@
                             alt="{{ $event->title }}">
                     </div>
                     <div class="market-title-section">
-                        <a href="{{ route('market.details', $event->slug) }}" class="market-card-title"
+                        <a href="{{ $marketLink }}" class="market-card-title"
                             style="color:#fff">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>
                     </div>
                 </div>
@@ -119,8 +144,8 @@
             </div>
 
             <div class="market-card-body-single">
-                <button class="market-card-yes-btn-large">{{ 'Up' }}</button>
-                <button class="market-card-no-btn-large">{{ 'Down' }}</button>
+                <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
+                <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
             </div>
 
             <div class="market-footer">

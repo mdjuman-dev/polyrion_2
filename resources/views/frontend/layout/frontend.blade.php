@@ -1459,7 +1459,8 @@
 
             // MARKET DETAIL PAGE (Optimized)
             (function() {
-                    if (!$('#marketChart').length && !$('.outcome-row').length) return;
+                    // Check if this is a market details page (has chart or outcome rows or trading panel)
+                    if (!$('#marketChart').length && !$('.outcome-row').length && !$('#tradingPanel').length) return;
 
                     // Ensure trading panel is closed on page load
                     $('#tradingPanel').removeClass('active');
@@ -1800,9 +1801,17 @@
                 // Ensure price is between 0.0001 and 0.9999
                 price = Math.max(0.0001, Math.min(0.9999, price));
 
-                // Prepare trade data
+                // Get outcome name from button data attribute (dynamic outcomes)
+                let outcomeName = null;
+                if (isYes) {
+                    outcomeName = $('#yesBtn').data('outcome') || window.currentFirstOutcome || 'Yes';
+                } else {
+                    outcomeName = $('#noBtn').data('outcome') || window.currentSecondOutcome || 'No';
+                }
+                
+                // Prepare trade data with dynamic outcome
                 const tradeData = {
-                    option: isYes ? 'yes' : 'no',
+                    option: outcomeName, // Use actual outcome name (Up, Down, Yes, No, etc.)
                     amount: currentShares,
                     price: price
                 };

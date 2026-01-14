@@ -35,20 +35,6 @@
                 <!-- Desktop: Categories Sidebar (3 columns) - Image Design -->
                 <div class="col-lg-3 d-none d-lg-block">
                     <div class="sports-sidebar" style="background: #1a1d29; border-radius: 8px; padding: 0; position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto;">
-                        <!-- Live/Futures Tabs -->
-                        <div style="display: flex; border-bottom: 1px solid #2d3142;">
-                            <button class="sports-tab-btn {{ request()->get('type', 'live') === 'live' ? 'active' : '' }}" 
-                                    onclick="window.location.href='{{ route('sports.index') }}?type=live{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}'"
-                                    style="flex: 1; padding: 12px 16px; background: transparent; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
-                                Live
-                            </button>
-                            <button class="sports-tab-btn {{ request()->get('type') === 'futures' ? 'active' : '' }}" 
-                                    onclick="window.location.href='{{ route('sports.index') }}?type=futures{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}'"
-                                    style="flex: 1; padding: 12px 16px; background: transparent; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
-                                Futures
-                            </button>
-                        </div>
-
                         <!-- POPULAR Section -->
                         @if(count($popularCategories) > 0)
                             <div style="padding: 20px 16px 12px 16px;">
@@ -58,7 +44,7 @@
                                 </div>
                                 <div class="sports-categories-list">
                                     @foreach($popularCategories as $category)
-                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
+                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}" 
                                            class="sports-category-link {{ strtolower($selectedCategory) === strtolower($category['name']) ? 'active' : '' }}"
                                            data-category="{{ strtolower($category['name']) }}">
                                             <i class="fas {{ $category['icon'] }}" style="color: {{ getCategoryColor($category['name']) }}; font-size: 18px; width: 24px; text-align: center;"></i>
@@ -77,7 +63,7 @@
                             <div class="sports-categories-list">
                                 @foreach($allCategories as $category)
                                     <div class="category-item-wrapper">
-                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
+                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}" 
                                            class="sports-category-link {{ strtolower($selectedCategory) === strtolower($category['name']) ? 'active' : '' }}"
                                            data-category="{{ strtolower($category['name']) }}">
                                             <i class="fas {{ $category['icon'] }}" style="color: #9ca3af; font-size: 18px; width: 24px; text-align: center;"></i>
@@ -89,7 +75,7 @@
                                         @if(strtolower($selectedCategory) === strtolower($category['name']) && count($subcategories) > 0)
                                             <div class="subcategories-list" style="margin-top: 4px; padding-left: 32px;">
                                                 @foreach($subcategories as $subcategory)
-                                                    <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}&subcategory={{ strtolower($subcategory['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
+                                                    <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}&subcategory={{ strtolower($subcategory['name']) }}" 
                                                        class="subcategory-link {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? 'active' : '' }}"
                                                        style="display: block; padding: 8px 12px; color: {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? '#fff' : '#9ca3af' }}; text-decoration: none; font-size: 13px; border-radius: 4px; background: {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? '#2d3142' : 'transparent' }}; transition: all 0.2s;">
                                                         {{ $subcategory['name'] }}

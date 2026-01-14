@@ -32,22 +32,6 @@
                     <button class="sports-content-tab active" style="padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">Games</button>
                     <button class="sports-content-tab" style="padding: 8px 16px; background: transparent; color: var(--text-secondary); border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">Props</button>
                 </div>
-
-                <!-- Settings and Filters -->
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <button style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text-primary); cursor: pointer;">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 14px; cursor: pointer;">
-                        <input type="checkbox" style="cursor: pointer;">
-                        <span>Show Spreads + Totals</span>
-                    </label>
-                    <select style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text-primary); font-size: 14px; cursor: pointer;">
-                        <option>Week 13</option>
-                        <option>Week 12</option>
-                        <option>Week 11</option>
-                    </select>
-                </div>
             </div>
         </div>
     </div>

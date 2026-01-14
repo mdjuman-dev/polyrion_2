@@ -1419,7 +1419,10 @@ $(document).ready(function () {
         if (isLimitOrder && limitPrice <= 0)
             return alert("Enter valid limit price");
         const action = isBuy ? "buy" : "sell";
-        const outcome = isYes ? "Yes" : "No";
+        // Get dynamic outcome name from button
+        const outcome = isYes ? 
+            ($("#yesBtn").data("outcome") || window.currentFirstOutcome || "Yes") :
+            ($("#noBtn").data("outcome") || window.currentSecondOutcome || "No");
         const date =
             $("#panelOutcomeName").text() ||
             $("#panelOutcomeTitle").text() ||
@@ -1460,9 +1463,14 @@ $(document).ready(function () {
         updateSummary();
         $("#confirmModal").hide();
         const isBuyAction = $(".action-tab.active").text() === "Buy";
-        const isYesAction = $(".outcome-btn.active").text() === "Yes";
+        // Get dynamic outcome from active button
+        const $activeBtn = $(".outcome-btn.active");
+        const isYesAction = $activeBtn.hasClass("outcome-btn-yes");
         const action = isBuyAction ? "bought" : "sold";
-        const outcome = isYesAction ? "Yes" : "No";
+        // Get outcome name from button data attribute
+        const outcome = $activeBtn.data("outcome") || (isYesAction ? 
+            (window.currentFirstOutcome || "Yes") : 
+            (window.currentSecondOutcome || "No"));
         const date =
             $("#panelOutcomeName").text() ||
             $("#panelOutcomeTitle").text() ||
@@ -1558,9 +1566,26 @@ $(document).ready(function () {
         // Get market ID from row
         const marketId = $row.data("market-id");
         
+        // Get outcomes from data attributes (dynamic outcomes like Up/Down, Yes/No, etc.)
+        let outcomes = $row.data("outcomes");
+        if (!outcomes || !Array.isArray(outcomes)) {
+            // Try to parse if it's a JSON string
+            try {
+                outcomes = JSON.parse($row.attr("data-outcomes") || '["Yes", "No"]');
+            } catch (e) {
+                outcomes = ["Yes", "No"]; // Fallback
+            }
+        }
+        const firstOutcome = outcomes[0] || "Yes";
+        const secondOutcome = outcomes[1] || "No";
+        
+        // Get outcome names from button data attributes (preferred)
+        const firstOutcomeName = $yesBtn.data("outcome") || firstOutcome;
+        const secondOutcomeName = $noBtn.data("outcome") || secondOutcome;
+        
         // Get initial prices from data attributes (fallback)
-        let yesPriceDecimal = parseFloat($yesBtn.attr("data-yes-price")) || 0.5;
-        let noPriceDecimal = parseFloat($noBtn.attr("data-no-price")) || 0.5;
+        let yesPriceDecimal = parseFloat($yesBtn.attr("data-price")) || parseFloat($row.attr("data-yes-price")) || 0.5;
+        let noPriceDecimal = parseFloat($noBtn.attr("data-price")) || parseFloat($row.attr("data-no-price")) || 0.5;
         
         // Fallback: Extract from button text if data attributes not available
         if (isNaN(yesPriceDecimal) || yesPriceDecimal <= 0) {
@@ -1642,14 +1667,23 @@ $(document).ready(function () {
             $("#actionTabs").addClass("buy-only");
         }
         // Update button text with prices (display in cents) but store decimal in data-price
+        // Use dynamic outcome names from the market
         $("#yesBtn")
-            .html(`Yes ${yesPriceCents.toFixed(1)}¢`)
+            .html(`${firstOutcomeName} ${yesPriceCents.toFixed(1)}¢`)
             .attr("data-price", yesPriceDecimal)
-            .data("price-decimal", yesPriceDecimal); // Store in jQuery data as well
+            .attr("data-outcome", firstOutcomeName)
+            .data("price-decimal", yesPriceDecimal)
+            .data("outcome", firstOutcomeName); // Store outcome name
         $("#noBtn")
-            .html(`No ${noPriceCents.toFixed(1)}¢`)
+            .html(`${secondOutcomeName} ${noPriceCents.toFixed(1)}¢`)
             .attr("data-price", noPriceDecimal)
-            .data("price-decimal", noPriceDecimal); // Store in jQuery data as well
+            .attr("data-outcome", secondOutcomeName)
+            .data("price-decimal", noPriceDecimal)
+            .data("outcome", secondOutcomeName); // Store outcome name
+        
+        // Store outcomes globally for trade execution
+        window.currentFirstOutcome = firstOutcomeName;
+        window.currentSecondOutcome = secondOutcomeName;
 
         if (isYesSelected) {
             $("#yesBtn").addClass("active");

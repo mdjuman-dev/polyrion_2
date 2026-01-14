@@ -136,13 +136,33 @@
                ? (int) $percentChange
                : $percentChange;
 
+            // Get actual outcomes from market
+            $outcomes = is_string($market->outcomes) 
+                ? json_decode($market->outcomes, true) 
+                : ($market->outcomes ?? ['Yes', 'No']);
+            
+            // Default to Yes/No if outcomes array is empty or invalid
+            if (empty($outcomes) || !is_array($outcomes)) {
+               $outcomes = ['Yes', 'No'];
+            }
+            
+            // Get first and second outcome (for binary markets)
+            $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+            $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
+            
+            // For binary markets, first outcome typically corresponds to index 1 in prices (YES equivalent)
+            // Second outcome corresponds to index 0 in prices (NO equivalent)
+            // But we'll use the actual outcome names from the API
+            
             // Check if this is the first market
             $isFirst = $index === 0;
          @endphp
 
          {{-- ACTIVE Market Outcome Row --}}
          <div class="outcome-row {{ $isFirst ? 'first-market' : '' }}" data-market-id="{{ $market->id }}"
-            data-market-status="active" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}">
+            data-market-status="active" data-yes-price="{{ $yesPrice }}" data-no-price="{{ $noPrice }}"
+            data-first-outcome="{{ $firstOutcome }}" data-second-outcome="{{ $secondOutcome }}"
+            data-outcomes="{{ json_encode($outcomes) }}">
 
             <div class="outcome-row-content">
                {{-- Left: Market Info --}}
@@ -175,13 +195,13 @@
             {{-- Action Buttons (Only for Active Markets) --}}
             <div class="outcome-actions">
                <button class="btn-yes" data-action="buy-yes" data-market-id="{{ $market->id }}" data-price="{{ $yesPrice }}"
-                  data-outcome="YES">
-                  Buy Yes {{ $yesPriceDisplay }}¢
+                  data-outcome="{{ $firstOutcome }}" data-outcome-index="0">
+                  Buy {{ $firstOutcome }} {{ $yesPriceDisplay }}¢
                </button>
 
                <button class="btn-no" data-action="buy-no" data-market-id="{{ $market->id }}" data-price="{{ $noPrice }}"
-                  data-outcome="NO">
-                  Buy No {{ $noPriceDisplay }}¢
+                  data-outcome="{{ $secondOutcome }}" data-outcome-index="1">
+                  Buy {{ $secondOutcome }} {{ $noPriceDisplay }}¢
                </button>
             </div>
          </div>
@@ -197,37 +217,66 @@
 
          @foreach ($endedMarkets as $index => $market)
             @php
+               // Get outcomes from market
+               $outcomes = is_string($market->outcomes) 
+                   ? json_decode($market->outcomes, true) 
+                   : ($market->outcomes ?? []);
+               
+               // Default to Yes/No if outcomes array is empty or invalid
+               if (empty($outcomes) || !is_array($outcomes)) {
+                  $outcomes = ['Yes', 'No'];
+               }
+               
+               // Get first and second outcome
+               $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+               $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
+               
                // Get final result from market - use getFinalOutcome() method
-               $winningOutcome = $market->getFinalOutcome(); // Returns 'YES', 'NO', or null
+               $winningOutcome = $market->getFinalOutcome(); // Returns outcome name or null
 
                // Get final prices at market close
                $prices = is_string($market->outcome_prices ?? null) 
                    ? json_decode($market->outcome_prices, true) 
                    : ($market->outcome_prices ?? [0.5, 0.5]);
-               $finalYesPrice = isset($prices[1]) ? (float) $prices[1] : 0.5;
-               $finalNoPrice = isset($prices[0]) ? (float) $prices[0] : 0.5;
+               $finalFirstPrice = isset($prices[1]) ? (float) $prices[1] : 0.5;
+               $finalSecondPrice = isset($prices[0]) ? (float) $prices[0] : 0.5;
 
                // Calculate final probabilities
-               $finalYesProb = round($finalYesPrice * 100, 1);
-               $finalNoProb = round($finalNoPrice * 100, 1);
+               $finalFirstProb = round($finalFirstPrice * 100, 1);
+               $finalSecondProb = round($finalSecondPrice * 100, 1);
 
                // Format display
-               if ($finalYesProb < 1) {
-                  $finalYesProbDisplay = '<1';
-               } elseif ($finalYesProb >= 99) {
-                  $finalYesProbDisplay = '>99';
+               if ($finalFirstProb < 1) {
+                  $finalFirstProbDisplay = '<1';
+               } elseif ($finalFirstProb >= 99) {
+                  $finalFirstProbDisplay = '>99';
                } else {
-                  $finalYesProbDisplay = $finalYesProb == floor($finalYesProb)
-                     ? (int) $finalYesProb
-                     : $finalYesProb;
+                  $finalFirstProbDisplay = $finalFirstProb == floor($finalFirstProb)
+                     ? (int) $finalFirstProb
+                     : $finalFirstProb;
                }
 
-               // Determine result display - show which outcome won
-               if ($winningOutcome === 'YES') {
-                  $resultText = 'YES Won';
+               // Determine result display - show which outcome won (case-insensitive)
+               $isFirstWinner = $winningOutcome && strcasecmp($winningOutcome, $firstOutcome) === 0;
+               $isSecondWinner = $winningOutcome && strcasecmp($winningOutcome, $secondOutcome) === 0;
+               
+               // Also check for YES/NO legacy format
+               if ($winningOutcome === 'YES' || ($winningOutcome && strcasecmp($winningOutcome, 'YES') === 0)) {
+                  if (strcasecmp($firstOutcome, 'Yes') === 0) {
+                     $isFirstWinner = true;
+                  }
+               }
+               if ($winningOutcome === 'NO' || ($winningOutcome && strcasecmp($winningOutcome, 'NO') === 0)) {
+                  if (strcasecmp($secondOutcome, 'No') === 0) {
+                     $isSecondWinner = true;
+                  }
+               }
+               
+               if ($isFirstWinner) {
+                  $resultText = $firstOutcome . ' Won';
                   $resultClass = 'result-yes';
-               } elseif ($winningOutcome === 'NO') {
-                  $resultText = 'NO Won';
+               } elseif ($isSecondWinner) {
+                  $resultText = $secondOutcome . ' Won';
                   $resultClass = 'result-no';
                } else {
                   $resultText = 'Resolving...';
@@ -270,10 +319,10 @@
                {{-- Result Display (Instead of Trade Buttons) --}}
                <div class="outcome-result">
                   <div class="result-badge {{ $resultClass }}">
-                     @if ($winningOutcome === 'YES')
-                        <i class="fas fa-check-circle"></i> <span>YES Won</span>
-                     @elseif ($winningOutcome === 'NO')
-                        <i class="fas fa-times-circle"></i> <span>NO Won</span>
+                     @if ($isFirstWinner)
+                        <i class="fas fa-check-circle"></i> <span>{{ $firstOutcome }} Won</span>
+                     @elseif ($isSecondWinner)
+                        <i class="fas fa-times-circle"></i> <span>{{ $secondOutcome }} Won</span>
                      @else
                         <i class="fas fa-clock"></i> <span>Resolving...</span>
                      @endif
@@ -281,7 +330,7 @@
 
                   @if ($winningOutcome)
                      <div class="final-probability">
-                        Final: {{ $finalYesProbDisplay }}% YES
+                        Final: {{ $finalFirstProbDisplay }}% {{ $firstOutcome }}
                      </div>
                   @endif
                </div>

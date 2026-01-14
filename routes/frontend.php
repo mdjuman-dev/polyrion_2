@@ -45,6 +45,7 @@ Route::controller(HomeController::class)->group(function () {
     })->name('category.finance.redirect');
     Route::get('/category/{category}', 'eventsByCategory')->name('events.by.category');
     Route::get('/market/details/{slug}', 'marketDetails')->name('market.details');
+    Route::get('/market/{slug}', 'singleMarket')->name('market.single');
     Route::get('/api/market/{slug}/price-data', 'getMarketPriceData')->name('api.market.price.data');
     Route::get('/api/market/{slug}/history-data', 'getMarketHistoryData')->name('api.market.history.data');
     Route::get('/api/market/{marketId}/live-price', 'getMarketLivePrice')->name('api.market.live.price');

@@ -29,15 +29,6 @@ class TradeController extends Controller
      */
     public function placeTrade(Request $request, $marketId)
     {
-        $request->validate([
-            'option' => ['required', Rule::in(['yes', 'no'])],
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
-            'price' => ['nullable', 'numeric', 'min:0.0001', 'max:0.9999'],
-        ], [
-            'amount.min' => 'Minimum trade amount is $0.01',
-            'amount.max' => 'Maximum trade amount is $100,000',
-        ]);
-
         try {
             $user = Auth::user();
             if (!$user) {
@@ -47,11 +38,45 @@ class TradeController extends Controller
                 ], 401);
             }
 
-            // Get market
+            // Get market first to validate outcome
             $market = Market::findOrFail($marketId);
 
-            // Convert option to outcome format (yes/no -> YES/NO)
-            $outcome = strtoupper($request->option);
+            // Get valid outcomes from market
+            $outcomes = $market->outcomes;
+            if (is_string($outcomes)) {
+                $outcomes = json_decode($outcomes, true);
+            }
+            if (!is_array($outcomes) || empty($outcomes)) {
+                $outcomes = ['Yes', 'No'];
+            }
+
+            // Validate outcome exists in market (case-insensitive)
+            $request->validate([
+                'option' => ['required', 'string'],
+                'amount' => ['required', 'numeric', 'min:0.01', 'max:100000'],
+                'price' => ['nullable', 'numeric', 'min:0.0001', 'max:0.9999'],
+            ], [
+                'option.required' => 'Please select an outcome',
+                'amount.min' => 'Minimum trade amount is $0.01',
+                'amount.max' => 'Maximum trade amount is $100,000',
+            ]);
+
+            // Find matching outcome (case-insensitive)
+            $outcome = null;
+            foreach ($outcomes as $outcomeName) {
+                if (strcasecmp($outcomeName, $request->option) === 0) {
+                    $outcome = $outcomeName; // Use exact name from array
+                    break;
+                }
+            }
+
+            if (!$outcome) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Invalid outcome. Valid outcomes: " . implode(', ', $outcomes),
+                ], 400);
+            }
+
             $amount = (float) $request->amount;
 
             // Use TradeService to create trade

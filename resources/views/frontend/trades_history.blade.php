@@ -144,10 +144,10 @@
                             </td>
                             <td style="padding: 1rem;">
                                 <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; 
-                                    background: {{ $trade->option === 'yes' ? '#10b98120' : '#ef444420' }};
-                                    color: {{ $trade->option === 'yes' ? '#10b981' : '#ef4444' }};
+                                    background: {{ strtoupper($trade->outcome ?? ($trade->option ?? 'YES')) === 'YES' ? '#10b98120' : '#ef444420' }};
+                                    color: {{ strtoupper($trade->outcome ?? ($trade->option ?? 'YES')) === 'YES' ? '#10b981' : '#ef4444' }};
                                 ">
-                                    {{ strtoupper($trade->option) }}
+                                    {{ $trade->getDisplayOutcomeName() }}
                                 </span>
                             </td>
                             <td style="padding: 1rem; text-align: right; color: var(--text-primary); font-weight: 600;">

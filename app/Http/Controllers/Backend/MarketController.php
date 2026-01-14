@@ -645,12 +645,55 @@ class MarketController extends Controller
                      // Process markets
                      foreach ($ev['markets'] as $mk) {
                         try {
+                           // Log outcomes extraction for debugging
+                           if (empty($mk['outcomes']) || !is_array($mk['outcomes'])) {
+                              Log::debug('Market missing or invalid outcomes', [
+                                 'market_slug' => $mk['slug'] ?? 'unknown',
+                                 'event_slug' => $ev['slug'] ?? 'unknown',
+                                 'outcomes_received' => $mk['outcomes'] ?? 'null',
+                                 'outcomes_type' => gettype($mk['outcomes'] ?? null),
+                              ]);
+                           }
+
                            // Determine outcome
                            [$outcomeResult, $finalOutcome, $finalResult] = $this->determineMarketOutcome($mk);
 
                            // Determine if market should be closed
                            $isClosed = ($mk['closed'] ?? false) || (bool) $outcomeResult;
 
+                           // Process outcomes - ensure it's properly formatted as JSON array
+                           $outcomes = $mk['outcomes'] ?? null;
+                           if ($outcomes !== null) {
+                              // If it's already a JSON string, decode and re-encode to ensure proper format
+                              if (is_string($outcomes)) {
+                                 $decoded = json_decode($outcomes, true);
+                                 $outcomes = $decoded !== null ? $decoded : null;
+                              }
+                              // If it's an array, keep it as is (will be auto-encoded to JSON by Laravel)
+                              if (!is_array($outcomes) || empty($outcomes)) {
+                                 // Fallback to default Yes/No if invalid or empty
+                                 $outcomes = ['Yes', 'No'];
+                              }
+                           } else {
+                              // If outcomes not provided, use default
+                              $outcomes = ['Yes', 'No'];
+                           }
+
+                           // Process outcome_prices - ensure it's properly formatted
+                           $outcomePrices = $mk['outcomePrices'] ?? null;
+                           if ($outcomePrices !== null) {
+                              // If it's already a JSON string, decode and re-encode to ensure proper format
+                              if (is_string($outcomePrices)) {
+                                 $decoded = json_decode($outcomePrices, true);
+                                 $outcomePrices = $decoded !== null ? $decoded : null;
+                              }
+                              // If it's an array, keep it as is
+                              if (!is_array($outcomePrices) || empty($outcomePrices)) {
+                                 $outcomePrices = null;
+                              }
+                           }
+
+                           // First, create or get the market (without volume/liquidity to preserve internal data)
                            $market = Market::updateOrCreate(
                               ['slug' => $mk['slug']],
                               [
@@ -664,13 +707,11 @@ class MarketController extends Controller
                                  'image' => cleanImageUrl($mk['image'] ?? null),
                                  'icon' => cleanImageUrl($mk['icon'] ?? null),
                                  'liquidity_clob' => $mk['liquidityClob'] ?? $mk['liquidityNum'] ?? null,
-                                 'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
-                                 'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
                                  'volume1wk' => $mk['volume1wk'] ?? $mk['volume1wkClob'] ?? null,
                                  'volume1mo' => $mk['volume1mo'] ?? $mk['volume1moClob'] ?? null,
                                  'volume1yr' => $mk['volume1yr'] ?? $mk['volume1yrClob'] ?? null,
-                                 'outcome_prices' => $mk['outcomePrices'] ?? null,
-                                 'outcomes' => $mk['outcomes'] ?? null,
+                                 'outcome_prices' => $outcomePrices,
+                                 'outcomes' => $outcomes, // Now properly formatted array
                                  'best_bid' => isset($mk['bestBid']) ? floatval($mk['bestBid']) : null,
                                  'best_ask' => isset($mk['bestAsk']) ? floatval($mk['bestAsk']) : null,
                                  'last_trade_price' => isset($mk['lastTradePrice']) ? floatval($mk['lastTradePrice']) : null,
@@ -698,12 +739,78 @@ class MarketController extends Controller
                               ]
                            );
 
+                           // Sync outcomes to outcomes table (new system)
+                           // This creates Outcome models from the outcomes array
+                           $market->syncOutcomesFromApi($outcomes);
+
+                           // Update API data while preserving internal trade data
+                           // This ensures user-generated volume/liquidity is never lost
+                           $apiData = [
+                              'volume' => $mk['volume'] ?? $mk['volumeNum'] ?? null,
+                              'liquidity' => $mk['liquidity'] ?? $mk['liquidityNum'] ?? null,
+                              'volume24hr' => $mk['volume24hr'] ?? $mk['volume24hrClob'] ?? null,
+                           ];
+                           $market->updateApiDataPreservingInternal($apiData);
+
                            // Update cache
                            $existingMarkets[$mk['slug']] = $market->id;
 
-                           // Collect markets that need settlement
+                           // CRITICAL: If market has a result from API, mark winning outcome and queue for settlement
                            if ($outcomeResult && $isClosed && !$market->settled) {
-                              $marketsToSettle[] = $market->id;
+                              // Find winning outcome by name
+                              $winningOutcome = null;
+                              
+                              // Try to find by exact name match
+                              $winningOutcome = $market->getOutcomeByName($finalOutcome);
+                              
+                              // If not found, try by outcome result (yes/no)
+                              if (!$winningOutcome) {
+                                 if (strtolower($outcomeResult) === 'yes') {
+                                    $winningOutcome = $market->getOutcomeByName('Yes');
+                                 } elseif (strtolower($outcomeResult) === 'no') {
+                                    $winningOutcome = $market->getOutcomeByName('No');
+                                 }
+                              }
+                              
+                              // If still not found, try matching by index in outcomes array
+                              if (!$winningOutcome && is_array($outcomes)) {
+                                 foreach ($outcomes as $index => $outcomeName) {
+                                    if (strcasecmp($outcomeName, $finalOutcome) === 0 || 
+                                        strcasecmp($outcomeName, $outcomeResult) === 0) {
+                                       $winningOutcome = $market->getOutcomeByName($outcomeName);
+                                       break;
+                                    }
+                                 }
+                              }
+                              
+                              if ($winningOutcome) {
+                                 // Mark as winning outcome
+                                 $market->outcomes()->update(['is_winning' => false]);
+                                 $winningOutcome->is_winning = true;
+                                 $winningOutcome->save();
+                                 
+                                 // Ensure market is closed and locked
+                                 $market->closed = true;
+                                 $market->is_closed = true;
+                                 $market->save();
+                                 
+                                 // Queue for automatic settlement
+                                 $marketsToSettle[] = $market->id;
+                                 
+                                 Log::info("Market resolved from API - queued for automatic settlement", [
+                                    'market_id' => $market->id,
+                                    'winning_outcome_id' => $winningOutcome->id,
+                                    'winning_outcome_name' => $winningOutcome->name,
+                                    'outcome_result' => $outcomeResult,
+                                 ]);
+                              } else {
+                                 Log::warning("Market has result but winning outcome not found", [
+                                    'market_id' => $market->id,
+                                    'outcome_result' => $outcomeResult,
+                                    'final_outcome' => $finalOutcome,
+                                    'available_outcomes' => $market->outcomes()->pluck('name')->toArray(),
+                                 ]);
+                              }
                            }
                         } catch (\Exception $e) {
                            Log::error('Market processing failed', [
@@ -840,40 +947,107 @@ class MarketController extends Controller
 
    /**
     * Set final result for a market and settle trades
+    * Supports both outcome_id (new system) and outcome name (legacy)
     */
    public function setResult(Request $request, $id)
    {
       $request->validate([
-         'final_result' => ['required', Rule::in(['yes', 'no'])],
+         'outcome_id' => ['nullable', 'integer', 'exists:outcomes,id'],
+         'outcome_name' => ['nullable', 'string'],
+         'final_result' => ['nullable', Rule::in(['yes', 'no'])], // Legacy support
       ]);
 
       try {
          $market = Market::findOrFail($id);
 
-         // Set all result fields (for compatibility)
-         $result = strtolower($request->final_result);
+         $winningOutcome = null;
+
+         // Priority 1: Use outcome_id (new system)
+         if ($request->outcome_id) {
+            $winningOutcome = \App\Models\Outcome::where('id', $request->outcome_id)
+               ->where('market_id', $market->id)
+               ->first();
+            
+            if (!$winningOutcome) {
+               return response()->json([
+                  'success' => false,
+                  'message' => 'Invalid outcome_id for this market',
+               ], 400);
+            }
+         }
+         // Priority 2: Use outcome_name
+         elseif ($request->outcome_name) {
+            $winningOutcome = $market->getOutcomeByName($request->outcome_name);
+            
+            if (!$winningOutcome) {
+               return response()->json([
+                  'success' => false,
+                  'message' => 'Invalid outcome_name for this market',
+               ], 400);
+            }
+         }
+         // Priority 3: Legacy support - use final_result (yes/no)
+         elseif ($request->final_result) {
+            $result = strtolower($request->final_result);
+            $winningOutcome = $market->getOutcomeByName($result === 'yes' ? 'Yes' : 'No');
+            
+            if (!$winningOutcome) {
+               // Fallback: create Yes/No outcomes if they don't exist
+               $market->syncOutcomesFromApi(['Yes', 'No']);
+               $winningOutcome = $market->getOutcomeByName($result === 'yes' ? 'Yes' : 'No');
+            }
+         }
+
+         if (!$winningOutcome) {
+            return response()->json([
+               'success' => false,
+               'message' => 'No valid outcome specified. Provide outcome_id, outcome_name, or final_result',
+            ], 400);
+         }
+
+         // Mark this outcome as winning
+         // Unmark all other outcomes
+         $market->outcomes()->update(['is_winning' => false]);
+         $winningOutcome->is_winning = true;
+         $winningOutcome->save();
+
+         // Set legacy result fields for backward compatibility
+         $result = strtolower($winningOutcome->name);
          $market->final_result = $result;
-         $market->outcome_result = $result; // Required for SettlementService
-         $market->final_outcome = strtoupper($request->final_result); // YES/NO format
+         $market->outcome_result = $result;
+         $market->final_outcome = strtoupper($winningOutcome->name);
          $market->result_set_at = now();
          $market->closed = true;
          $market->is_closed = true;
          $market->settled = false; // Will be set to true after settlement
          $market->save();
 
-         // Settle all pending trades
+         // CRITICAL: Automatically settle all pending trades immediately
+         // This ensures payouts are processed instantly when market is resolved
          $settlementService = new SettlementService();
          $settlementResult = $settlementService->settleMarket($market->id);
+         
+         if (!$settlementResult) {
+             Log::warning("Automatic settlement failed after market resolution", [
+                 'market_id' => $market->id,
+                 'winning_outcome_id' => $winningOutcome->id,
+             ]);
+         }
 
          return response()->json([
             'success' => true,
             'message' => 'Market result set and trades settled successfully',
+            'winning_outcome' => [
+               'id' => $winningOutcome->id,
+               'name' => $winningOutcome->name,
+            ],
             'settlement' => $settlementResult,
          ]);
       } catch (\Exception $e) {
          Log::error('Failed to set market result', [
             'market_id' => $id,
             'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
          ]);
 
          return response()->json([

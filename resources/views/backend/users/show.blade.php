@@ -488,9 +488,9 @@
                                                     </td>
                                                     <td style="padding: 15px;">
                                                         <span
-                                                            class="badge {{ strtoupper($trade->outcome ?? ($trade->side ?? 'N/A')) === 'YES' ? 'bg-success' : 'bg-danger' }}"
+                                                            class="badge {{ strtoupper($trade->outcome ?? ($trade->side ?? 'YES')) === 'YES' ? 'bg-success' : 'bg-danger' }}"
                                                             style="padding: 6px 12px; border-radius: 8px; font-weight: 600;">
-                                                            {{ strtoupper($trade->outcome ?? ($trade->side ?? 'N/A')) }}
+                                                            {{ $trade->getDisplayOutcomeName() }}
                                                         </span>
                                                     </td>
                                                     <td style="padding: 15px; font-weight: 600; color: #1f2937;">

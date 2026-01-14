@@ -68,10 +68,10 @@
                 font-size: 0.875rem;
                 padding: 0.25rem 0.5rem;
                 border-radius: 4px;
-                background: {{ $trade->outcome === 'YES' ? '#10b98120' : '#3b82f620' }};
-                color: {{ $trade->outcome === 'YES' ? '#10b981' : '#3b82f6' }};
+                background: {{ ($trade->outcome ?? 'YES') === 'YES' ? '#10b98120' : '#3b82f620' }};
+                color: {{ ($trade->outcome ?? 'YES') === 'YES' ? '#10b981' : '#3b82f6' }};
             ">
-                {{ $trade->outcome }}
+                {{ $trade->getDisplayOutcomeName() }}
             </span>
             
             <span style="font-weight: 600; color: #111827;">

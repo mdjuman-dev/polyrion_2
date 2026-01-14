@@ -451,8 +451,8 @@
                                                                                 </td>
                                                     <td>
                                                         <span
-                                                            class="badge {{ strtoupper($trade->outcome ?? ($trade->side ?? 'N/A')) === 'YES' ? 'bg-success' : 'bg-danger' }}">
-                                                            {{ strtoupper($trade->outcome ?? ($trade->side ?? 'N/A')) }}
+                                                            class="badge {{ strtoupper($trade->outcome ?? ($trade->side ?? 'YES')) === 'YES' ? 'bg-success' : 'bg-danger' }}">
+                                                            {{ $trade->getDisplayOutcomeName() }}
                                                         </span>
                                                                                 </td>
                                                     <td>${{ number_format($trade->amount_invested ?? ($trade->amount ?? 0), 2) }}

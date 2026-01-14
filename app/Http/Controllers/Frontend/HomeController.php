@@ -190,10 +190,28 @@ class HomeController extends Controller
          $event = Event::where('slug', $slug)
             ->with([
                'markets' => function ($query) {
-                  $query->limit(8)->orderBy('id');
+                  $query->where('active', true)
+                        ->where('closed', false)
+                        ->limit(8)
+                        ->orderBy('id');
                }
             ])
             ->firstOrFail();
+
+         // If event has only 1 active market, redirect to single market page
+         $activeMarkets = $event->markets->filter(function($market) {
+            return $market->active && !$market->closed;
+         });
+         
+         if ($activeMarkets->count() === 1) {
+            $singleMarket = $activeMarkets->first();
+            if ($singleMarket->slug) {
+               return redirect()->route('market.single', $singleMarket->slug);
+            } else {
+               // If no slug, use market ID
+               return redirect()->route('market.single', $singleMarket->id);
+            }
+         }
 
          // Color palette for markets (Polymarket style) - fallback if series_color not set
          $marketColors = [
@@ -340,6 +358,129 @@ class HomeController extends Controller
             ->with('error', 'Event not found.');
       } catch (\Exception $e) {
          \Log::error('Error in marketDetails: ' . $e->getMessage());
+         return redirect()->route('home')
+            ->with('error', 'An error occurred. Please try again later.');
+      }
+   }
+
+   /**
+    * Display single market page
+    */
+   function singleMarket($slug)
+   {
+      try {
+         // Find market by slug or ID
+         $market = Market::where(function($query) use ($slug) {
+               $query->where('slug', $slug)
+                     ->orWhere('id', $slug);
+            })
+            ->with('event')
+            ->firstOrFail();
+
+         $event = $market->event;
+         if (!$event) {
+            return redirect()->route('home')
+               ->with('error', 'Event not found for this market.');
+         }
+
+         // Use same chart data generation logic as marketDetails but for single market
+         $marketColors = ['#ff7b2c', '#4c8df5', '#9cdbff', '#ffe04d', '#ff6b9d', '#4ecdc4', '#a8e6cf', '#ff8b94'];
+         
+         // Generate time labels (last 30 days, 2 days apart)
+         $labels = [];
+         $allTimes = [];
+         $endDate = now();
+         $startDate = $endDate->copy()->subDays(30);
+         
+         for ($i = 30; $i >= 0; $i -= 2) {
+            $date = $endDate->copy()->subDays($i);
+            $labels[] = $date->format('M d');
+            $allTimes[] = $date;
+         }
+
+         // Prepare data for single market
+         $seriesData = [];
+         
+         // Get current price
+         $currentPrice = 50;
+         if ($market->outcome_prices) {
+            $prices = is_string($market->outcome_prices) 
+               ? json_decode($market->outcome_prices, true) 
+               : ($market->outcome_prices ?? []);
+            if (is_array($prices)) {
+               if (isset($prices[1])) {
+                  $currentPrice = floatval($prices[1]) * 100;
+               } elseif (isset($prices[0])) {
+                  $currentPrice = (1 - floatval($prices[0])) * 100;
+               }
+            }
+         }
+
+         if ($market->best_ask !== null && $market->best_ask > 0) {
+            $currentPrice = floatval($market->best_ask) * 100;
+         }
+
+         // Generate historical data points
+         $basePrice = $currentPrice;
+         $priceVariation = min(20, abs($basePrice - 50));
+         $dataPoints = [];
+
+         foreach ($allTimes as $timeIndex => $time) {
+            if ($time < $startDate) {
+               $dataPoints[] = null;
+               continue;
+            }
+
+            $progress = ($timeIndex + 1) / count($allTimes);
+            $targetPrice = 50 + ($basePrice - 50) * $progress;
+            $volatility = (($timeIndex % 3 - 1) / 3) * $priceVariation * 0.2;
+            $price = max(1, min(99, $targetPrice + $volatility));
+            $dataPoints[] = round($price, 1);
+         }
+
+         if (count($dataPoints) > 0) {
+            $dataPoints[count($dataPoints) - 1] = round($currentPrice, 1);
+         }
+
+         $priceText = $currentPrice < 1 ? '<1%' : ($currentPrice >= 99 ? '>99%' : round($currentPrice, 1) . '%');
+         $marketName = $market->question;
+         if (strlen($marketName) > 40) {
+            $marketName = substr($marketName, 0, 37) . '...';
+         }
+
+         $marketColor = $market->series_color ?? $marketColors[0];
+         if (empty($marketColor) || trim($marketColor) === '') {
+            $marketColor = $marketColors[0];
+         }
+         if (!str_starts_with($marketColor, '#')) {
+            $marketColor = '#' . $marketColor;
+         }
+
+         $seriesData[] = [
+            'name' => $marketName . ' ' . $priceText,
+            'color' => $marketColor,
+            'data' => $dataPoints,
+            'icon' => $market->icon ?? null,
+            'market_id' => $market->id,
+            'volume' => $market->volume ?? 0,
+            'volume24hr' => $market->volume24hr ?? 0,
+            'volume1wk' => $market->volume1wk ?? 0,
+            'volume1mo' => $market->volume1mo ?? 0,
+            'best_bid' => $market->best_bid,
+            'best_ask' => $market->best_ask,
+            'last_trade_price' => $market->last_trade_price,
+            'one_day_price_change' => $market->one_day_price_change,
+            'one_week_price_change' => $market->one_week_price_change,
+            'one_month_price_change' => $market->one_month_price_change,
+         ];
+
+         return view('frontend.single_market', compact('market', 'event', 'seriesData', 'labels'));
+      } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+         \Log::warning('Market not found: ' . $slug);
+         return redirect()->route('home')
+            ->with('error', 'Market not found.');
+      } catch (\Exception $e) {
+         \Log::error('Error in singleMarket: ' . $e->getMessage());
          return redirect()->route('home')
             ->with('error', 'An error occurred. Please try again later.');
       }

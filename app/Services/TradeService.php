@@ -40,39 +40,96 @@ class TradeService
    }
 
    /**
-    * Get outcome price from market
-    * Priority: best_ask/best_bid (most accurate) > outcome_prices
-    * outcome_prices[0] = NO price
-    * outcome_prices[1] = YES price
+    * Get outcome model by name from market
+    * Creates outcome if it doesn't exist (for backward compatibility)
     */
-   public function getOutcomePrice(Market $market, string $outcome): float
+   public function getOutcomeByName(Market $market, string $outcomeName): \App\Models\Outcome
    {
-      // Priority 1: Use best_ask/best_bid if available (most accurate from order book)
-      if ($outcome === 'YES' && $market->best_ask !== null && $market->best_ask > 0) {
-         return (float) $market->best_ask;
-      } elseif ($outcome === 'NO' && $market->best_bid !== null && $market->best_bid > 0) {
-         // For NO: price = 1 - best_bid (since best_bid is for YES)
-         return 1 - (float) $market->best_bid;
+      // Try to find existing outcome
+      $outcome = $market->getOutcomeByName($outcomeName);
+      
+      if ($outcome) {
+         return $outcome;
       }
 
-      // Priority 2: Use outcome_prices
-      $outcomePrices = $market->outcome_prices ?? $market->outcomePrices;
-
-      if (is_string($outcomePrices)) {
-         $outcomePrices = json_decode($outcomePrices, true);
+      // If not found, check if market has outcomes synced from API
+      $outcomesArray = $market->outcomes;
+      if (is_string($outcomesArray)) {
+         $outcomesArray = json_decode($outcomesArray, true);
       }
 
-      if (!is_array($outcomePrices) || count($outcomePrices) < 2) {
-         throw new InvalidArgumentException('Invalid outcome_prices format. Expected array with 2 elements: [NO_price, YES_price]');
+      // If market has outcomes array, sync them first
+      if (is_array($outcomesArray) && !empty($outcomesArray)) {
+         $market->syncOutcomesFromApi($outcomesArray);
+         $outcome = $market->getOutcomeByName($outcomeName);
+         if ($outcome) {
+            return $outcome;
+         }
       }
 
-      if ($outcome === 'YES') {
-         return (float) $outcomePrices[1];
-      } elseif ($outcome === 'NO') {
-         return (float) $outcomePrices[0];
+      // Last resort: create default Yes/No outcomes if none exist
+      if ($market->outcomes()->count() === 0) {
+         $market->syncOutcomesFromApi(['Yes', 'No']);
+         $outcome = $market->getOutcomeByName($outcomeName);
+         if ($outcome) {
+            return $outcome;
+         }
       }
 
-      throw new InvalidArgumentException('Outcome must be YES or NO');
+      throw new InvalidArgumentException("Outcome '{$outcomeName}' not found for market {$market->id}");
+   }
+
+   /**
+    * Get outcome price from Outcome model
+    * Uses calculated price from traded amounts (Polymarket-style)
+    * Falls back to API prices if no trades yet
+    */
+   public function getOutcomePrice(Market $market, string $outcomeName): float
+   {
+      $outcome = $this->getOutcomeByName($market, $outcomeName);
+
+      // Priority 1: Use calculated price from trades (most accurate for internal trading)
+      if ($outcome->total_traded_amount > 0) {
+         return (float) $outcome->current_price;
+      }
+
+      // Priority 2: Use best_ask/best_bid from API if available
+      $outcomesArray = $market->outcomes;
+      if (is_string($outcomesArray)) {
+         $outcomesArray = json_decode($outcomesArray, true);
+      }
+      
+      if (is_array($outcomesArray) && !empty($outcomesArray)) {
+         $outcomeIndex = null;
+         foreach ($outcomesArray as $index => $name) {
+            if (strcasecmp($name, $outcomeName) === 0) {
+               $outcomeIndex = $index;
+               break;
+            }
+         }
+
+         if ($outcomeIndex !== null) {
+            // Use best_ask/best_bid if available
+            if ($outcomeIndex === 1 && $market->best_ask !== null && $market->best_ask > 0) {
+               return (float) $market->best_ask;
+            } elseif ($outcomeIndex === 0 && $market->best_bid !== null && $market->best_bid > 0) {
+               return 1 - (float) $market->best_bid;
+            }
+
+            // Fallback to outcome_prices
+            $outcomePrices = $market->outcome_prices;
+            if (is_string($outcomePrices)) {
+               $outcomePrices = json_decode($outcomePrices, true);
+            }
+            if (is_array($outcomePrices) && isset($outcomePrices[$outcomeIndex === 0 ? 0 : 1])) {
+               return (float) $outcomePrices[$outcomeIndex === 0 ? 0 : 1];
+            }
+         }
+      }
+
+      // Default: equal distribution
+      $activeOutcomesCount = $market->activeOutcomes()->count();
+      return $activeOutcomesCount > 0 ? (1.0 / $activeOutcomesCount) : 0.5;
    }
 
    /**
@@ -115,13 +172,12 @@ class TradeService
 
    /**
     * Create a new trade
+    * Uses Outcome model for flexible outcomes (Up/Down, Yes/No, Over 2.5, etc.)
     */
-   public function createTrade(User $user, Market $market, string $outcome, float $amount): Trade
+   public function createTrade(User $user, Market $market, string $outcomeName, float $amount): Trade
    {
-      // Validate outcome
-      if (!in_array($outcome, ['YES', 'NO'])) {
-         throw new InvalidArgumentException('Outcome must be YES or NO');
-      }
+      // Get or create outcome model
+      $outcome = $this->getOutcomeByName($market, $outcomeName);
 
       // Validate trade amount limits
       $this->validateTradeAmount($amount);
@@ -143,11 +199,12 @@ class TradeService
          throw new InvalidArgumentException('Insufficient balance. Your balance: $' . number_format($wallet->balance, 2) . ', Required: $' . number_format($amount, 2));
       }
 
-      // Refresh market data if needed (reload from database to get latest prices)
+      // Refresh market and outcome data
       $market->refresh();
+      $outcome->refresh();
 
-      // Get outcome price (uses best_ask/best_bid if available, otherwise outcome_prices)
-      $outcomePrice = $this->getOutcomePrice($market, $outcome);
+      // Get outcome price (calculated from trades or API fallback)
+      $outcomePrice = $this->getOutcomePrice($market, $outcomeName);
 
       // Validate price is valid
       if ($outcomePrice <= 0 || $outcomePrice >= 1) {
@@ -176,20 +233,26 @@ class TradeService
          $wallet->balance -= $amount;
          $wallet->save();
 
-         // Create trade with both new and legacy fields for backward compatibility
+         // Create trade with outcome_id (new system)
          $trade = Trade::create([
             'user_id' => $user->id,
             'market_id' => $market->id,
-            'outcome' => $outcome,
+            'outcome_id' => $outcome->id, // Use outcome_id (new system)
+            'outcome' => null, // Keep nullable for backward compatibility
+            'outcome_name' => $outcome->name, // Store actual outcome name
             'amount_invested' => $amount,
             'token_amount' => $tokenAmount,
             'price_at_buy' => $outcomePrice,
             'status' => 'PENDING',
-            'option' => strtolower($outcome),
+            // Legacy fields for backward compatibility
+            'option' => strtolower($outcome->name),
             'amount' => $amount,
             'price' => $outcomePrice,
             'shares' => $tokenAmount,
          ]);
+
+         // Update outcome's traded amounts (atomic operation)
+         $outcome->incrementTradeData($amount, $tokenAmount);
 
          // Create wallet transaction
          WalletTransaction::create([
@@ -201,16 +264,23 @@ class TradeService
             'balance_after' => $wallet->balance,
             'reference_type' => Trade::class,
             'reference_id' => $trade->id,
-            'description' => "Bought {$outcome} on market: {$market->question}",
+            'description' => "Bought {$outcome->name} on market: {$market->question}",
             'metadata' => [
                'trade_id' => $trade->id,
                'market_id' => $market->id,
-               'outcome' => $outcome,
+               'outcome_id' => $outcome->id,
+               'outcome_name' => $outcome->name,
                'amount_invested' => $amount,
                'token_amount' => $tokenAmount,
                'price_at_buy' => $outcomePrice,
             ]
          ]);
+
+         // Increment internal volume and liquidity for this market
+         // This ensures user trades contribute to market metrics
+         // Uses database lock to prevent race conditions
+         // Must be done within transaction to ensure consistency
+         $market->incrementInternalTradeData($amount, $amount);
 
          DB::commit();
 
@@ -402,12 +472,10 @@ class TradeService
     * Get trade preview/estimate before placing trade
     * Returns: estimated tokens, cost, potential payout
     */
-   public function getTradePreview(Market $market, string $outcome, float $amount): array
+   public function getTradePreview(Market $market, string $outcomeName, float $amount): array
    {
-      // Validate outcome
-      if (!in_array($outcome, ['YES', 'NO'])) {
-         throw new InvalidArgumentException('Outcome must be YES or NO');
-      }
+      // Get outcome model
+      $outcome = $this->getOutcomeByName($market, $outcomeName);
 
       // Validate market is open
       if (!$market->isOpenForTrading()) {
@@ -415,7 +483,7 @@ class TradeService
       }
 
       // Get outcome price
-      $outcomePrice = $this->getOutcomePrice($market, $outcome);
+      $outcomePrice = $this->getOutcomePrice($market, $outcomeName);
 
       // Calculate token amount
       $tokenAmount = $this->calculateTokens($amount, $outcomePrice);
@@ -428,7 +496,8 @@ class TradeService
       $potentialProfitPercent = $amount > 0 ? ($potentialProfit / $amount) * 100 : 0;
 
       return [
-         'outcome' => $outcome,
+         'outcome_id' => $outcome->id,
+         'outcome' => $outcome->name,
          'amount' => $amount,
          'price' => $outcomePrice,
          'price_percent' => $outcomePrice * 100,

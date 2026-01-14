@@ -309,7 +309,9 @@
                                                             : ($outcomePricesRaw ?? []);
                                                         
                                                         if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
-                                                            if ($trade->option === 'yes') {
+                                                            // Use outcome field (YES/NO) for price calculation
+                                                            $effectiveOutcome = strtoupper($trade->outcome ?? ($trade->option ?? 'YES'));
+                                                            if ($effectiveOutcome === 'YES') {
                                                                 $currentPrice = $outcomePrices[1] ?? $avgPrice; // YES is at index 1
                                                             } else {
                                                                 $currentPrice = $outcomePrices[0] ?? $avgPrice; // NO is at index 0
@@ -406,7 +408,7 @@
                                                     color: {{ $trade->option === 'yes' ? '#10b981' : '#ef4444' }};
                                                     border: 1px solid {{ $trade->option === 'yes' ? '#10b98140' : '#ef444440' }};
                                                 ">
-                                                            {{ strtoupper($trade->option) }}
+                                                            {{ $trade->getDisplayOutcomeName() }}
                                                         </span>
                                                     </td>
                                                     <td
@@ -523,7 +525,9 @@
                                                     : ($outcomePricesRaw ?? []);
                                                 
                                                 if (is_array($outcomePrices) && count($outcomePrices) >= 2) {
-                                                    if ($trade->option === 'yes') {
+                                                    // Use outcome field (YES/NO) for price calculation
+                                                    $effectiveOutcome = strtoupper($trade->outcome ?? ($trade->option ?? 'YES'));
+                                                    if ($effectiveOutcome === 'YES') {
                                                         $currentPrice = $outcomePrices[1] ?? $avgPrice; // YES is at index 1
                                                     } else {
                                                         $currentPrice = $outcomePrices[0] ?? $avgPrice; // NO is at index 0
@@ -626,7 +630,7 @@
                                                 <div
                                                     style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
                                                     {{ $tradeDate->format('M d, Y h:i A') }} •
-                                                    {{ strtoupper($trade->option) }}
+                                                    {{ $trade->getDisplayOutcomeName() }}
                                                 </div>
                                             </div>
 
@@ -836,9 +840,9 @@
                                                             </div>
                                                             <div style="font-size: 0.85rem; color: var(--text-secondary);">
                                                                 {{ $trade->created_at->format('M d, Y h:i A') }}
-                                                                @if ($trade->outcome || $trade->side)
+                                                                @if ($trade->outcome_name || $trade->outcome || $trade->side)
                                                                     •
-                                                                    {{ strtoupper($trade->outcome ?? ($trade->side ?? 'N/A')) }}
+                                                                    {{ $trade->getDisplayOutcomeName() }}
                                                                 @endif
                                                             </div>
                                                         </div>

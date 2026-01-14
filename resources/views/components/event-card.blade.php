@@ -71,6 +71,10 @@
    // For ended events, use all markets for display
    $displayMarkets = $eventEnded && $activeMarkets->isEmpty() ? $allMarkets : $activeMarkets;
    $isMultiMarket = $displayMarkets->count() > 1;
+   $singleMarket = $displayMarkets->count() === 1 ? $displayMarkets->first() : null;
+   $marketLink = $singleMarket && $singleMarket->slug 
+      ? route('market.single', $singleMarket->slug) 
+      : route('market.details', $event->slug);
 @endphp
 
 @if ($shouldShow)
@@ -107,6 +111,15 @@
                   $outcomes = is_string($market->outcomes) 
                       ? json_decode($market->outcomes, true) 
                       : ($market->outcomes ?? []);
+                  
+                  // Default to Yes/No if outcomes array is empty or invalid
+                  if (empty($outcomes) || !is_array($outcomes)) {
+                     $outcomes = ['Yes', 'No'];
+                  }
+                  
+                  // Get first and second outcome
+                  $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+                  $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
                  @endphp
 
                @if ($outcomes !== null)
@@ -127,39 +140,52 @@
                         $marketResult = $market->determineOutcomeFromLastTradePrice();
                      }
 
-                     $isYesWinner = $marketResult === 'YES';
-                     $isNoWinner = $marketResult === 'NO';
+                     // Check if first outcome won (case-insensitive comparison)
+                     $isFirstWinner = $marketResult && strcasecmp($marketResult, $firstOutcome) === 0;
+                     $isSecondWinner = $marketResult && strcasecmp($marketResult, $secondOutcome) === 0;
+                     
+                     // Also check for YES/NO legacy format
+                     $isYesWinner = $marketResult === 'YES' || ($marketResult && strcasecmp($marketResult, 'YES') === 0);
+                     $isNoWinner = $marketResult === 'NO' || ($marketResult && strcasecmp($marketResult, 'NO') === 0);
+                     
+                     // For legacy markets with YES/NO, map to first/second outcome
+                     if ($isYesWinner && strcasecmp($firstOutcome, 'Yes') === 0) {
+                        $isFirstWinner = true;
+                     }
+                     if ($isNoWinner && strcasecmp($secondOutcome, 'No') === 0) {
+                        $isSecondWinner = true;
+                     }
                   @endphp
                   <div class="market-card-outcome-row">
                      <span class="market-card-outcome-label">{{ Str::limit($market->groupItem_title, 20) }}</span>
                      @if ($marketEnded && $marketResult)
                         {{-- Show percentage and buttons with winner/loser indication --}}
                         <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                        @if ($isYesWinner)
+                        @if ($isFirstWinner)
                            <button class="market-card-yes-btn"
                               style="background: rgba(50, 210, 150, 0.2); border-color: #32d296; color: #32d296; position: relative;">
-                              <i class="fas fa-check" style="color: #32d296; margin-right: 4px;"></i> Yes
+                              <i class="fas fa-check" style="color: #32d296; margin-right: 4px;"></i> {{ $firstOutcome }}
                            </button>
                            <button class="market-card-no-btn" style="opacity: 0.5;">
-                              <i class="fas fa-times" style="color: #ff4d4f; margin-right: 4px;"></i> No
+                              <i class="fas fa-times" style="color: #ff4d4f; margin-right: 4px;"></i> {{ $secondOutcome }}
                            </button>
-                        @elseif ($isNoWinner)
+                        @elseif ($isSecondWinner)
                            <button class="market-card-yes-btn" style="opacity: 0.5;">
-                              <i class="fas fa-times" style="color: #ff4d4f; margin-right: 4px;"></i> Yes
+                              <i class="fas fa-times" style="color: #ff4d4f; margin-right: 4px;"></i> {{ $firstOutcome }}
                            </button>
                            <button class="market-card-no-btn"
                               style="background: rgba(255, 77, 79, 0.2); border-color: #ff4d4f; color: #ff4d4f; position: relative;">
-                              <i class="fas fa-check" style="color: #ff4d4f; margin-right: 4px;"></i> No
+                              <i class="fas fa-check" style="color: #ff4d4f; margin-right: 4px;"></i> {{ $secondOutcome }}
                            </button>
                         @else
-                           <button class="market-card-yes-btn">{{ 'Yes' }}</button>
-                           <button class="market-card-no-btn">{{ 'No' }}</button>
+                           <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
+                           <button class="market-card-no-btn">{{ $secondOutcome }}</button>
                         @endif
                      @else
                         {{-- Active market: show percentage and buttons --}}
                         <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                        <button class="market-card-yes-btn">{{ 'Yes' }}</button>
-                        <button class="market-card-no-btn">{{ 'No' }}</button>
+                        <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
+                        <button class="market-card-no-btn">{{ $secondOutcome }}</button>
                      @endif
                   </div>
                @endif
@@ -232,6 +258,15 @@
             $outcomes = is_string($market->outcomes) 
                 ? json_decode($market->outcomes, true) 
                 : ($market->outcomes ?? []);
+            
+            // Default to Yes/No if outcomes array is empty or invalid
+            if (empty($outcomes) || !is_array($outcomes)) {
+               $outcomes = ['Yes', 'No'];
+            }
+            
+            // Get first and second outcome
+            $firstOutcome = isset($outcomes[0]) ? $outcomes[0] : 'Yes';
+            $secondOutcome = isset($outcomes[1]) ? $outcomes[1] : 'No';
          }
         @endphp
 
@@ -243,7 +278,7 @@
                      alt="{{ $event->title }}">
                </div>
                <div class="market-title-section">
-                  <a href="{{ route('market.details', $event->slug) }}"
+                  <a href="{{ $marketLink }}"
                      class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>
                </div>
             </div>
@@ -273,29 +308,42 @@
                $marketResult = $market->determineOutcomeFromLastTradePrice();
             }
 
-            $isYesWinner = $marketResult === 'YES';
-            $isNoWinner = $marketResult === 'NO';
+            // Check if first/second outcome won (case-insensitive)
+            $isFirstWinner = $marketResult && $market && strcasecmp($marketResult, $firstOutcome) === 0;
+            $isSecondWinner = $marketResult && $market && strcasecmp($marketResult, $secondOutcome) === 0;
+            
+            // Also check for YES/NO legacy format
+            $isYesWinner = $marketResult === 'YES' || ($marketResult && strcasecmp($marketResult, 'YES') === 0);
+            $isNoWinner = $marketResult === 'NO' || ($marketResult && strcasecmp($marketResult, 'NO') === 0);
+            
+            // For legacy markets with YES/NO, map to first/second outcome
+            if ($isYesWinner && $market && strcasecmp($firstOutcome, 'Yes') === 0) {
+               $isFirstWinner = true;
+            }
+            if ($isNoWinner && $market && strcasecmp($secondOutcome, 'No') === 0) {
+               $isSecondWinner = true;
+            }
          @endphp
          <div class="market-card-body-single">
             @if ($marketEnded && $marketResult)
                {{-- Show ONLY the winning outcome button (full width) --}}
-               @if ($isYesWinner)
+               @if ($isFirstWinner)
                   <button class="market-card-yes-btn-large"
                      style="background: rgba(50, 210, 150, 0.2); border-color: #32d296; color: #32d296; position: relative; width: 100%;">
-                     <i class="fas fa-check" style="color: #32d296; margin-right: 6px;"></i> Yes
+                     <i class="fas fa-check" style="color: #32d296; margin-right: 6px;"></i> {{ $firstOutcome }}
                   </button>
-               @elseif ($isNoWinner)
+               @elseif ($isSecondWinner)
                   <button class="market-card-no-btn-large"
                      style="background: rgba(255, 77, 79, 0.2); border-color: #ff4d4f; color: #ff4d4f; position: relative; width: 100%;">
-                     <i class="fas fa-times" style="color: #ff4d4f; margin-right: 6px;"></i> No
+                     <i class="fas fa-times" style="color: #ff4d4f; margin-right: 6px;"></i> {{ $secondOutcome }}
                   </button>
                @else
-                  <button class="market-card-yes-btn-large">Up</button>
-                  <button class="market-card-no-btn-large">Down</button>
+                  <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
+                  <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
                @endif
             @else
-               <button class="market-card-yes-btn-large">Up</button>
-               <button class="market-card-no-btn-large">Down</button>
+               <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
+               <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
             @endif
          </div>
 

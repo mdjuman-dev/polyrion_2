@@ -17,6 +17,12 @@ class Market extends Model
         'volume1wk' => 'float',
         'volume1mo' => 'float',
         'volume1yr' => 'float',
+        'api_volume' => 'float',
+        'api_liquidity' => 'float',
+        'api_volume24hr' => 'float',
+        'internal_volume' => 'float',
+        'internal_liquidity' => 'float',
+        'internal_volume24hr' => 'float',
         'outcome_prices' => 'array',
         'outcomes' => 'array',
         'best_bid' => 'float',
@@ -51,6 +57,30 @@ class Market extends Model
     }
 
     /**
+     * Get all outcomes for this market
+     */
+    public function outcomes()
+    {
+        return $this->hasMany(Outcome::class)->orderBy('order_index', 'asc');
+    }
+
+    /**
+     * Get active outcomes for this market
+     */
+    public function activeOutcomes()
+    {
+        return $this->hasMany(Outcome::class)->where('active', true)->orderBy('order_index', 'asc');
+    }
+
+    /**
+     * Get winning outcome (if market is resolved)
+     */
+    public function winningOutcome()
+    {
+        return $this->hasOne(Outcome::class)->where('is_winning', true);
+    }
+
+    /**
      * Get all trades for this market
      */
     public function trades()
@@ -74,6 +104,7 @@ class Market extends Model
      * - Archived
      * - Close time has passed
      * - Has final result (resolving/settled state) - prevents trading after result is determined
+     * - Has winning outcome (new system) - prevents trading after resolution
      */
     public function isOpenForTrading(): bool
     {
@@ -88,6 +119,13 @@ class Market extends Model
         // Prevent trading if market has result (resolving or settled state)
         // This ensures users can't trade after result is determined but before settlement
         if ($this->hasResult() || $this->settled) {
+            return false;
+        }
+
+        // CRITICAL: Prevent trading if market has winning outcome (new system)
+        // This locks market immediately when resolved
+        $winningOutcome = $this->winningOutcome()->first();
+        if ($winningOutcome) {
             return false;
         }
 
@@ -208,5 +246,246 @@ class Market extends Model
     {
         $settlementService = app(\App\Services\SettlementService::class);
         return $settlementService->settleMarket($this->id);
+    }
+
+    /**
+     * Get total volume (API + Internal trades)
+     * This is the value that should be displayed to users
+     */
+    public function getTotalVolumeAttribute(): float
+    {
+        $apiVolume = (float) ($this->api_volume ?? $this->volume ?? 0);
+        $internalVolume = (float) ($this->internal_volume ?? 0);
+        return $apiVolume + $internalVolume;
+    }
+
+    /**
+     * Get total liquidity (API + Internal trades)
+     * This is the value that should be displayed to users
+     */
+    public function getTotalLiquidityAttribute(): float
+    {
+        $apiLiquidity = (float) ($this->api_liquidity ?? $this->liquidity ?? 0);
+        $internalLiquidity = (float) ($this->internal_liquidity ?? 0);
+        return $apiLiquidity + $internalLiquidity;
+    }
+
+    /**
+     * Get total 24hr volume (API + Internal trades)
+     */
+    public function getTotalVolume24hrAttribute(): float
+    {
+        $apiVolume24hr = (float) ($this->api_volume24hr ?? $this->volume24hr ?? 0);
+        $internalVolume24hr = (float) ($this->internal_volume24hr ?? 0);
+        return $apiVolume24hr + $internalVolume24hr;
+    }
+
+    /**
+     * Safely increment internal volume and liquidity from a trade
+     * Uses database lock to prevent race conditions
+     * 
+     * @param float $volume Volume to add (trade amount)
+     * @param float $liquidity Liquidity to add (typically same as volume for simplicity)
+     * @return bool Success status
+     */
+    public function incrementInternalTradeData(float $volume, float $liquidity = null): bool
+    {
+        if ($liquidity === null) {
+            $liquidity = $volume; // Default: liquidity equals volume
+        }
+
+        try {
+            // Use pessimistic locking to prevent concurrent update issues
+            $market = self::lockForUpdate()->find($this->id);
+            
+            if (!$market) {
+                \Log::error('Market not found for internal trade data increment', [
+                    'market_id' => $this->id
+                ]);
+                return false;
+            }
+
+            // Increment internal values atomically
+            $market->increment('internal_volume', $volume);
+            $market->increment('internal_liquidity', $liquidity);
+            
+            // Also increment 24hr volume if trade is within last 24 hours
+            // This is optional - you may want to track this separately
+            $market->increment('internal_volume24hr', $volume);
+
+            \Log::info('Internal trade data incremented', [
+                'market_id' => $this->id,
+                'volume_added' => $volume,
+                'liquidity_added' => $liquidity,
+                'new_internal_volume' => $market->fresh()->internal_volume,
+                'new_internal_liquidity' => $market->fresh()->internal_liquidity,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to increment internal trade data', [
+                'market_id' => $this->id,
+                'volume' => $volume,
+                'liquidity' => $liquidity,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Update API data while preserving internal trade data
+     * This should be called during API sync operations
+     * 
+     * @param array $apiData API data containing volume, liquidity, etc.
+     * @return bool Success status
+     */
+    public function updateApiDataPreservingInternal(array $apiData): bool
+    {
+        try {
+            // Use pessimistic locking
+            $market = self::lockForUpdate()->find($this->id);
+            
+            if (!$market) {
+                \Log::error('Market not found for API data update', [
+                    'market_id' => $this->id
+                ]);
+                return false;
+            }
+
+            // Store current internal values (they will be preserved)
+            $currentInternalVolume = (float) ($market->internal_volume ?? 0);
+            $currentInternalLiquidity = (float) ($market->internal_liquidity ?? 0);
+            $currentInternalVolume24hr = (float) ($market->internal_volume24hr ?? 0);
+
+            // Update API values only (these come from external API)
+            $updateData = [];
+            
+            if (isset($apiData['volume'])) {
+                $updateData['api_volume'] = (float) $apiData['volume'];
+            }
+            if (isset($apiData['liquidity'])) {
+                $updateData['api_liquidity'] = (float) $apiData['liquidity'];
+            }
+            if (isset($apiData['volume24hr'])) {
+                $updateData['api_volume24hr'] = (float) $apiData['volume24hr'];
+            }
+
+            // Update API fields only (internal fields remain unchanged)
+            if (!empty($updateData)) {
+                $market->update($updateData);
+            }
+
+            // Update legacy volume/liquidity fields for backward compatibility
+            // These will be the total (API + Internal) for display
+            $totalVolume = (float) ($updateData['api_volume'] ?? $market->api_volume ?? 0) + $currentInternalVolume;
+            $totalLiquidity = (float) ($updateData['api_liquidity'] ?? $market->api_liquidity ?? 0) + $currentInternalLiquidity;
+            $totalVolume24hr = (float) ($updateData['api_volume24hr'] ?? $market->api_volume24hr ?? 0) + $currentInternalVolume24hr;
+
+            $market->update([
+                'volume' => $totalVolume,
+                'liquidity' => $totalLiquidity,
+                'volume24hr' => $totalVolume24hr,
+            ]);
+
+            \Log::info('API data updated while preserving internal data', [
+                'market_id' => $this->id,
+                'api_volume' => $updateData['api_volume'] ?? null,
+                'api_liquidity' => $updateData['api_liquidity'] ?? null,
+                'internal_volume_preserved' => $currentInternalVolume,
+                'internal_liquidity_preserved' => $currentInternalLiquidity,
+                'total_volume' => $totalVolume,
+                'total_liquidity' => $totalLiquidity,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to update API data while preserving internal', [
+                'market_id' => $this->id,
+                'api_data' => $apiData,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Sync outcomes from API data (outcomes array)
+     * Creates or updates outcomes based on API response
+     * 
+     * @param array|null $outcomesArray Outcomes array from API (e.g., ["Yes", "No"] or ["Up", "Down"])
+     * @return array Array of created/updated Outcome models
+     */
+    public function syncOutcomesFromApi(?array $outcomesArray): array
+    {
+        if (empty($outcomesArray) || !is_array($outcomesArray)) {
+            // Default to Yes/No if no outcomes provided
+            $outcomesArray = ['Yes', 'No'];
+        }
+
+        $syncedOutcomes = [];
+        
+        foreach ($outcomesArray as $index => $outcomeName) {
+            if (empty($outcomeName)) {
+                continue;
+            }
+
+            // Find or create outcome
+            $outcome = Outcome::updateOrCreate(
+                [
+                    'market_id' => $this->id,
+                    'name' => $outcomeName,
+                ],
+                [
+                    'order_index' => $index,
+                    'active' => true,
+                ]
+            );
+
+            $syncedOutcomes[] = $outcome;
+        }
+
+        // Deactivate outcomes that are no longer in the API response
+        $activeOutcomeNames = array_map('strval', $outcomesArray);
+        Outcome::where('market_id', $this->id)
+            ->whereNotIn('name', $activeOutcomeNames)
+            ->update(['active' => false]);
+
+        return $syncedOutcomes;
+    }
+
+    /**
+     * Get outcome by name (case-insensitive)
+     */
+    public function getOutcomeByName(string $name): ?Outcome
+    {
+        return $this->outcomes()
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->where('active', true)
+            ->first();
+    }
+
+    /**
+     * Recalculate prices for all outcomes in this market
+     */
+    public function recalculateAllOutcomePrices(): bool
+    {
+        try {
+            $outcomes = $this->activeOutcomes()->get();
+            
+            foreach ($outcomes as $outcome) {
+                $outcome->recalculatePrice();
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to recalculate outcome prices', [
+                'market_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 }

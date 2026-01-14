@@ -1,0 +1,76 @@
+{
+  "description": "Required fields to extract from Polymarket API for centralized trading platform",
+  "event_level_data": {
+    "id": "Event ID from Polymarket",
+    "title": "Event title",
+    "description": "Event description",
+    "slug": "URL friendly name",
+    "image": "Event image URL",
+    "active": "Is event active? (boolean)",
+    "closed": "Is event closed? (boolean)",
+    "endDate": "When does it end (timestamp)",
+    "startDate": "When did it start (timestamp)",
+    "volume": "Total trading volume (decimal)",
+    "liquidity": "Total liquidity (decimal)",
+    "volume24hr": "24 hour volume (decimal)",
+    "tags": [
+      {
+        "label": "Tag label",
+        "slug": "Tag slug"
+      }
+    ]
+  },
+  "markets_data": {
+    "id": "Market ID from Polymarket",
+    "question": "The actual question",
+    "outcomes": "Array like [\"Yes\", \"No\"]",
+    "outcomePrices": "Current prices like [\"0.65\", \"0.35\"]",
+    "volume": "Market volume (decimal)",
+    "liquidity": "Market liquidity (decimal)",
+    "active": "Is trading active? (boolean)",
+    "closed": "Is market closed? (boolean)",
+    "endDate": "Market end date (timestamp)",
+    "lastTradePrice": "Last trade price (decimal)",
+    "bestBid": "Best buy price (decimal)",
+    "bestAsk": "Best sell price (decimal)",
+    "spread": "Bid-ask spread (decimal)",
+    "oneDayPriceChange": "24h price change (decimal)",
+    "oneWeekPriceChange": "7d price change (decimal)",
+    "oneMonthPriceChange": "30d price change (decimal)"
+  },
+  "ignored_fields": {
+    "note": "These fields are NOT needed for centralized trading",
+    "fields": [
+      "conditionId",
+      "marketMakerAddress",
+      "clobTokenIds",
+      "umaBond",
+      "umaReward",
+      "All blockchain/smart contract related fields"
+    ]
+  },
+  "database_tables": {
+    "events": {
+      "description": "Stores event-level data",
+      "primary_key": "id",
+      "polymarket_reference": "polymarket_event_id"
+    },
+    "markets": {
+      "description": "Stores market data",
+      "primary_key": "id",
+      "foreign_key": "event_id -> events.id"
+    },
+    "tags": {
+      "description": "Stores tag information",
+      "primary_key": "id"
+    },
+    "event_tags": {
+      "description": "Many-to-many relationship between events and tags",
+      "foreign_keys": [
+        "event_id -> events.id",
+        "tag_id -> tags.id"
+      ]
+    }
+  }
+}
+
