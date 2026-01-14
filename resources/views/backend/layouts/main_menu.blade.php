@@ -84,23 +84,23 @@
 
                 <!-- Settings Section -->
                 @if($admin && (($admin->isSuperAdmin() || $admin->hasPermissionTo('manage global settings', 'admin')) || ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage payment settings', 'admin'))))
-                <li class="menu-header">
-                    <span class="menu-header-text">Settings</span>
-                </li>
-                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage global settings', 'admin')))
-                <li class="{{ request()->routeIs('admin.setting') ? 'active' : '' }}">
-                    <a href="{{ route('admin.setting') }}">
-                        <iconify-icon icon="mdi:cog" class="sidebar-icon"></iconify-icon>
-                        <span>Global Settings</span>
-                    </a>
-                </li>
-                <li class="{{ request()->routeIs('admin.referral-settings.*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.referral-settings.index') }}">
-                        <iconify-icon icon="mdi:account-group" class="sidebar-icon"></iconify-icon>
-                        <span>Referral Settings</span>
-                    </a>
-                </li>
-                @endif
+                    <li class="menu-header">
+                        <span class="menu-header-text">Settings</span>
+                    </li>
+                        @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage global settings', 'admin')))
+                        <li class="{{ request()->routeIs('admin.setting') ? 'active' : '' }}">
+                            <a href="{{ route('admin.setting') }}">
+                                <iconify-icon icon="mdi:cog" class="sidebar-icon"></iconify-icon>
+                                <span>Global Settings</span>
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('admin.referral-settings.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.referral-settings.index') }}">
+                                <iconify-icon icon="mdi:account-group" class="sidebar-icon"></iconify-icon>
+                                <span>Referral Settings</span>
+                            </a>
+                        </li>
+                        @endif
                 @endif
 
                 <!-- Content & Pages Section -->

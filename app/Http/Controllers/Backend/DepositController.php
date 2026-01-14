@@ -23,7 +23,14 @@ class DepositController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Deposit::with('user');
+        // Optimize: Select only necessary columns and eager load user with select
+        $query = Deposit::select([
+            'id', 'user_id', 'amount', 'currency', 'payment_method', 
+            'status', 'merchant_trade_no', 'transaction_id', 'created_at', 'completed_at'
+        ])
+        ->with(['user' => function($q) {
+            $q->select(['id', 'name', 'email', 'username']);
+        }]);
 
         // Filter by status
         if ($request->has('status') && $request->status !== '') {
@@ -42,7 +49,8 @@ class DepositController extends Controller
                 $q->where('merchant_trade_no', 'like', "%{$search}%")
                   ->orWhere('transaction_id', 'like', "%{$search}%")
                   ->orWhereHas('user', function($userQuery) use ($search) {
-                      $userQuery->where('email', 'like', "%{$search}%")
+                      $userQuery->select(['id', 'name', 'email'])
+                                ->where('email', 'like', "%{$search}%")
                                 ->orWhere('name', 'like', "%{$search}%");
                   });
             });
@@ -50,13 +58,23 @@ class DepositController extends Controller
 
         $deposits = $query->orderBy('created_at', 'desc')->paginate(20);
 
+        // Optimize: Get stats in single query using conditional aggregation
+        $statsQuery = Deposit::selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
+            SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = "expired" THEN 1 ELSE 0 END) as expired,
+            SUM(CASE WHEN status = "pending" AND payment_method = "manual" THEN 1 ELSE 0 END) as manual_pending
+        ')->first();
+
         $stats = [
-            'pending' => Deposit::where('status', 'pending')->count(),
-            'completed' => Deposit::where('status', 'completed')->count(),
-            'failed' => Deposit::where('status', 'failed')->count(),
-            'expired' => Deposit::where('status', 'expired')->count(),
-            'total' => Deposit::count(),
-            'manual_pending' => Deposit::where('status', 'pending')->where('payment_method', 'manual')->count(),
+            'pending' => $statsQuery->pending ?? 0,
+            'completed' => $statsQuery->completed ?? 0,
+            'failed' => $statsQuery->failed ?? 0,
+            'expired' => $statsQuery->expired ?? 0,
+            'total' => $statsQuery->total ?? 0,
+            'manual_pending' => $statsQuery->manual_pending ?? 0,
         ];
 
         return view('backend.deposits.index', compact('deposits', 'stats'));
@@ -67,7 +85,16 @@ class DepositController extends Controller
      */
     public function show($id)
     {
-        $deposit = Deposit::with('user')->findOrFail($id);
+        // Optimize: Select only necessary columns
+        $deposit = Deposit::select([
+            'id', 'user_id', 'amount', 'currency', 'payment_method', 
+            'status', 'merchant_trade_no', 'transaction_id', 'response_data',
+            'created_at', 'completed_at', 'updated_at'
+        ])
+        ->with(['user' => function($q) {
+            $q->select(['id', 'name', 'email', 'username', 'number']);
+        }])
+        ->findOrFail($id);
         return view('backend.deposits.show', compact('deposit'));
     }
 

@@ -64,10 +64,18 @@ class EventController extends Controller
         }
 
         // Apply pagination AFTER filtering - this ensures filter works on all data
-        // Optimize: Eager load markets with select to avoid N+1 and reduce data
-        $events = $query->with(['markets' => function($q) {
-            $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume']);
-        }])->orderBy('volume', 'desc')->paginate(20)->withQueryString();
+        // Optimize: Select only necessary columns and eager load markets with select to avoid N+1
+        $events = $query->select([
+            'id', 'title', 'slug', 'description', 'category', 'image', 'icon',
+            'volume', 'volume_24hr', 'liquidity', 'active', 'closed', 'featured',
+            'start_date', 'end_date', 'created_at', 'updated_at'
+        ])
+        ->with(['markets' => function($q) {
+            $q->select(['id', 'event_id', 'question', 'slug', 'active', 'closed', 'volume', 'created_at']);
+        }])
+        ->orderBy('volume', 'desc')
+        ->paginate(20)
+        ->withQueryString();
         $categories = $this->categoryDetector->getAvailableCategories();
 
         return view('backend.events.index', compact('events', 'categories'));

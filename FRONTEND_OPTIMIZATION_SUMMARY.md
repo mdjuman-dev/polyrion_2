@@ -113,3 +113,6 @@ The following code remains inline in `frontend.blade.php` because it requires Bl
 - **Bandwidth**: Reduced by ~40-50%
 - **Parse Time**: Faster (smaller HTML document)
 
+
+
+

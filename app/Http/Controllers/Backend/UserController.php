@@ -29,7 +29,11 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with('wallet');
+        // Optimize: Select only necessary columns and eager load wallet with select
+        $query = User::select(['id', 'name', 'email', 'username', 'number', 'profile_image', 'created_at', 'balance'])
+            ->with(['wallet' => function($q) {
+                $q->select(['id', 'user_id', 'balance', 'locked_balance', 'currency']);
+            }]);
 
         // Search functionality
         if ($request->has('search') && !empty($request->search)) {

@@ -23,7 +23,19 @@ class WithdrawalController extends Controller
     */
    public function index(Request $request)
    {
-      $query = Withdrawal::with(['user', 'approver']);
+      // Optimize: Select only necessary columns and eager load relationships with select
+      $query = Withdrawal::select([
+         'id', 'user_id', 'amount', 'currency', 'status', 'payment_method',
+         'wallet_address', 'approved_by', 'admin_note', 'created_at', 'processed_at'
+      ])
+      ->with([
+         'user' => function($q) {
+            $q->select(['id', 'name', 'email', 'username']);
+         },
+         'approver' => function($q) {
+            $q->select(['id', 'name', 'email']);
+         }
+      ]);
 
       // Filter by status
       if ($request->has('status') && $request->status !== '') {
@@ -34,19 +46,29 @@ class WithdrawalController extends Controller
       if ($request->has('search') && $request->search !== '') {
          $search = $request->search;
          $query->whereHas('user', function ($q) use ($search) {
-            $q->where('email', 'like', "%{$search}%")
-               ->orWhere('name', 'like', "%{$search}%");
+            $q->select(['id', 'name', 'email'])
+              ->where('email', 'like', "%{$search}%")
+              ->orWhere('name', 'like', "%{$search}%");
          });
       }
 
       $withdrawals = $query->orderBy('created_at', 'desc')->paginate(20);
 
+      // Optimize: Get stats in single query using conditional aggregation
+      $statsQuery = Withdrawal::selectRaw('
+         COUNT(*) as total,
+         SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
+         SUM(CASE WHEN status = "processing" THEN 1 ELSE 0 END) as processing,
+         SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
+         SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as rejected
+      ')->first();
+
       $stats = [
-         'pending' => Withdrawal::where('status', 'pending')->count(),
-         'processing' => Withdrawal::where('status', 'processing')->count(),
-         'completed' => Withdrawal::where('status', 'completed')->count(),
-         'rejected' => Withdrawal::where('status', 'rejected')->count(),
-         'total' => Withdrawal::count(),
+         'pending' => $statsQuery->pending ?? 0,
+         'processing' => $statsQuery->processing ?? 0,
+         'completed' => $statsQuery->completed ?? 0,
+         'rejected' => $statsQuery->rejected ?? 0,
+         'total' => $statsQuery->total ?? 0,
       ];
 
       return view('backend.withdrawal.index', compact('withdrawals', 'stats'));
@@ -57,7 +79,21 @@ class WithdrawalController extends Controller
     */
    public function show($id)
    {
-      $withdrawal = Withdrawal::with(['user', 'approver'])->findOrFail($id);
+      // Optimize: Select only necessary columns
+      $withdrawal = Withdrawal::select([
+         'id', 'user_id', 'amount', 'currency', 'status', 'payment_method',
+         'wallet_address', 'approved_by', 'admin_note', 'response_data',
+         'created_at', 'processed_at', 'updated_at'
+      ])
+      ->with([
+         'user' => function($q) {
+            $q->select(['id', 'name', 'email', 'username', 'number']);
+         },
+         'approver' => function($q) {
+            $q->select(['id', 'name', 'email']);
+         }
+      ])
+      ->findOrFail($id);
       return view('backend.withdrawal.show', compact('withdrawal'));
    }
 

@@ -124,20 +124,33 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info - eager load market.event
-        $trades = Trade::where('user_id', $user->id)
-            ->with('market.event')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Optimize: Select only necessary columns and eager load relationships with select
+        $trades = Trade::select([
+            'id', 'user_id', 'market_id', 'outcome', 'side', 'option',
+            'amount_invested', 'amount', 'token_amount', 'shares', 'price_at_buy',
+            'status', 'payout', 'payout_amount', 'settled_at', 'created_at'
+        ])
+        ->where('user_id', $user->id)
+        ->with([
+            'market' => function($q) {
+                $q->select(['id', 'event_id', 'question', 'slug']);
+            },
+            'market.event' => function($q) {
+                $q->select(['id', 'title', 'slug']);
+            }
+        ])
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
 
         // Calculate statistics - optimize with base query
         $baseQuery = Trade::where('user_id', $user->id);
         $totalTrades = (clone $baseQuery)->count();
-        $totalAmount = (clone $baseQuery)->sum('amount');
+        $totalAmount = (clone $baseQuery)->sum(DB::raw('COALESCE(amount_invested, amount, 0)'));
         $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
         $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
         $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
-        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])
+            ->sum(DB::raw('COALESCE(payout, payout_amount, 0)'));
         
         // Get first and last trade dates - optimize with single query
         $tradeDates = (clone $baseQuery)
@@ -169,20 +182,33 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        // Get all trades with market info - eager load market.event
-        $trades = Trade::where('user_id', $user->id)
-            ->with('market.event')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Optimize: Select only necessary columns and eager load relationships with select
+        $trades = Trade::select([
+            'id', 'user_id', 'market_id', 'outcome', 'side', 'option',
+            'amount_invested', 'amount', 'token_amount', 'shares', 'price_at_buy',
+            'status', 'payout', 'payout_amount', 'settled_at', 'created_at'
+        ])
+        ->where('user_id', $user->id)
+        ->with([
+            'market' => function($q) {
+                $q->select(['id', 'event_id', 'question', 'slug']);
+            },
+            'market.event' => function($q) {
+                $q->select(['id', 'title', 'slug']);
+            }
+        ])
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
 
         // Calculate statistics - optimize with base query
         $baseQuery = Trade::where('user_id', $user->id);
         $totalTrades = (clone $baseQuery)->count();
-        $totalAmount = (clone $baseQuery)->sum('amount');
+        $totalAmount = (clone $baseQuery)->sum(DB::raw('COALESCE(amount_invested, amount, 0)'));
         $pendingTrades = (clone $baseQuery)->whereRaw('UPPER(status) = ?', ['PENDING'])->count();
         $winTrades = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->count();
         $lossTrades = (clone $baseQuery)->whereIn('status', ['loss', 'LOSS', 'LOST', 'lost'])->count();
-        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])->sum('payout_amount');
+        $totalPayout = (clone $baseQuery)->whereIn('status', ['win', 'WIN', 'WON', 'won'])
+            ->sum(DB::raw('COALESCE(payout, payout_amount, 0)'));
         
         // Get first and last trade dates - optimize with single query
         $tradeDates = (clone $baseQuery)
@@ -199,12 +225,20 @@ class TradeController extends Controller
      */
     public function marketTrades($marketId)
     {
-        $market = Market::findOrFail($marketId);
+        // Optimize: Select only necessary columns
+        $market = Market::select(['id', 'question', 'slug'])->findOrFail($marketId);
         
-        $trades = Trade::where('market_id', $marketId)
-            ->with('user:id,name')
-            ->orderBy('created_at', 'desc')
-            ->paginate(50);
+        $trades = Trade::select([
+            'id', 'user_id', 'market_id', 'outcome', 'side', 'option',
+            'amount_invested', 'amount', 'token_amount', 'shares', 'price_at_buy',
+            'status', 'payout', 'payout_amount', 'created_at'
+        ])
+        ->where('market_id', $marketId)
+        ->with(['user' => function($q) {
+            $q->select(['id', 'name', 'email']);
+        }])
+        ->orderBy('created_at', 'desc')
+        ->paginate(50);
 
         return response()->json([
             'success' => true,
@@ -220,10 +254,26 @@ class TradeController extends Controller
     {
         $user = Auth::user();
         
-        $trade = Trade::where('id', $id)
-            ->where('user_id', $user->id) // Only allow users to see their own trades
-            ->with(['market.event', 'user'])
-            ->firstOrFail();
+        // Optimize: Select only necessary columns
+        $trade = Trade::select([
+            'id', 'user_id', 'market_id', 'outcome', 'side', 'option',
+            'amount_invested', 'amount', 'token_amount', 'shares', 'price_at_buy',
+            'status', 'payout', 'payout_amount', 'settled_at', 'created_at', 'updated_at'
+        ])
+        ->where('id', $id)
+        ->where('user_id', $user->id) // Only allow users to see their own trades
+        ->with([
+            'market' => function($q) {
+                $q->select(['id', 'event_id', 'question', 'slug']);
+            },
+            'market.event' => function($q) {
+                $q->select(['id', 'title', 'slug']);
+            },
+            'user' => function($q) {
+                $q->select(['id', 'name', 'email']);
+            }
+        ])
+        ->firstOrFail();
 
         return response()->json([
             'success' => true,
