@@ -639,7 +639,7 @@
     </div>
 
     <!-- Google Translate Element (Hidden) -->
-    <div id="google_translate_element" style="display: none !important; visibility: hidden !important; position: absolute !important; left: -9999px !important;"></div>
+    <div id="google_translate_element"></div>
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav d-lg-none d-flex">
@@ -661,15 +661,6 @@
                 <span style="font-size: 0.7rem; font-weight: 600;">Main</span>
             </div>
             <span style="font-size: 0.85rem; font-weight: 700;">${{ number_format(($authUserMainWallet ?? $authUser?->mainWallet)?->balance ?? 0, 2) }}</span>
-            @php
-                $earningBalance = ($authUserEarningWallet ?? $authUser?->earningWallet)?->balance ?? 0;
-            @endphp
-            @if($earningBalance > 0)
-            <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem;">
-                <i class="fas fa-trophy" style="font-size: 0.7rem; color: #10b981;"></i>
-                <span style="font-size: 0.65rem; color: #10b981; font-weight: 600;">${{ number_format($earningBalance, 2) }}</span>
-            </div>
-            @endif
         </a>
     </div>
 
@@ -723,6 +714,38 @@
                     </a>
                 </div>
             </div>
+            
+            @php
+                $mainWallet = $authUserMainWallet ?? $authUser?->mainWallet;
+                $earningWallet = $authUserEarningWallet ?? $authUser?->earningWallet;
+                $mainBalance = $mainWallet ? $mainWallet->balance : 0;
+                $earningBalance = $earningWallet ? $earningWallet->balance : 0;
+            @endphp
+            
+            <div class="sidebar-wallets" style="margin: 15px 0; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Main Wallet -->
+                <div class="sidebar-wallet-item" style="padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-wallet" style="color: #3b82f6; font-size: 1rem;"></i>
+                        <div>
+                            <div style="font-size: 0.75rem; color: #3b82f6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Main Wallet</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${{ number_format($mainBalance, 2) }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Earning Wallet -->
+                <div class="sidebar-wallet-item sidebar-earning-wallet" style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-trophy" style="color: #10b981; font-size: 1rem;"></i>
+                        <div>
+                            <div style="font-size: 0.75rem; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Earning Wallet</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${{ number_format($earningBalance, 2) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="more-menu-divider"></div>
         @endif
 

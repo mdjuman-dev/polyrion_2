@@ -35,6 +35,20 @@
                 <!-- Desktop: Categories Sidebar (3 columns) - Image Design -->
                 <div class="col-lg-3 d-none d-lg-block">
                     <div class="sports-sidebar" style="background: #1a1d29; border-radius: 8px; padding: 0; position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto;">
+                        <!-- Live/Futures Tabs -->
+                        <div style="display: flex; border-bottom: 1px solid #2d3142;">
+                            <button class="sports-tab-btn {{ request()->get('type', 'live') === 'live' ? 'active' : '' }}" 
+                                    onclick="window.location.href='{{ route('sports.index') }}?type=live{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}'"
+                                    style="flex: 1; padding: 12px 16px; background: transparent; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                                Live
+                            </button>
+                            <button class="sports-tab-btn {{ request()->get('type') === 'futures' ? 'active' : '' }}" 
+                                    onclick="window.location.href='{{ route('sports.index') }}?type=futures{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}'"
+                                    style="flex: 1; padding: 12px 16px; background: transparent; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                                Futures
+                            </button>
+                        </div>
+
                         <!-- POPULAR Section -->
                         @if(count($popularCategories) > 0)
                             <div style="padding: 20px 16px 12px 16px;">
@@ -44,7 +58,7 @@
                                 </div>
                                 <div class="sports-categories-list">
                                     @foreach($popularCategories as $category)
-                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}" 
+                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
                                            class="sports-category-link {{ strtolower($selectedCategory) === strtolower($category['name']) ? 'active' : '' }}"
                                            data-category="{{ strtolower($category['name']) }}">
                                             <i class="fas {{ $category['icon'] }}" style="color: {{ getCategoryColor($category['name']) }}; font-size: 18px; width: 24px; text-align: center;"></i>
@@ -63,7 +77,7 @@
                             <div class="sports-categories-list">
                                 @foreach($allCategories as $category)
                                     <div class="category-item-wrapper">
-                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}" 
+                                        <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
                                            class="sports-category-link {{ strtolower($selectedCategory) === strtolower($category['name']) ? 'active' : '' }}"
                                            data-category="{{ strtolower($category['name']) }}">
                                             <i class="fas {{ $category['icon'] }}" style="color: #9ca3af; font-size: 18px; width: 24px; text-align: center;"></i>
@@ -75,7 +89,7 @@
                                         @if(strtolower($selectedCategory) === strtolower($category['name']) && count($subcategories) > 0)
                                             <div class="subcategories-list" style="margin-top: 4px; padding-left: 32px;">
                                                 @foreach($subcategories as $subcategory)
-                                                    <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}&subcategory={{ strtolower($subcategory['name']) }}" 
+                                                    <a href="{{ route('sports.index') }}?category={{ strtolower($category['name']) }}&subcategory={{ strtolower($subcategory['name']) }}{{ request()->get('type') ? '&type=' . request()->get('type') : '' }}" 
                                                        class="subcategory-link {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? 'active' : '' }}"
                                                        style="display: block; padding: 8px 12px; color: {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? '#fff' : '#9ca3af' }}; text-decoration: none; font-size: 13px; border-radius: 4px; background: {{ strtolower($selectedSubcategory ?? '') === strtolower($subcategory['name']) ? '#2d3142' : 'transparent' }}; transition: all 0.2s;">
                                                         {{ $subcategory['name'] }}
@@ -171,6 +185,76 @@
             background: var(--accent) !important;
             color: #fff !important;
             border-color: var(--accent) !important;
+        }
+
+        .sports-tab-btn.active {
+            color: #fff !important;
+            background: #2d3142 !important;
+            border-bottom: 2px solid var(--accent) !important;
+        }
+
+        .sports-tab-btn:hover {
+            color: #fff !important;
+            background: #2d3142 !important;
+        }
+
+        /* Sports Game Card Styles */
+        .sports-game-card {
+            transition: all 0.3s ease;
+        }
+
+        .sports-game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent) !important;
+        }
+
+        .sports-game-card a:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .sports-game-card button:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .sports-game-card a[style*="background: #3b82f6"]:hover,
+        .sports-game-card a[style*="background: #ff6b35"]:hover,
+        .sports-game-card a[style*="background: #4a5568"]:hover {
+            opacity: 0.85;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .sports-content-tab:hover {
+            background: rgba(255, 177, 26, 0.1) !important;
+            color: var(--accent) !important;
+        }
+
+        .sports-content-tab.active {
+            background: var(--accent) !important;
+            color: #fff !important;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sports-header-section > div {
+                flex-direction: column;
+                align-items: flex-start !important;
+            }
+
+            .sports-game-card > div:last-child {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+
+            .sports-game-card > div:last-child > div:first-child {
+                grid-column: 1 / -1;
+            }
+
+            .sports-game-card > div:last-child > div:last-child {
+                grid-template-columns: 1fr !important;
+            }
         }
 
     </style>

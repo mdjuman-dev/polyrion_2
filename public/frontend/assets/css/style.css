@@ -7,7 +7,7 @@
     --card-bg: #16171a;
     --border: #ffb11a33;
     --text-primary: #ffffff;
-    --text-secondary: #a0aec0;
+    --text-secondary: #ffffff;
     --success: #00c853;
     --danger: #ff4757;
     --info: #60a5fa;
@@ -2021,6 +2021,30 @@ nav::-webkit-scrollbar {
     color: var(--text-primary);
     font-size: 1.2rem;
     cursor: pointer;
+}
+
+.sidebar-wallets {
+    width: 100%;
+}
+
+.sidebar-wallet-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sidebar-wallet-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-wallet-item:first-child:hover {
+    background: rgba(59, 130, 246, 0.15) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.sidebar-earning-wallet:hover {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
 .more-menu-actions {

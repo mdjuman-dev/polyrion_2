@@ -171,11 +171,36 @@
     </a>
     <div class="nav-item-divider"></div>
     
+    <!-- Direct Category Links -->
+    <a href="{{ route('sports.index') }}"
+        class="nav-item {{ request()->routeIs('sports.index') ? 'active' : '' }}">
+        <span class="nav-item-text">Sports</span>
+    </a>
+    <a href="{{ route('finance.index') }}"
+        class="nav-item {{ request()->routeIs('finance.index') ? 'active' : '' }}">
+        <span class="nav-item-text">Finance</span>
+    </a>
+    <a href="{{ route('crypto.index') }}"
+        class="nav-item {{ request()->routeIs('crypto.index') ? 'active' : '' }}">
+        <span class="nav-item-text">Crypto</span>
+    </a>
+    <a href="{{ route('politics.index') }}"
+        class="nav-item {{ request()->routeIs('politics.index') ? 'active' : '' }}">
+        <span class="nav-item-text">Politics</span>
+    </a>
+    
     @foreach($categories as $category)
-        <a href="{{ route('events.by.category', ['category' => strtolower($category)]) }}" 
-           class="nav-item {{ request()->routeIs('events.by.category') && request()->route('category') === strtolower($category) ? 'active' : '' }}">
-            <span class="nav-item-text">{{ $category }}</span>
-        </a>
+        @php
+            $categoryLower = strtolower($category);
+            // Skip if already shown as direct link
+            $skipCategories = ['sports', 'finance', 'crypto', 'politics'];
+        @endphp
+        @if(!in_array($categoryLower, $skipCategories))
+            <a href="{{ route('events.by.category', ['category' => $categoryLower]) }}" 
+               class="nav-item {{ request()->routeIs('events.by.category') && request()->route('category') === $categoryLower ? 'active' : '' }}">
+                <span class="nav-item-text">{{ $category }}</span>
+            </a>
+        @endif
     @endforeach
     
     <div class="nav-item-dropdown d-lg-block d-none" id="moreNavDropdown">
