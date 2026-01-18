@@ -2091,6 +2091,8 @@
 
         })(jQuery);
     </script>
+    <!-- Toastr JS (Must load before notifications.min.js) -->
+    <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
     <!-- Deposit Modal JS (Production Optimized) -->
     <script src="{{ asset('frontend/assets/js/deposit-modal.min.js') }}"></script>
     <!-- Notifications & Utilities JS (Production Optimized) -->
@@ -2751,8 +2753,6 @@
     </script>
     <!-- SweetAlert2 -->
     <script src="{{ asset('global/sweetalert/sweetalert2@11.js') }}"></script>
-    <!-- Toastr JS -->
-    <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
     
     <!-- Success/Error Message Functions -->
     <script>

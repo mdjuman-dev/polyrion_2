@@ -5,38 +5,40 @@ function getThemeColor(variable) {
     return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
 }
 
-// Configure toastr options
-toastr.options = {
-    closeButton: true,
-    debug: false,
-    newestOnTop: true,
-    progressBar: true,
-    positionClass: "toast-top-right",
-    preventDuplicates: false,
-    onclick: null,
-    showDuration: "400",
-    hideDuration: "300",
-    timeOut: "5000",
-    extendedTimeOut: "1000",
-    showEasing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
-    hideEasing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
-    showMethod: "slideIn",
-    hideMethod: "slideOut",
-    onHidden: function() {
-        $(this).remove();
-        if ($('#toast-container').children().length === 0) {
-            $('#toast-container').remove();
-        }
-    },
-    onCloseClick: function() {
-        $(this).fadeOut(300, function() {
+// Configure toastr options (only if toastr is available)
+if (typeof toastr !== 'undefined') {
+    toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        preventDuplicates: false,
+        onclick: null,
+        showDuration: "400",
+        hideDuration: "300",
+        timeOut: "5000",
+        extendedTimeOut: "1000",
+        showEasing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        hideEasing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        showMethod: "slideIn",
+        hideMethod: "slideOut",
+        onHidden: function() {
             $(this).remove();
             if ($('#toast-container').children().length === 0) {
                 $('#toast-container').remove();
             }
-        });
-    }
-};
+        },
+        onCloseClick: function() {
+            $(this).fadeOut(300, function() {
+                $(this).remove();
+                if ($('#toast-container').children().length === 0) {
+                    $('#toast-container').remove();
+                }
+            });
+        }
+    };
+}
 
 // Show success notification
 function showSuccess(message, title) {

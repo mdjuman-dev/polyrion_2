@@ -280,27 +280,74 @@ class HomeController extends Controller
       // Use current time (not rounded to start of day)
       $now = now();
       
-      // Use event creation time as base
-      $baseTime = $event->created_at ? \Carbon\Carbon::parse($event->created_at)->startOfDay() : $now->copy()->subDays(30);
+      // Use event creation date as base (exact time for recent events)
+      $createdAt = $event->created_at 
+         ? \Carbon\Carbon::parse($event->created_at) 
+         : $now->copy()->subDays(30);
+      
+      // For very recent events (< 1 day), keep exact time
+      $hoursDiff = $createdAt->diffInHours($now);
+      if ($hoursDiff < 24) {
+         $baseTime = $createdAt->copy(); // Keep exact time
+      } else {
+         $baseTime = $createdAt->copy()->startOfDay();
+      }
+      
       $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date)->startOfDay() : $baseTime;
       
-      // If event is very new, ensure we have enough time range
-      if ($baseTime->diffInDays($now) < 7) {
-         $baseTime = $now->copy()->subDays(30);
-      }
+      $daysDiff = $baseTime->diffInDays($now);
+      $totalHours = $baseTime->diffInHours($now);
+      $totalMinutes = $baseTime->diffInMinutes($now);
 
       // Generate time labels (x-axis) - calculate points based on time range
-      $daysDiff = max(7, $baseTime->diffInDays($now));
+      // Determine interval and label format based on time range
+      $intervalType = 'days'; // Default
       
-      // For long periods (>60 days), show months. For shorter, show dates
-      if ($daysDiff > 60) {
-         $maxPoints = min(12, ceil($daysDiff / 30)); // Show months
+      if ($totalMinutes <= 60) {
+         // Less than 1 hour old: show 5-minute intervals
+         $maxPoints = min(12, ceil($totalMinutes / 5));
+         $interval = 5; // 5-minute intervals
+         $intervalType = 'minutes';
+         $labelFormat = 'H:i'; // Hour:minute format
+      } elseif ($totalHours < 6) {
+         // 1-6 hours old: show 30-minute intervals
+         $maxPoints = min(12, ceil($totalHours * 2));
+         $interval = 30; // 30-minute intervals
+         $intervalType = 'minutes';
+         $labelFormat = 'H:i'; // Hour:minute format
+      } elseif ($totalHours < 24) {
+         // 6-24 hours old: show hourly intervals
+         $maxPoints = min(24, $totalHours + 1);
+         $interval = max(1, ceil($totalHours / $maxPoints));
+         $intervalType = 'hours';
+         $labelFormat = 'H:i'; // Hour:minute format
+      } elseif ($daysDiff <= 7) {
+         // 1-7 days old: show daily
+         $maxPoints = $daysDiff + 1;
+         $interval = 1;
+         $labelFormat = 'M d'; // Month day
+      } elseif ($daysDiff <= 30) {
+         // 8-30 days old: show every 2-3 days
+         $maxPoints = 12;
          $interval = max(1, ceil($daysDiff / $maxPoints));
-         $labelFormat = 'M'; // Just month name (Jan, Feb, etc)
+         $labelFormat = 'M d';
+      } elseif ($daysDiff <= 90) {
+         // 31-90 days old: show weekly
+         $maxPoints = 12;
+         $interval = 7; // Weekly
+         $labelFormat = 'M d';
       } else {
-         $maxPoints = min(30, $daysDiff); // Show dates
-         $interval = max(1, ceil($daysDiff / $maxPoints));
-         $labelFormat = 'M d'; // Month and day
+         // >90 days old: show monthly (like Polymarket: Aug, Sep, Oct...)
+         $baseTime = $createdAt->copy()->startOfMonth(); // Start from beginning of month
+         $maxPoints = min(12, ceil($daysDiff / 30));
+         $interval = 1; // Month interval
+         $intervalType = 'months';
+         $labelFormat = 'M'; // Just month name (Aug, Sep, Oct)
+         
+         // Limit to last 12 months for very old events
+         if ($daysDiff > 365) {
+            $baseTime = $now->copy()->subMonths(12)->startOfMonth();
+         }
       }
       
       $timeLabels = [];
@@ -312,7 +359,19 @@ class HomeController extends Controller
       while ($currentTime <= $now && $pointCount < $maxPoints) {
          $allTimes[] = $currentTime->copy();
          $timeLabels[] = $currentTime->format($labelFormat);
-         $currentTime->addDays($interval);
+         
+         // Add interval based on interval type
+         if ($intervalType === 'minutes') {
+            $currentTime->addMinutes($interval);
+         } elseif ($intervalType === 'hours') {
+            $currentTime->addHours($interval);
+         } elseif ($intervalType === 'months') {
+            $currentTime->addMonths($interval);
+         } else {
+            // Default: days
+            $currentTime->addDays($interval);
+         }
+         
          $pointCount++;
       }
       
@@ -490,9 +549,14 @@ class HomeController extends Controller
          // Send ALL market data to frontend (user will select which ones to display)
          $seriesData = $allSeriesData;
 
+         // Convert timestamps to ISO8601 strings for frontend
+         $timestamps = array_map(function($time) {
+            return $time->toIso8601String();
+         }, $allTimes);
+
          // Response with cache headers for browser caching
          return response()
-            ->view('frontend.market_details', compact('event', 'seriesData', 'labels'))
+            ->view('frontend.market_details', compact('event', 'seriesData', 'labels', 'timestamps'))
             ->header('Cache-Control', 'public, max-age=60'); // Cache in browser for 1 minute
       } catch (\Illuminate\Database\QueryException $e) {
          \Log::error('Database connection failed in marketDetails: ' . $e->getMessage());
@@ -627,23 +691,71 @@ class HomeController extends Controller
             break;
          case 'all':
          default:
-            // From market creation to now
+            // Use event creation date (exact time, not start of day)
             $createdAt = $event->created_at ? \Carbon\Carbon::parse($event->created_at) : $now->copy()->subDays(30);
-            $startTime = $createdAt->copy()->startOfDay();
-            $endTime = $now->copy();
-            $daysDiff = max(7, $startTime->diffInDays($endTime));
             
-            // For long periods (>30 days), show months. For shorter, show dates
-            if ($daysDiff > 30) {
-               $maxPoints = min(12, ceil($daysDiff / 30)); // Show months
-               $interval = max(1, ceil($daysDiff / $maxPoints));
-               $intervalType = 'days';
-               $labelFormat = 'M'; // Just month name (Jan, Feb, etc)
+            // For very recent events (< 1 day), keep exact time. Otherwise start of day
+            $hoursDiff = $createdAt->diffInHours($now);
+            if ($hoursDiff < 24) {
+               $startTime = $createdAt->copy(); // Keep exact time for recent events
             } else {
-               $maxPoints = min(30, $daysDiff); // Show dates
+               $startTime = $createdAt->copy()->startOfDay();
+            }
+            
+            $endTime = $now->copy();
+            $daysDiff = $startTime->diffInDays($endTime);
+            $totalHours = $startTime->diffInHours($endTime);
+            $totalMinutes = $startTime->diffInMinutes($endTime);
+            
+            // Determine interval and label format based on time range
+            if ($totalMinutes <= 60) {
+               // Less than 1 hour old: show 5-minute intervals
+               $maxPoints = min(12, ceil($totalMinutes / 5));
+               $interval = 5; // 5-minute intervals
+               $intervalType = 'minutes';
+               $labelFormat = 'H:i'; // Hour:minute format
+            } elseif ($totalHours < 6) {
+               // 1-6 hours old: show 30-minute intervals
+               $maxPoints = min(12, ceil($totalHours * 2));
+               $interval = 30; // 30-minute intervals
+               $intervalType = 'minutes';
+               $labelFormat = 'H:i'; // Hour:minute format
+            } elseif ($totalHours < 24) {
+               // 6-24 hours old: show hourly intervals
+               $maxPoints = min(24, $totalHours + 1);
+               $interval = max(1, ceil($totalHours / $maxPoints));
+               $intervalType = 'hours';
+               $labelFormat = 'H:i'; // Hour:minute format
+            } elseif ($daysDiff <= 7) {
+               // 1-7 days old: show daily
+               $maxPoints = $daysDiff + 1;
+               $interval = 1;
+               $intervalType = 'days';
+               $labelFormat = 'M d'; // Month day
+            } elseif ($daysDiff <= 30) {
+               // 8-30 days old: show every 2-3 days
+               $maxPoints = 12;
                $interval = max(1, ceil($daysDiff / $maxPoints));
                $intervalType = 'days';
-               $labelFormat = 'M d'; // Month and day
+               $labelFormat = 'M d';
+            } elseif ($daysDiff <= 90) {
+               // 31-90 days old: show weekly
+               $maxPoints = 12;
+               $interval = 7; // Weekly
+               $intervalType = 'days';
+               $labelFormat = 'M d';
+            } else {
+               // >90 days old: show monthly (like Polymarket: Aug, Sep, Oct...)
+               $startTime = $createdAt->copy()->startOfMonth(); // Start from beginning of month
+               $maxPoints = min(12, ceil($daysDiff / 30));
+               $interval = 1; // Will add months, not days
+               $intervalType = 'months';
+               $labelFormat = 'M'; // Just month name (Aug, Sep, Oct)
+               
+               // Limit to last 12 months for very old events
+               if ($daysDiff > 365) {
+                  $startTime = $now->copy()->subMonths(12)->startOfMonth();
+               }
             }
             break;
       }
@@ -662,6 +774,8 @@ class HomeController extends Controller
             $currentTime->addMinutes($interval);
          } elseif ($intervalType === 'hours') {
             $currentTime->addHours($interval);
+         } elseif ($intervalType === 'months') {
+            $currentTime->addMonths($interval);
          } else {
             $currentTime->addDays($interval);
          }
@@ -814,8 +928,14 @@ class HomeController extends Controller
          ];
       }
 
+      // Convert timestamps to ISO8601 strings for frontend
+      $timestampStrings = array_map(function($timestamp) {
+         return $timestamp->toIso8601String();
+      }, $timestamps);
+
       return [
          'labels' => $labels,
+         'timestamps' => $timestampStrings, // Full timestamps for tooltip
          'series' => $seriesData,
          'period' => $period,
          'startTime' => $startTime->toIso8601String(),

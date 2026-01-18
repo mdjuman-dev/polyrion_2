@@ -14,10 +14,34 @@
       $activeMarkets = $event->markets
          ->where('closed', false)
          ->filter(fn($market) => !$market->isClosed())
+         ->sortByDesc(function($market) {
+            // Sort by YES probability (highest first)
+            $prices = is_string($market->outcome_prices) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? [0.5, 0.5]);
+            
+            // Get YES price (index 1 in Polymarket format)
+            $yesPrice = isset($prices[1]) ? (float) $prices[1] : 0.5;
+            
+            // Use best_ask if available (most accurate)
+            if (!is_null($market->best_ask) && $market->best_ask > 0) {
+               $yesPrice = (float) $market->best_ask;
+            }
+            
+            return $yesPrice;
+         })
          ->values();
 
       $endedMarkets = $event->markets
          ->where('closed', true)
+         ->sortByDesc(function($market) {
+            // Sort by final YES probability (highest first)
+            $prices = is_string($market->outcome_prices) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? [0.5, 0.5]);
+            
+            return isset($prices[1]) ? (float) $prices[1] : 0.5;
+         })
          ->values();
    @endphp
 

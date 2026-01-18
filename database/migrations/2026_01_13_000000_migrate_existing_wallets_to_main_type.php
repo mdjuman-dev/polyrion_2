@@ -14,10 +14,14 @@ return new class extends Migration
     {
         // Update all existing wallets to have wallet_type = 'main'
         // This ensures backward compatibility
-        DB::table('wallets')
-            ->whereNull('wallet_type')
-            ->orWhere('wallet_type', '')
-            ->update(['wallet_type' => 'main']);
+        if (Schema::hasColumn('wallets', 'wallet_type')) {
+            DB::table('wallets')
+                ->where(function ($query) {
+                    $query->whereNull('wallet_type')
+                          ->orWhere('wallet_type', '');
+                })
+                ->update(['wallet_type' => 'main']);
+        }
     }
 
     /**

@@ -648,11 +648,14 @@
          // Data from Laravel backend
          const seriesData = @json($seriesData ?? []);
          const labels = @json($labels ?? []);
+         const timestamps = @json($timestamps ?? []);
          
          // Store original data globally
          window.originalSeriesData = seriesData;
          window.originalLabels = labels;
+         window.originalTimestamps = timestamps; // Store full timestamps for tooltips
          window.currentSeriesData = seriesData; // Currently displayed series (updated on modal selection)
+         window.currentTimestamps = timestamps; // Currently displayed timestamps
          window.currentPeriod = 'all'; // Track current active time period
          window.marketChart = null;
          window.selectedMarketIds = []; // Track selected markets for chart
@@ -703,28 +706,33 @@
             const datasetsToShow = seriesData.slice(0, maxInitialMarkets);
             const datasets = datasetsToShow.map((series, index) => {
                const color = series.color || defaultColors[index % defaultColors.length];
-               // Use groupItem_title if available
-               const displayLabel = series.groupItem_title || series.name || `Outcome ${index + 1}`;
+               // Use full market title for legend (groupItem_title or question, WITHOUT price)
+               const displayLabel = series.groupItem_title || series.question || series.full_name || series.name;
                const fullName = series.groupItem_title || series.full_name || series.question || series.name;
+               // Remove price from label if it exists (e.g., "Market Name 67%" -> "Market Name")
+               const cleanLabel = displayLabel.replace(/\s+\d+(\.\d+)?%$/, '');
                
                return {
-                  label: displayLabel,
+                  label: cleanLabel,
                   fullName: fullName, // For tooltip
                   data: series.data,
                   borderColor: color,
-                  backgroundColor: color + '20',
-                  borderWidth: 2,
+                  backgroundColor: 'transparent',
+                  borderWidth: 1.5,
                   fill: false,
-                  tension: 0.4,
+                  tension: 0.3,
                   pointRadius: 0,
-                  pointHoverRadius: 6,
+                  pointHoverRadius: 5,
                   pointHoverBackgroundColor: color,
                   pointHoverBorderColor: '#fff',
                   pointHoverBorderWidth: 2,
+                  cubicInterpolationMode: 'monotone',
+                  segment: {
+                     borderColor: color,
+                  }
                };
             });
 
-            console.log(`📊 Initial chart: Showing ${datasets.length} of ${seriesData.length} markets`);
 
             // Create chart
             window.marketChart = new Chart(ctx, {
@@ -736,6 +744,9 @@
                options: {
                   responsive: true,
                   maintainAspectRatio: false,
+                  animation: {
+                     duration: 0 // Disable animation to prevent circles during update
+                  },
                   plugins: {
                      legend: {
                         display: true,
@@ -744,8 +755,9 @@
                            color: '#9ab1c6',
                            font: { size: 12 },
                            padding: 15,
-                           usePointStyle: true,
-                           pointStyle: 'circle'
+                           usePointStyle: false,
+                           boxWidth: 40,
+                           boxHeight: 3
                         }
                      },
                      tooltip: {
@@ -761,19 +773,33 @@
                         displayColors: true,
                         callbacks: {
                            label: function(context) {
-                              return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                              // Show full market name in tooltip
+                              const fullName = context.dataset.fullName || context.dataset.label;
+                              return fullName + ': ' + context.parsed.y.toFixed(1) + '%';
                            },
                            title: function(tooltipItems) {
-                              // For tooltip, show more detailed date/time
-                              const label = tooltipItems[0].label;
+                              // Show full date/time from timestamps
+                              const index = tooltipItems[0].dataIndex;
                               
-                              // If it's just a month name, show it as is
-                              if (label && label.length <= 3) {
-                                 return label; // "Jan", "Feb", etc
+                              // Check if we have timestamps stored
+                              if (window.currentTimestamps && window.currentTimestamps[index]) {
+                                 const timestamp = new Date(window.currentTimestamps[index]);
+                                 
+                                 // Format: "Nov 30, 2025 6:00 pm" (matching the image)
+                                 const options = { 
+                                    month: 'short', 
+                                    day: 'numeric', 
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                 };
+                                 
+                                 return timestamp.toLocaleString('en-US', options);
                               }
                               
-                              // Otherwise show the date
-                              return label;
+                              // Fallback to label
+                              return tooltipItems[0].label;
                            }
                         }
                      }
@@ -822,7 +848,6 @@
                }
             });
 
-            console.log('🎉 Market Chart created successfully!', window.marketChart);
 
             // Handle period button clicks
             const chartButtons = document.querySelectorAll('.chart-btn');
@@ -878,9 +903,6 @@
                return;
             }
 
-            console.log('⏱️ Filtering chart by period:', period);
-            console.log('📊 Selected markets:', window.selectedMarketIds);
-
             // Update current period tracker
             window.currentPeriod = period;
 
@@ -893,7 +915,6 @@
                : '';
             
             const apiUrl = `/api/market/{{ $event->slug }}/chart-data?period=${period}&market_ids=${marketIdsParam}`;
-            console.log('🌐 Fetching data from:', apiUrl);
 
             fetch(apiUrl)
                .then(response => {
@@ -904,17 +925,16 @@
                   return response.json();
                })
                .then(response => {
-                  console.log('✅ Period data fetched:', response);
                   
                   // Handle both response formats
                   const chartData = response.data || response;
                   
-                  console.log('📊 Series count:', chartData.series ? chartData.series.length : 0);
-                  console.log('🏷️ Labels count:', chartData.labels ? chartData.labels.length : 0);
 
                   // Update stored data
                   window.originalLabels = chartData.labels || [];
+                  window.originalTimestamps = chartData.timestamps || [];
                   window.currentSeriesData = chartData.series || [];
+                  window.currentTimestamps = chartData.timestamps || [];
 
                   // Update chart labels
                   window.marketChart.data.labels = chartData.labels || [];
@@ -922,49 +942,29 @@
                   // Prepare datasets
                   const datasets = chartData.series.map((series, index) => {
                      const color = series.color || defaultColors[index % defaultColors.length];
-                     const displayLabel = series.groupItem_title || series.name || `Outcome ${index + 1}`;
+                     const displayLabel = series.groupItem_title || series.question || series.full_name || series.name;
                      const fullName = series.groupItem_title || series.full_name || series.question || series.name;
+                     // Remove price from label if it exists
+                     const cleanLabel = displayLabel.replace(/\s+\d+(\.\d+)?%$/, '');
                      
-                     // Add direction indicators to point styles
-                     const pointBackgroundColors = [];
-                     const pointBorderColors = [];
-                     const pointRadii = [];
-                     
-                     if (series.directions && Array.isArray(series.directions)) {
-                        series.directions.forEach((direction, i) => {
-                           if (direction === 'up') {
-                              pointBackgroundColors.push('#10b981');
-                              pointBorderColors.push('#10b981');
-                              pointRadii.push(3);
-                           } else if (direction === 'down') {
-                              pointBackgroundColors.push('#ef4444');
-                              pointBorderColors.push('#ef4444');
-                              pointRadii.push(3);
-                           } else {
-                              pointBackgroundColors.push(color);
-                              pointBorderColors.push(color);
-                              pointRadii.push(0);
-                           }
-                        });
-                     }
-
                      return {
-                        label: displayLabel,
+                        label: cleanLabel,
                         fullName: fullName,
                         data: series.data,
                         borderColor: color,
-                        backgroundColor: color + '20',
-                        borderWidth: 2,
+                        backgroundColor: 'transparent',
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.4,
-                        pointRadius: pointRadii.length > 0 ? pointRadii : 0,
-                        pointBackgroundColor: pointBackgroundColors.length > 0 ? pointBackgroundColors : color,
-                        pointBorderColor: pointBorderColors.length > 0 ? pointBorderColors : color,
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
+                        tension: 0.3,
+                        pointRadius: 0, // No visible points on line
+                        pointHoverRadius: 5, // Show point only on hover
                         pointHoverBackgroundColor: color,
                         pointHoverBorderColor: '#fff',
                         pointHoverBorderWidth: 2,
+                        cubicInterpolationMode: 'monotone',
+                        segment: {
+                           borderColor: color,
+                        },
                         directions: series.directions
                      };
                   });
@@ -973,7 +973,7 @@
 
                   // Update chart
                   window.marketChart.data.datasets = datasets;
-                  window.marketChart.update('active');
+                  window.marketChart.update('none'); // Use 'none' to prevent animation circles
 
                   console.log(`✅ Chart filtered to ${period} with ${datasets.length} markets`);
 
@@ -1289,9 +1289,11 @@
                   console.log('🏷️ Labels count:', chartData.labels ? chartData.labels.length : 0);
                   console.log('📈 Series data:', chartData.series);
 
-                  // Update labels
+                  // Update labels and timestamps
                   window.originalLabels = chartData.labels || [];
+                  window.originalTimestamps = chartData.timestamps || [];
                   window.marketChart.data.labels = chartData.labels || [];
+                  window.currentTimestamps = chartData.timestamps || [];
 
                   // Store series data for filtering
                   window.originalSeriesData = chartData.series || [];
@@ -1313,49 +1315,29 @@
                   // Prepare datasets
                   const datasets = chartData.series.map((series, index) => {
                      const color = series.color || defaultColors[index % defaultColors.length];
-                     const displayLabel = series.groupItem_title || series.name || `Outcome ${index + 1}`;
+                     const displayLabel = series.groupItem_title || series.question || series.full_name || series.name;
                      const fullName = series.groupItem_title || series.full_name || series.question || series.name;
+                     // Remove price from label if it exists
+                     const cleanLabel = displayLabel.replace(/\s+\d+(\.\d+)?%$/, '');
                      
-                     // Add direction indicators to point styles
-                     const pointBackgroundColors = [];
-                     const pointBorderColors = [];
-                     const pointRadii = [];
-                     
-                     if (series.directions && Array.isArray(series.directions)) {
-                        series.directions.forEach((direction, i) => {
-                           if (direction === 'up') {
-                              pointBackgroundColors.push('#10b981');
-                              pointBorderColors.push('#10b981');
-                              pointRadii.push(3);
-                           } else if (direction === 'down') {
-                              pointBackgroundColors.push('#ef4444');
-                              pointBorderColors.push('#ef4444');
-                              pointRadii.push(3);
-                           } else {
-                              pointBackgroundColors.push(color);
-                              pointBorderColors.push(color);
-                              pointRadii.push(0);
-                           }
-                        });
-                     }
-
                      return {
-                        label: displayLabel,
+                        label: cleanLabel,
                         fullName: fullName,
                         data: series.data,
                         borderColor: color,
-                        backgroundColor: color + '20',
-                        borderWidth: 2,
+                        backgroundColor: 'transparent',
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.4,
-                        pointRadius: pointRadii.length > 0 ? pointRadii : 0,
-                        pointBackgroundColor: pointBackgroundColors.length > 0 ? pointBackgroundColors : color,
-                        pointBorderColor: pointBorderColors.length > 0 ? pointBorderColors : color,
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
+                        tension: 0.3,
+                        pointRadius: 0, // No visible points on line
+                        pointHoverRadius: 5, // Show point only on hover
                         pointHoverBackgroundColor: color,
                         pointHoverBorderColor: '#fff',
                         pointHoverBorderWidth: 2,
+                        cubicInterpolationMode: 'monotone',
+                        segment: {
+                           borderColor: color,
+                        },
                         directions: series.directions
                      };
                   });
@@ -1364,7 +1346,7 @@
 
                   // Update chart
                   window.marketChart.data.datasets = datasets;
-                  window.marketChart.update('active');
+                  window.marketChart.update('none'); // Use 'none' to prevent animation circles
 
                   console.log(`✅ Chart updated with ${datasets.length} selected markets (real data)`);
                })
