@@ -146,6 +146,37 @@
                             </div>
                         </div>
                         <div style="height: 1px; background: #2d3142; margin: 0 16px;"></div>
+                        
+                        <!-- Secondary Categories -->
+                        @if(isset($secondaryCategories) && $secondaryCategories->count() > 0)
+                            <div style="padding: 12px 16px 20px 16px;">
+                                <h3 style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <i class="fas fa-folder" style="color: #60a5fa; margin-right: 6px;"></i> Subcategories
+                                </h3>
+                                <div class="filter-list" style="display: flex; flex-direction: column; gap: 2px;">
+                                    @foreach($secondaryCategories as $secCategory)
+                                        <a href="{{ route('crypto.index') }}?secondary_category={{ $secCategory->id }}{{ $selectedTimeframe !== 'all' ? '&timeframe=' . $selectedTimeframe : '' }}{{ $selectedAsset !== 'all' ? '&asset=' . $selectedAsset : '' }}" 
+                                           class="filter-item {{ ($selectedSecondaryCategory ?? '') == $secCategory->id ? 'active' : '' }}"
+                                           style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: #fff; text-decoration: none; font-size: 14px; border-radius: 6px; transition: all 0.2s ease;"
+                                           title="{{ $secCategory->description }}">
+                                            @if($secCategory->icon)
+                                                <img src="{{ asset('storage/' . $secCategory->icon) }}" 
+                                                     alt="{{ $secCategory->name }}" 
+                                                     style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
+                                            @else
+                                                <i class="fas fa-folder" style="color: #9ca3af; width: 20px; text-align: center;"></i>
+                                            @endif
+                                            <span style="flex: 1;">{{ $secCategory->name }}</span>
+                                            @if($secCategory->active_events_count > 0)
+                                                <span style="color: #9ca3af; font-size: 13px;">{{ $secCategory->active_events_count }}</span>
+                                            @endif
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div style="height: 1px; background: #2d3142; margin: 0 16px;"></div>
+                        @endif
+                        
                         <!-- Asset-based Filters -->
                         <div style="padding: 12px 16px 20px 16px;">
                             <h3 style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">

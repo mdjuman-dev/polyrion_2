@@ -1,3 +1,145 @@
+<?php
+
+use App\Models\Wallet;
+use App\Models\Deposit;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Volt\Component;
+use Livewire\Attributes\Validate;
+
+new class extends Component {
+    #[Validate('required|numeric|min:10|max:1000000')]
+    public $amount = '';
+
+    #[Validate('required|string|in:binancepay,manual,metamask,trustwallet')]
+    public $payment_method = 'binancepay';
+
+    public $query_code = '';
+    public $wallet_balance = 0;
+    public $currency = 'USDT';
+    public $min_deposit = 10;
+    
+    // Binance Pay Manual Payment Details
+    public $binance_wallet_address = '';
+    public $binance_network = '';
+    public $binance_instructions = '';
+
+    public function mount()
+    {
+        $user = Auth::user();
+        if ($user) {
+            // Get main wallet for deposits
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $user->id, 'wallet_type' => Wallet::TYPE_MAIN],
+                ['balance' => 0, 'status' => 'active', 'currency' => 'USDT']
+            );
+            $this->wallet_balance = $wallet->balance;
+            $this->currency = $wallet->currency;
+        }
+        
+        // Load Binance Pay manual payment details from settings
+        $this->binance_wallet_address = \App\Models\GlobalSetting::getValue('binance_manual_wallet_address', '');
+        $this->binance_network = \App\Models\GlobalSetting::getValue('binance_manual_network', 'BEP20');
+        $this->binance_instructions = \App\Models\GlobalSetting::getValue('binance_manual_instructions', '');
+    }
+
+    public function setQuickAmount($amount)
+    {
+        $this->amount = $amount;
+    }
+
+    public function submit()
+    {
+        $this->validate();
+        $user = Auth::user();
+
+        if (!$user) {
+            $this->addError('amount', 'You must be logged in to make a deposit.');
+            return;
+        }
+
+        if ($this->amount < $this->min_deposit) {
+            $this->addError('amount', 'Minimum deposit amount is $' . $this->min_deposit);
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+
+            // Handle Manual Payment
+            if ($this->payment_method === 'manual') {
+                if (empty($this->query_code)) {
+                    $this->addError('query_code', 'Transaction/Query code is required.');
+                    \Illuminate\Support\Facades\DB::rollBack();
+                    return;
+                }
+
+                $merchantTradeNo = 'MANUAL_' . $user->id . '_' . time() . '_' . rand(1000, 9999);
+
+                $deposit = Deposit::create([
+                    'user_id' => $user->id,
+                    'merchant_trade_no' => $merchantTradeNo,
+                    'amount' => $this->amount,
+                    'currency' => $this->currency,
+                    'status' => 'pending',
+                    'payment_method' => 'manual',
+                    'response_data' => [
+                        'query_code' => $this->query_code,
+                        'submitted_at' => now()->toDateTimeString(),
+                    ],
+                ]);
+
+                \Illuminate\Support\Facades\DB::commit();
+
+                // Livewire 3 dispatch with named arguments
+                $this->dispatch('deposit-submitted', 
+                    message: 'Manual payment request submitted! Your deposit is pending admin verification.',
+                    balance: number_format($wallet->balance, 2)
+                );
+
+                $this->reset(['amount', 'query_code']);
+                return;
+            }
+
+            // Handle Binance Pay
+            if ($this->payment_method === 'binancepay') {
+                \Illuminate\Support\Facades\Log::info('Binance Pay deposit initiated from Livewire', [
+                    'user_id' => $user->id,
+                    'amount' => $this->amount,
+                    'currency' => $this->currency
+                ]);
+                
+                \Illuminate\Support\Facades\DB::commit();
+                
+                // Dispatch event to JavaScript
+                $this->dispatch('deposit-binance', 
+                    amount: $this->amount, 
+                    currency: $this->currency
+                );
+                
+                \Illuminate\Support\Facades\Log::info('Binance Pay event dispatched');
+                return;
+            }
+
+            // Handle MetaMask or Trust Wallet
+            if ($this->payment_method === 'metamask' || $this->payment_method === 'trustwallet') {
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatch('deposit-web3', 
+                    amount: $this->amount, 
+                    currency: $this->currency,
+                    walletType: $this->payment_method
+                );
+                return;
+            }
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Deposit Error: ' . $e->getMessage());
+            $this->addError('amount', 'Deposit failed. Please try again.');
+        }
+    }
+}; ?>
 <div>
     <div class="deposit-modal-header">
         <h3>Deposit Funds</h3>
@@ -55,6 +197,7 @@
                 </div>
 
                 @if ($payment_method === 'manual')
+                    <!-- Binance Pay Details Section -->
                     @if(!empty($binance_wallet_address))
                     <div class="deposit-info-box" style="background: var(--card-bg); border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -150,31 +293,25 @@
 </div>
 @push('scripts')
 <script>
-// Binance Pay Deposit Handler (Livewire 3 compatible - Multiple approaches)
-(function() {
-    console.log('🚀 Binance Pay script loaded');
+// Binance Pay Deposit Handler (Livewire 3 compatible)
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for Livewire to be ready
+    if (typeof Livewire !== 'undefined') {
+        setupBinancePay();
+    } else {
+        document.addEventListener('livewire:init', setupBinancePay);
+    }
     
-    function setupBinancePayListener() {
+    function setupBinancePay() {
         console.log('🔧 Setting up Binance Pay listener...');
-        console.log('✅ Livewire available:', typeof Livewire !== 'undefined');
-        console.log('✅ window.Livewire:', typeof window.Livewire !== 'undefined');
         
-        const livewireInstance = window.Livewire || Livewire;
-        
-        if (!livewireInstance) {
-            console.error('❌ Livewire not found!');
-            return;
-        }
-        
-        livewireInstance.on('deposit-binance', function(event) {
-            console.log('🎯 RAW EVENT RECEIVED:', event);
-            
+        Livewire.on('deposit-binance', function(event) {
             // Handle both Livewire 2 and 3 event formats
             const data = Array.isArray(event) ? event[0] : event;
             const amount = data.amount || 0;
             const currency = data.currency || 'USDT';
             
-            console.log('🔔 Binance Pay event parsed:', { amount, currency, data });
+            console.log('🔔 Binance Pay event received:', { amount, currency, data });
             
             // Close modal
             if (typeof closeDepositModal === 'function') {
@@ -243,60 +380,175 @@
             });
         });
         
-        console.log('✅ Binance Pay listener registered');
+        console.log('✅ Binance Pay listener ready');
     }
-    
-    // Try multiple initialization approaches
-    
-    // Approach 1: DOMContentLoaded
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupBinancePayListener);
-    } else {
-        setupBinancePayListener();
-    }
-    
-    // Approach 2: Livewire:init event
-    document.addEventListener('livewire:init', function() {
-        console.log('🔄 Livewire:init event fired');
-        setupBinancePayListener();
-    });
-    
-    // Approach 3: Livewire:initialized event
-    document.addEventListener('livewire:initialized', function() {
-        console.log('🔄 Livewire:initialized event fired');
-        setupBinancePayListener();
-    });
-    
-    // Approach 4: Direct check after short delay
-    setTimeout(function() {
-        if (typeof window.Livewire !== 'undefined' || typeof Livewire !== 'undefined') {
-            console.log('🔄 Delayed check - Livewire found');
-            setupBinancePayListener();
-        }
-    }, 500);
-})();
+});
 
 // Copy to clipboard function
 function copyToClipboard(text, button) {
-    const icon = button.querySelector('i');
-    const originalClass = icon.className;
-    const originalTitle = button.getAttribute('title') || 'Copy wallet address';
-    
-    navigator.clipboard.writeText(text).then(function() {
-        // Change icon to checkmark
-        icon.className = 'fas fa-check';
-        button.style.background = '#10b981';
-        button.setAttribute('title', 'Copied!');
+        const icon = button.querySelector('i');
+        const originalClass = icon.className;
+        const originalTitle = button.getAttribute('title') || 'Copy wallet address';
         
-        // Reset after 2 seconds
-        setTimeout(function() {
-            icon.className = originalClass;
-            button.style.background = 'var(--accent)';
-            button.setAttribute('title', originalTitle);
-        }, 2000);
-    }).catch(function(err) {
-        console.error('Failed to copy:', err);
+        navigator.clipboard.writeText(text).then(function() {
+            // Change icon to checkmark
+            icon.className = 'fas fa-check';
+            button.style.background = '#10b981';
+            button.setAttribute('title', 'Copied!');
+            
+            // Reset after 2 seconds
+            setTimeout(function() {
+                icon.className = originalClass;
+                button.style.background = 'var(--accent)';
+                button.setAttribute('title', originalTitle);
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Failed to copy:', err);
+        });
+    }
+
+    // Handle Deposit Success - Livewire 3 format with named arguments
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('deposit-submitted', (event) => {
+            // Livewire 3 named arguments are passed directly as object properties
+            let message = 'Deposit request submitted successfully! Your deposit is pending admin verification.';
+            
+            // Handle different event formats
+            if (event && typeof event === 'object') {
+                // Livewire 3 named arguments format: event.message
+                if (event.message) {
+                    message = event.message;
+                } 
+                // Array format: [0].message
+                else if (Array.isArray(event) && event[0] && event[0].message) {
+                    message = event[0].message;
+                }
+                // Detail format: event.detail.message
+                else if (event.detail && event.detail.message) {
+                    message = event.detail.message;
+                }
+            }
+            
+            console.log('Deposit submitted event received:', event, 'Message:', message);
+            
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+
+            // Use showSuccess function (now defined globally)
+            if (typeof showSuccess !== 'undefined') {
+                showSuccess(message, 'Deposit Submitted');
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deposit Submitted',
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#ffb11a',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.success(message, 'Deposit Submitted');
+            } else {
+                alert('Success: ' + message);
+            }
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
     });
-}
+    
+    // Also listen after Livewire is fully initialized
+    document.addEventListener('livewire:initialized', () => {
+        window.Livewire.on('deposit-submitted', (event) => {
+            let message = 'Deposit request submitted successfully! Your deposit is pending admin verification.';
+            
+            if (event && typeof event === 'object') {
+                if (event.message) {
+                    message = event.message;
+                } else if (Array.isArray(event) && event[0] && event[0].message) {
+                    message = event[0].message;
+                } else if (event.detail && event.detail.message) {
+                    message = event.detail.message;
+                }
+            }
+            
+            console.log('Deposit submitted event (initialized):', event, 'Message:', message);
+            
+            if (typeof closeDepositModal === 'function') {
+                closeDepositModal();
+            }
+
+            if (typeof showSuccess !== 'undefined') {
+                showSuccess(message, 'Deposit Submitted');
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deposit Submitted',
+                    text: message,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    confirmButtonColor: '#ffb11a',
+                });
+            } else if (typeof toastr !== 'undefined') {
+                toastr.success(message, 'Deposit Submitted');
+            } else {
+                alert('Success: ' + message);
+            }
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
+    });
+
+        // Handle Web3 Wallet Deposits (MetaMask & Trust Wallet)
+        Livewire.on('deposit-web3', (event) => {
+            const data = Array.isArray(event) ? event[0] : event;
+            const walletName = data.walletType === 'trustwallet' ? 'Trust Wallet' : 'MetaMask';
+            
+            // Check if the handleWeb3Deposit function exists
+            if (typeof handleWeb3Deposit === 'function') {
+                // Get the submit button
+                const $btn = $('.deposit-submit-btn');
+                const originalText = $btn.html();
+                
+                // Call the Web3 deposit handler
+                handleWeb3Deposit(
+                    data.amount, 
+                    data.currency, 
+                    $btn, 
+                    originalText, 
+                    data.walletType
+                );
+            } else {
+                // Fallback if function is not loaded
+                if (typeof showError !== 'undefined') {
+                    showError(
+                        `${walletName} integration is not loaded. Please refresh the page and try again.`,
+                        'Integration Error'
+                    );
+                } else if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Integration Error',
+                        text: `${walletName} integration is not loaded. Please refresh the page and try again.`,
+                        confirmButtonColor: '#ef4444',
+                    });
+                } else {
+                    alert(`${walletName} integration is not loaded. Please refresh the page and try again.`);
+                }
+            }
+        });
+        
+        // Binance Pay handler is now in @script section above for Livewire 3 compatibility
+    });
 </script>
 @endpush

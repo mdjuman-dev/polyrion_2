@@ -83,8 +83,9 @@
       <div class="market-card multi-market">
          <div class="market-card-header">
             <div class="market-profile-img">
-               <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}" alt="{{ $event->title }}"
-                  onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
+               <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}" 
+                    alt="{{ $event->title }}"
+                    onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
             </div>
             <a href="{{ route('market.details', $event->slug) }}"
                class="market-card-title">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>
@@ -178,14 +179,14 @@
                               <i class="fas fa-check" style="color: #ff4d4f; margin-right: 4px;"></i> {{ $secondOutcome }}
                            </button>
                         @else
-                           <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
-                           <button class="market-card-no-btn">{{ $secondOutcome }}</button>
+                           <button class="market-card-yes-btn">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+                           <button class="market-card-no-btn">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
                         @endif
                      @else
                         {{-- Active market: show percentage and buttons --}}
                         <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                        <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
-                        <button class="market-card-no-btn">{{ $secondOutcome }}</button>
+                        <button class="market-card-yes-btn">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+                        <button class="market-card-no-btn">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
                      @endif
                   </div>
                @endif
@@ -274,8 +275,9 @@
          <div class="d-flex">
             <div class="market-card-header me-3">
                <div class="market-profile-img">
-                  <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}"
-                     alt="{{ $event->title }}">
+                  <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}"
+                     alt="{{ $event->title }}"
+                     onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
                </div>
                <div class="market-title-section">
                   <a href="{{ $marketLink }}"
@@ -338,12 +340,12 @@
                      <i class="fas fa-times" style="color: #ff4d4f; margin-right: 6px;"></i> {{ $secondOutcome }}
                   </button>
                @else
-                  <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
-                  <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
+                  <button class="market-card-yes-btn-large">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+                  <button class="market-card-no-btn-large">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
                @endif
             @else
-               <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
-               <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
+               <button class="market-card-yes-btn-large">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+               <button class="market-card-no-btn-large">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
             @endif
          </div>
 

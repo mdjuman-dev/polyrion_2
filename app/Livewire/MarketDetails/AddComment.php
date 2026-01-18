@@ -34,6 +34,10 @@ class AddComment extends Component
             'comment_text' => $this->commentText,
         ]);
 
+        // Clear comments cache
+        \Illuminate\Support\Facades\Cache::forget("event_comments:{$this->event->id}");
+        \Illuminate\Support\Facades\Cache::forget("event_comments_count:{$this->event->id}");
+
         $this->commentText = '';
         $this->dispatch('commentAdded');
     }

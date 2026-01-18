@@ -39,9 +39,28 @@
                                 All
                             </a>
 
-                            <!-- Popular Sub-Categories -->
+                            <!-- Secondary Categories (from database) -->
+                            @if(isset($secondaryCategories) && $secondaryCategories->count() > 0)
+                                @foreach($secondaryCategories as $secCategory)
+                                    <a href="{{ route('events.by.category', $category) }}?secondary_category={{ $secCategory->id }}{{ $selectedSubCategory !== 'all' ? '&subcategory=' . $selectedSubCategory : '' }}" 
+                                       class="filter-btn {{ ($selectedSecondaryCategory ?? '') == $secCategory->id ? 'active' : '' }}"
+                                       title="{{ $secCategory->description }}">
+                                        @if($secCategory->icon)
+                                            <img src="{{ asset('storage/' . $secCategory->icon) }}" 
+                                                 alt="{{ $secCategory->name }}" 
+                                                 style="width: 16px; height: 16px; margin-right: 4px; border-radius: 3px; object-fit: cover;">
+                                        @endif
+                                        {{ $secCategory->name }}
+                                        @if($secCategory->active_events_count > 0)
+                                            <span class="badge badge-sm" style="background: rgba(255,255,255,0.2); margin-left: 4px; font-size: 10px;">{{ $secCategory->active_events_count }}</span>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            @endif
+
+                            <!-- Popular Sub-Categories (dynamic) -->
                             @foreach($popularSubCategories as $subCategory)
-                                <a href="{{ route('events.by.category', $category) }}?subcategory={{ $subCategory['slug'] }}" 
+                                <a href="{{ route('events.by.category', $category) }}?subcategory={{ $subCategory['slug'] }}{{ $selectedSecondaryCategory ? '&secondary_category=' . $selectedSecondaryCategory : '' }}" 
                                    class="filter-btn {{ $selectedSubCategory === $subCategory['slug'] ? 'active' : '' }}">
                                     {{ $subCategory['name'] }}
                                 </a>

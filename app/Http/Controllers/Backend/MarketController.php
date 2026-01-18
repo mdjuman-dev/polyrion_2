@@ -115,10 +115,26 @@ class MarketController extends Controller
          'question' => 'required|string|max:255',
          'description' => 'nullable|string',
          'event_id' => 'nullable|exists:events,id',
+         'volume' => 'nullable|numeric|min:0',
+         'yes_price' => 'nullable|numeric|min:0|max:1',
+         'no_price' => 'nullable|numeric|min:0|max:1',
          'active' => 'boolean',
          'closed' => 'boolean',
          'featured' => 'boolean',
       ]);
+
+      // Validate that yes_price + no_price = 1.0
+      if ($request->has('yes_price') && $request->has('no_price')) {
+         $yesPrice = (float) $request->yes_price;
+         $noPrice = (float) $request->no_price;
+         $sum = $yesPrice + $noPrice;
+
+         if (abs($sum - 1.0) > 0.001) {
+            return back()
+               ->withInput()
+               ->withErrors(['yes_price' => "Yes and No prices must sum to 1.0 (Current sum: {$sum})"]);
+         }
+      }
 
       try {
          $market = Market::findOrFail($id);
@@ -128,6 +144,20 @@ class MarketController extends Controller
 
          if ($request->has('event_id')) {
             $market->event_id = $request->event_id;
+         }
+
+         // Update volume if provided
+         if ($request->has('volume')) {
+            $market->volume = $request->volume;
+         }
+
+         // Update outcome prices if provided
+         if ($request->has('yes_price') && $request->has('no_price')) {
+            $outcomePrices = [
+               (string) $request->no_price,  // Index 0 = No price
+               (string) $request->yes_price   // Index 1 = Yes price
+            ];
+            $market->outcome_prices = json_encode($outcomePrices);
          }
 
          if ($request->has('active')) {

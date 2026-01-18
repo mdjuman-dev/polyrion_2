@@ -24,6 +24,16 @@ class SportsController extends Controller
                   ->orWhere('end_date', '>', now());
             });
 
+        // Get secondary categories for Sports
+        $secondaryCategories = \App\Models\SecondaryCategory::active()
+            ->byMainCategory('Sports')
+            ->ordered()
+            ->withCount('activeEvents')
+            ->get();
+
+        // Get selected secondary category from query
+        $selectedSecondaryCategory = $request->get('secondary_category', null);
+
         // Extract dynamic categories from event titles and market questions (cached)
         $cacheKey = 'sports_dynamic_categories';
         $dynamicCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($baseQuery) {
@@ -71,6 +81,11 @@ class SportsController extends Controller
             }])
             ->orderBy('created_at', 'desc');
 
+        // Filter by secondary category if selected
+        if ($selectedSecondaryCategory) {
+            $eventsQuery->where('secondary_category_id', $selectedSecondaryCategory);
+        }
+
         // If specific category selected, filter by event title and market questions
         if ($selectedCategory !== 'all') {
             $categoryKeywords = $this->getCategoryKeywords($selectedCategory);
@@ -116,7 +131,9 @@ class SportsController extends Controller
             'selectedCategory',
             'selectedSubcategory',
             'events',
-            'subcategories'
+            'subcategories',
+            'secondaryCategories',
+            'selectedSecondaryCategory'
         ));
     }
 

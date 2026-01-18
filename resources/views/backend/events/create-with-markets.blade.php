@@ -149,8 +149,9 @@
                                                             <i class="fa fa-tag"></i>
                                                             Category
                                                         </label>
-                                                        <select name="category"
-                                                            class="form-control-modern @error('category') is-invalid @enderror">
+                                                        <select name="category" id="mainCategorySelect"
+                                                            class="form-control-modern @error('category') is-invalid @enderror"
+                                                            onchange="loadSecondaryCategories(this.value)">
                                                             <option value="">Auto-detect from title</option>
                                                             @foreach ($categories as $category)
                                                                 <option value="{{ $category }}"
@@ -168,6 +169,33 @@
                                                             <i class="fa fa-info-circle"></i>
                                                             Leave empty to auto-detect from title
                                                         </small>
+                                                    </div>
+
+                                                    <!-- Secondary Category -->
+                                                    <div class="form-group-modern" id="secondaryCategoryGroup" style="display: none;">
+                                                        <label class="form-label-modern">
+                                                            <i class="fa fa-folder"></i>
+                                                            Secondary Category
+                                                            <span class="required-star">*</span>
+                                                        </label>
+                                                        <select name="secondary_category_id" id="secondaryCategorySelect"
+                                                            class="form-control-modern @error('secondary_category_id') is-invalid @enderror">
+                                                            <option value="">Select a secondary category</option>
+                                                        </select>
+                                                        @error('secondary_category_id')
+                                                            <div class="error-message">
+                                                                <i class="fa fa-exclamation-circle"></i> {{ $message }}
+                                                            </div>
+                                                        @enderror
+                                                        <small class="form-hint">
+                                                            <i class="fa fa-info-circle"></i>
+                                                            Required when main category is selected
+                                                        </small>
+                                                        <div id="secondaryCategoryLoading" style="display: none; margin-top: 10px;">
+                                                            <small class="text-muted">
+                                                                <i class="fa fa-spinner fa-spin"></i> Loading categories...
+                                                            </small>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -408,16 +436,7 @@
                                                     <p class="section-subtitle">Add trading markets for this event</p>
                                                 </div>
                                             </div>
-                                            <div class="section-actions">
-                                                <span class="section-badge info-badge">
-                                                    <i class="fa fa-info-circle"></i>
-                                                    At least 1 market required
-                                                </span>
-                                                <button type="button" class="btn-add-market" id="addMarketBtn">
-                                                    <i class="fa fa-plus"></i>
-                                                    Add Market
-                                                </button>
-                                            </div>
+                                           
                                         </div>
 
                                         <div class="section-body">
@@ -487,12 +506,70 @@
                                                                     <div class="form-group-modern">
                                                                         <label class="form-label-modern">
                                                                             <i class="fa fa-image"></i>
-                                                                            Market Image URL
+                                                                            Market Image
                                                                         </label>
-                                                                        <input type="url" name="markets[INDEX][image]"
-                                                                            class="form-control-modern"
-                                                                            placeholder="https://example.com/image.jpg"
-                                                                            disabled>
+                                                                        <div class="upload-option-tabs">
+                                                                            <button type="button" class="upload-tab-btn active"
+                                                                                data-tab="market-image-upload-INDEX"
+                                                                                onclick="switchMarketImageTab('upload', 'INDEX')">
+                                                                                <i class="fa fa-upload"></i> Upload
+                                                                            </button>
+                                                                            <button type="button" class="upload-tab-btn"
+                                                                                data-tab="market-image-url-INDEX"
+                                                                                onclick="switchMarketImageTab('url', 'INDEX')">
+                                                                                <i class="fa fa-link"></i> URL
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <!-- File Upload -->
+                                                                        <div id="marketImageUploadTab-INDEX" class="upload-tab-content">
+                                                                            <div class="file-upload-wrapper">
+                                                                                <input type="file" 
+                                                                                    name="markets[INDEX][image_file]"
+                                                                                    id="marketImageFileInput-INDEX"
+                                                                                    class="file-input"
+                                                                                    accept="image/*"
+                                                                                    disabled
+                                                                                    onchange="handleMarketImageFileSelect(this, 'INDEX')">
+                                                                                <label for="marketImageFileInput-INDEX" class="file-upload-label">
+                                                                                    <i class="fa fa-cloud-upload-alt"></i>
+                                                                                    <span>Choose Image File</span>
+                                                                                </label>
+                                                                            </div>
+                                                                            <div class="mt-3" id="marketImageFilePreview-INDEX"
+                                                                                style="display: none;">
+                                                                                <div class="image-preview-wrapper">
+                                                                                    <img src="" alt="Preview"
+                                                                                        class="preview-image" id="marketImageFilePreviewImg-INDEX">
+                                                                                    <button type="button" class="remove-preview"
+                                                                                        onclick="removeMarketImageFilePreview('INDEX')">
+                                                                                        <i class="fa fa-times"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <!-- URL Input -->
+                                                                        <div id="marketImageUrlTab-INDEX" class="upload-tab-content"
+                                                                            style="display: none;">
+                                                                            <input type="url" 
+                                                                                name="markets[INDEX][image]"
+                                                                                class="form-control-modern"
+                                                                                placeholder="https://example.com/image.jpg"
+                                                                                disabled
+                                                                                oninput="handleMarketImageUrlInput(this, 'INDEX')">
+                                                                            <div class="mt-3" id="marketImageUrlPreview-INDEX"
+                                                                                style="display: none;">
+                                                                                <div class="image-preview-wrapper">
+                                                                                    <img src="" alt="Preview"
+                                                                                        class="preview-image" id="marketImageUrlPreviewImg-INDEX">
+                                                                                    <button type="button" class="remove-preview"
+                                                                                        onclick="removeMarketImageUrlPreview('INDEX')">
+                                                                                        <i class="fa fa-times"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
 
                                                                     <div class="form-group-modern">
@@ -529,31 +606,52 @@
                                                                     <div class="form-group-modern">
                                                                         <label class="form-label-modern">
                                                                             <i class="fa fa-dollar-sign"></i>
-                                                                            Initial Prices
+                                                                            Initial Prices (Chance %)
                                                                         </label>
                                                                         <div class="price-input-group">
                                                                             <div class="price-input-wrapper">
-                                                                                <label class="price-label">Yes</label>
+                                                                                <label class="price-label">Yes (%)</label>
                                                                                 <input type="number"
-                                                                                    name="markets[INDEX][yes_price]"
-                                                                                    class="form-control-modern price-input"
-                                                                                    step="0.001" min="0"
-                                                                                    max="1" value="0.5"
-                                                                                    placeholder="0.5" disabled>
+                                                                                    name="markets[INDEX][yes_price_percent]"
+                                                                                    class="form-control-modern price-input yes-price-percent"
+                                                                                    step="0.1" min="0"
+                                                                                    max="100" value="50"
+                                                                                    placeholder="50.0" disabled
+                                                                                    onchange="updateMarketPricesModern(this)">
+                                                                                <input type="hidden" name="markets[INDEX][yes_price]" class="yes-price-decimal" value="0.5">
                                                                             </div>
                                                                             <div class="price-input-wrapper">
-                                                                                <label class="price-label">No</label>
+                                                                                <label class="price-label">No (%)</label>
                                                                                 <input type="number"
-                                                                                    name="markets[INDEX][no_price]"
-                                                                                    class="form-control-modern price-input"
-                                                                                    step="0.001" min="0"
-                                                                                    max="1" value="0.5"
-                                                                                    placeholder="0.5" disabled>
+                                                                                    name="markets[INDEX][no_price_percent]"
+                                                                                    class="form-control-modern price-input no-price-percent"
+                                                                                    step="0.1" min="0"
+                                                                                    max="100" value="50"
+                                                                                    placeholder="50.0" disabled
+                                                                                    onchange="updateMarketPricesModern(this)">
+                                                                                <input type="hidden" name="markets[INDEX][no_price]" class="no-price-decimal" value="0.5">
                                                                             </div>
                                                                         </div>
                                                                         <small class="form-hint">
                                                                             <i class="fa fa-info-circle"></i>
-                                                                            Must sum to 1.0
+                                                                            Must sum to 100%
+                                                                        </small>
+                                                                    </div>
+
+                                                                    <div class="form-group-modern">
+                                                                        <label class="form-label-modern">
+                                                                            <i class="fa fa-chart-bar"></i>
+                                                                            Volume
+                                                                        </label>
+                                                                        <input type="number"
+                                                                            name="markets[INDEX][volume]"
+                                                                            class="form-control-modern"
+                                                                            step="0.01" min="0"
+                                                                            value="0"
+                                                                            placeholder="0.00" disabled>
+                                                                        <small class="form-hint">
+                                                                            <i class="fa fa-info-circle"></i>
+                                                                            Trading volume for this market
                                                                         </small>
                                                                     </div>
                                                                 </div>
@@ -626,11 +724,68 @@
                                                                     <div class="form-group-modern">
                                                                         <label class="form-label-modern">
                                                                             <i class="fa fa-image"></i>
-                                                                            Market Image URL
+                                                                            Market Image
                                                                         </label>
-                                                                        <input type="url" name="markets[0][image]"
-                                                                            class="form-control-modern"
-                                                                            placeholder="https://example.com/image.jpg">
+                                                                        <div class="upload-option-tabs">
+                                                                            <button type="button" class="upload-tab-btn active"
+                                                                                data-tab="market-image-upload-0"
+                                                                                onclick="switchMarketImageTab('upload', '0')">
+                                                                                <i class="fa fa-upload"></i> Upload
+                                                                            </button>
+                                                                            <button type="button" class="upload-tab-btn"
+                                                                                data-tab="market-image-url-0"
+                                                                                onclick="switchMarketImageTab('url', '0')">
+                                                                                <i class="fa fa-link"></i> URL
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <!-- File Upload -->
+                                                                        <div id="marketImageUploadTab-0" class="upload-tab-content">
+                                                                            <div class="file-upload-wrapper">
+                                                                                <input type="file" 
+                                                                                    name="markets[0][image_file]"
+                                                                                    id="marketImageFileInput-0"
+                                                                                    class="file-input"
+                                                                                    accept="image/*"
+                                                                                    onchange="handleMarketImageFileSelect(this, '0')">
+                                                                                <label for="marketImageFileInput-0" class="file-upload-label">
+                                                                                    <i class="fa fa-cloud-upload-alt"></i>
+                                                                                    <span>Choose Image File</span>
+                                                                                </label>
+                                                                            </div>
+                                                                            <div class="mt-3" id="marketImageFilePreview-0"
+                                                                                style="display: none;">
+                                                                                <div class="image-preview-wrapper">
+                                                                                    <img src="" alt="Preview"
+                                                                                        class="preview-image" id="marketImageFilePreviewImg-0">
+                                                                                    <button type="button" class="remove-preview"
+                                                                                        onclick="removeMarketImageFilePreview('0')">
+                                                                                        <i class="fa fa-times"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <!-- URL Input -->
+                                                                        <div id="marketImageUrlTab-0" class="upload-tab-content"
+                                                                            style="display: none;">
+                                                                            <input type="url" 
+                                                                                name="markets[0][image]"
+                                                                                class="form-control-modern"
+                                                                                placeholder="https://example.com/image.jpg"
+                                                                                oninput="handleMarketImageUrlInput(this, '0')">
+                                                                            <div class="mt-3" id="marketImageUrlPreview-0"
+                                                                                style="display: none;">
+                                                                                <div class="image-preview-wrapper">
+                                                                                    <img src="" alt="Preview"
+                                                                                        class="preview-image" id="marketImageUrlPreviewImg-0">
+                                                                                    <button type="button" class="remove-preview"
+                                                                                        onclick="removeMarketImageUrlPreview('0')">
+                                                                                        <i class="fa fa-times"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
 
                                                                     <div class="form-group-modern">
@@ -666,31 +821,52 @@
                                                                     <div class="form-group-modern">
                                                                         <label class="form-label-modern">
                                                                             <i class="fa fa-dollar-sign"></i>
-                                                                            Initial Prices
+                                                                            Initial Prices (Chance %)
                                                                         </label>
                                                                         <div class="price-input-group">
                                                                             <div class="price-input-wrapper">
-                                                                                <label class="price-label">Yes</label>
+                                                                                <label class="price-label">Yes (%)</label>
                                                                                 <input type="number"
-                                                                                    name="markets[0][yes_price]"
-                                                                                    class="form-control-modern price-input"
-                                                                                    step="0.001" min="0"
-                                                                                    max="1" value="0.5"
-                                                                                    placeholder="0.5">
+                                                                                    name="markets[0][yes_price_percent]"
+                                                                                    class="form-control-modern price-input yes-price-percent"
+                                                                                    step="0.1" min="0"
+                                                                                    max="100" value="50"
+                                                                                    placeholder="50.0"
+                                                                                    onchange="updateMarketPricesModern(this)">
+                                                                                <input type="hidden" name="markets[0][yes_price]" class="yes-price-decimal" value="0.5">
                                                                             </div>
                                                                             <div class="price-input-wrapper">
-                                                                                <label class="price-label">No</label>
+                                                                                <label class="price-label">No (%)</label>
                                                                                 <input type="number"
-                                                                                    name="markets[0][no_price]"
-                                                                                    class="form-control-modern price-input"
-                                                                                    step="0.001" min="0"
-                                                                                    max="1" value="0.5"
-                                                                                    placeholder="0.5">
+                                                                                    name="markets[0][no_price_percent]"
+                                                                                    class="form-control-modern price-input no-price-percent"
+                                                                                    step="0.1" min="0"
+                                                                                    max="100" value="50"
+                                                                                    placeholder="50.0"
+                                                                                    onchange="updateMarketPricesModern(this)">
+                                                                                <input type="hidden" name="markets[0][no_price]" class="no-price-decimal" value="0.5">
                                                                             </div>
                                                                         </div>
                                                                         <small class="form-hint">
                                                                             <i class="fa fa-info-circle"></i>
-                                                                            Must sum to 1.0
+                                                                            Must sum to 100%
+                                                                        </small>
+                                                                    </div>
+
+                                                                    <div class="form-group-modern">
+                                                                        <label class="form-label-modern">
+                                                                            <i class="fa fa-chart-bar"></i>
+                                                                            Volume
+                                                                        </label>
+                                                                        <input type="number"
+                                                                            name="markets[0][volume]"
+                                                                            class="form-control-modern"
+                                                                            step="0.01" min="0"
+                                                                            value="0"
+                                                                            placeholder="0.00">
+                                                                        <small class="form-hint">
+                                                                            <i class="fa fa-info-circle"></i>
+                                                                            Trading volume for this market
                                                                         </small>
                                                                     </div>
                                                                 </div>
@@ -699,10 +875,20 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="section-actions">
+                                                <span class="section-badge info-badge">
+                                                    <i class="fa fa-info-circle"></i>
+                                                    At least 1 market required
+                                                </span>
+                                                <button type="button" class="btn-add-market" id="addMarketBtn">
+                                                    <i class="fa fa-plus"></i>
+                                                    Add Market
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
+                               
                                 <!-- Action Buttons -->
                                 <div class="form-actions">
                                     <button type="submit" class="btn-submit">
@@ -724,6 +910,70 @@
 
     <script>
         let marketIndex = 1;
+
+        // Load secondary categories when main category changes
+        function loadSecondaryCategories(mainCategory) {
+            const secondaryCategoryGroup = document.getElementById('secondaryCategoryGroup');
+            const secondaryCategorySelect = document.getElementById('secondaryCategorySelect');
+            const loadingIndicator = document.getElementById('secondaryCategoryLoading');
+
+            // Hide and clear if no main category selected
+            if (!mainCategory) {
+                secondaryCategoryGroup.style.display = 'none';
+                secondaryCategorySelect.innerHTML = '<option value="">Select a secondary category</option>';
+                return;
+            }
+
+            // Show loading
+            loadingIndicator.style.display = 'block';
+            secondaryCategoryGroup.style.display = 'block';
+
+            // Fetch secondary categories
+            fetch(`{{ route('admin.secondary-categories.by-main-category') }}?main_category=${mainCategory}`)
+                .then(response => response.json())
+                .then(data => {
+                    loadingIndicator.style.display = 'none';
+                    
+                    if (data.success && data.categories) {
+                        secondaryCategorySelect.innerHTML = '<option value="">Select a secondary category</option>';
+                        
+                        if (data.categories.length === 0) {
+                            secondaryCategorySelect.innerHTML += '<option value="" disabled>No categories available</option>';
+                        } else {
+                            data.categories.forEach(category => {
+                                const option = document.createElement('option');
+                                option.value = category.id;
+                                option.textContent = category.name;
+                                // Restore old value if exists
+                                if ('{{ old("secondary_category_id") }}' == category.id) {
+                                    option.selected = true;
+                                }
+                                secondaryCategorySelect.appendChild(option);
+                            });
+                        }
+                    }
+                })
+                .catch(error => {
+                    loadingIndicator.style.display = 'none';
+                    console.error('Error loading secondary categories:', error);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to load secondary categories',
+                            confirmButtonColor: '#ffb11a'
+                        });
+                    }
+                });
+        }
+
+        // Load secondary categories on page load if main category is selected
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainCategory = document.getElementById('mainCategorySelect').value;
+            if (mainCategory) {
+                loadSecondaryCategories(mainCategory);
+            }
+        });
 
         // Auto-generate slug from title
         document.querySelector('input[name="title"]').addEventListener('input', function(e) {
@@ -747,41 +997,101 @@
 
         // Image/Icon Tab Switching
         function switchImageTab(type) {
+            console.log('switchImageTab called with type:', type);
+            
             const uploadTab = document.getElementById('imageUploadTab');
             const urlTab = document.getElementById('imageUrlTab');
             const uploadBtn = document.querySelector('[data-tab="image-upload"]');
             const urlBtn = document.querySelector('[data-tab="image-url"]');
 
+            console.log('Elements found:', {
+                uploadTab: !!uploadTab,
+                urlTab: !!urlTab,
+                uploadBtn: !!uploadBtn,
+                urlBtn: !!urlBtn
+            });
+
+            if (!uploadTab || !urlTab || !uploadBtn || !urlBtn) {
+                console.error('Some elements not found for image tab switching');
+                return;
+            }
+
             if (type === 'upload') {
                 uploadTab.style.display = 'block';
                 urlTab.style.display = 'none';
                 uploadBtn.classList.add('active');
                 urlBtn.classList.remove('active');
+                
+                // Clear URL input and preview when switching to upload
+                const urlInput = urlTab.querySelector('input[type="url"]');
+                if (urlInput) {
+                    urlInput.value = '';
+                }
+                removeImageUrlPreview();
             } else {
                 uploadTab.style.display = 'none';
                 urlTab.style.display = 'block';
                 uploadBtn.classList.remove('active');
                 urlBtn.classList.add('active');
+                
+                // Clear file input and preview when switching to URL
+                const fileInput = document.getElementById('imageFileInput');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                removeImageFilePreview();
             }
+            
+            console.log('Tab switched to:', type);
         }
 
         function switchIconTab(type) {
+            console.log('switchIconTab called with type:', type);
+            
             const uploadTab = document.getElementById('iconUploadTab');
             const urlTab = document.getElementById('iconUrlTab');
             const uploadBtn = document.querySelector('[data-tab="icon-upload"]');
             const urlBtn = document.querySelector('[data-tab="icon-url"]');
 
+            console.log('Elements found:', {
+                uploadTab: !!uploadTab,
+                urlTab: !!urlTab,
+                uploadBtn: !!uploadBtn,
+                urlBtn: !!urlBtn
+            });
+
+            if (!uploadTab || !urlTab || !uploadBtn || !urlBtn) {
+                console.error('Some elements not found for icon tab switching');
+                return;
+            }
+
             if (type === 'upload') {
                 uploadTab.style.display = 'block';
                 urlTab.style.display = 'none';
                 uploadBtn.classList.add('active');
                 urlBtn.classList.remove('active');
+                
+                // Clear URL input and preview when switching to upload
+                const urlInput = urlTab.querySelector('input[type="url"]');
+                if (urlInput) {
+                    urlInput.value = '';
+                }
+                removeIconUrlPreview();
             } else {
                 uploadTab.style.display = 'none';
                 urlTab.style.display = 'block';
                 uploadBtn.classList.remove('active');
                 urlBtn.classList.add('active');
+                
+                // Clear file input and preview when switching to URL
+                const fileInput = document.getElementById('iconFileInput');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                removeIconFilePreview();
             }
+            
+            console.log('Tab switched to:', type);
         }
 
         // Image File Upload Handler
@@ -862,6 +1172,7 @@
             const newMarket = template.cloneNode(true);
             newMarket.style.display = 'block';
             newMarket.classList.remove('market-item-template');
+            newMarket.classList.add('market-item');
 
             // Update all inputs with new index and enable them
             newMarket.querySelectorAll('input, textarea, select').forEach(input => {
@@ -872,6 +1183,11 @@
                     if (input.name.includes('[question]')) {
                         input.setAttribute('required', 'required');
                     }
+                }
+                // Update onchange attributes
+                if (input.hasAttribute('onchange')) {
+                    const onchangeValue = input.getAttribute('onchange');
+                    input.setAttribute('onchange', onchangeValue);
                 }
             });
 
@@ -960,38 +1276,459 @@
             });
         }
 
-        // Validate price sum
+        // Validate price sum and handle form submission with AJAX validation
         document.getElementById('eventWithMarketsForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Always prevent default to handle via AJAX
+            
+            const form = this;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            // Enable all disabled inputs EXCEPT template fields
+            form.querySelectorAll('.market-item:not(.market-item-template)').forEach(marketItem => {
+                marketItem.querySelectorAll('input[disabled], textarea[disabled], select[disabled]').forEach(field => {
+                    field.removeAttribute('disabled');
+                });
+            });
+            
             const markets = document.querySelectorAll('.market-item:not(.market-item-template)');
+            
+            // Check if at least one market exists
+            if (markets.length === 0) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Markets',
+                        text: 'Please add at least one market before submitting.',
+                        confirmButtonColor: '#ffb11a'
+                    });
+                } else {
+                    alert('Please add at least one market before submitting.');
+                }
+                return;
+            }
+            
             let isValid = true;
 
+            // Client-side validation first
             markets.forEach(market => {
-                const yesPriceInput = market.querySelector('input[name*="[yes_price]"]');
-                const noPriceInput = market.querySelector('input[name*="[no_price]"]');
+                const yesPriceInput = market.querySelector('.yes-price-percent');
+                const noPriceInput = market.querySelector('.no-price-percent');
 
                 if (yesPriceInput && noPriceInput) {
                     const yesPrice = parseFloat(yesPriceInput.value) || 0;
                     const noPrice = parseFloat(noPriceInput.value) || 0;
                     const sum = yesPrice + noPrice;
 
-                    if (Math.abs(sum - 1.0) > 0.001) {
+                    if (Math.abs(sum - 100.0) > 0.1) {
                         isValid = false;
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Invalid Prices',
-                                text: 'Yes and No prices must sum to 1.0 for all markets',
+                                text: 'Yes and No chances must sum to 100% for all markets. Current sum: ' + sum.toFixed(1) + '%',
                                 confirmButtonColor: '#ffb11a'
                             });
                         } else {
-                            alert('Yes and No prices must sum to 1.0 for all markets');
+                            alert('Yes and No chances must sum to 100% for all markets. Current sum: ' + sum.toFixed(1) + '%');
                         }
-                        e.preventDefault();
                         return false;
                     }
                 }
             });
+
+            if (!isValid) return;
+
+            // Debug: Log form data before sending
+            console.log('=== FORM SUBMISSION DEBUG ===');
+            console.log('Total markets:', markets.length);
+            
+            markets.forEach((market, idx) => {
+                const questionInput = market.querySelector('.market-question');
+                console.log(`Market ${idx}:`, {
+                    question: questionInput ? questionInput.value : 'NOT FOUND',
+                    name: questionInput ? questionInput.name : 'NO NAME',
+                    disabled: questionInput ? questionInput.disabled : 'N/A'
+                });
+            });
+
+            // Show loading state
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Validating & Submitting...';
+
+            // Clear previous errors
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            const existingAlert = document.querySelector('.validation-errors');
+            if (existingAlert) existingAlert.remove();
+
+            // Prepare FormData - exclude template fields
+            const formData = new FormData();
+            
+            // Add all form inputs EXCEPT from template
+            const formElements = form.querySelectorAll('input, textarea, select');
+            formElements.forEach(element => {
+                // Skip if it's inside template
+                if (element.closest('.market-item-template')) {
+                    return;
+                }
+                
+                // Add to FormData
+                if (element.type === 'file') {
+                    if (element.files.length > 0) {
+                        formData.append(element.name, element.files[0]);
+                    }
+                } else if (element.type === 'checkbox') {
+                    formData.append(element.name, element.checked ? '1' : '0');
+                } else if (element.type === 'radio') {
+                    if (element.checked) {
+                        formData.append(element.name, element.value);
+                    }
+                } else if (element.name && element.value !== undefined) {
+                    formData.append(element.name, element.value);
+                }
+            });
+            
+            // Add CSRF token
+            const csrfToken = form.querySelector('[name="_token"]');
+            if (csrfToken) {
+                formData.append('_token', csrfToken.value);
+            }
+            
+            // Debug: Log what we're sending
+            console.log('=== FORMDATA BEING SENT ===');
+            for (let pair of formData.entries()) {
+                if (pair[0].includes('market')) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+            }
+
+            // Submit via AJAX
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw data;
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Event created successfully!',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.href = data.redirect || '{{ route("admin.events.index") }}';
+                        });
+                    } else {
+                        window.location.href = data.redirect || '{{ route("admin.events.index") }}';
+                    }
+                } else {
+                    throw data;
+                }
+            })
+            .catch(error => {
+                console.error('Validation errors:', error);
+                console.log('Full error object:', JSON.stringify(error, null, 2));
+                
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+
+                // Handle validation errors
+                if (error.errors) {
+                    console.log('Processing errors:', error.errors);
+                    
+                    // Show error summary
+                    const errorAlert = document.createElement('div');
+                    errorAlert.className = 'alert alert-danger validation-errors';
+                    errorAlert.style.margin = '20px 40px';
+                    
+                    let errorHtml = '<div class="alert-header"><i class="fa fa-exclamation-triangle"></i><strong>Please fix the following errors:</strong></div><ul class="error-list">';
+                    
+                    let firstErrorElement = null;
+                    
+                    // Display field-specific errors
+                    Object.keys(error.errors).forEach(field => {
+                        console.log('Processing field:', field);
+                        
+                        const errors = Array.isArray(error.errors[field]) ? error.errors[field] : [error.errors[field]];
+                        errors.forEach(message => {
+                            errorHtml += `<li>${message}</li>`;
+                            
+                            // Highlight the specific field
+                            let input = null;
+                            
+                            // Handle nested field names like markets.0.question
+                            if (field.includes('.')) {
+                                const parts = field.split('.');
+                                console.log('Field parts:', parts);
+                                
+                                if (parts[0] === 'markets' && parts.length >= 3) {
+                                    const marketIndex = parseInt(parts[1]);
+                                    const fieldName = parts[2];
+                                    const markets = document.querySelectorAll('.market-item:not(.market-item-template)');
+                                    
+                                    console.log('Market index:', marketIndex, 'Field name:', fieldName);
+                                    console.log('Total markets found:', markets.length);
+                                    
+                                    if (markets[marketIndex]) {
+                                        console.log('Market found at index:', marketIndex);
+                                        
+                                        // Try multiple selectors to find the input
+                                        input = markets[marketIndex].querySelector(`[name="markets[${marketIndex}][${fieldName}]"]`) ||
+                                               markets[marketIndex].querySelector(`[name*="[${fieldName}]"]`) ||
+                                               markets[marketIndex].querySelector(`.${fieldName}`) ||
+                                               markets[marketIndex].querySelector(`input[type="text"]`);
+                                        
+                                        console.log('Input found with general selector:', input ? 'YES' : 'NO');
+                                        
+                                        // Special handling for specific fields
+                                        if (!input) {
+                                            if (fieldName === 'question') {
+                                                input = markets[marketIndex].querySelector('.market-question') ||
+                                                       markets[marketIndex].querySelector('input[placeholder*="question"]') ||
+                                                       markets[marketIndex].querySelector('input.form-control-modern');
+                                                console.log('Input found with question selector:', input ? 'YES' : 'NO');
+                                            } else if (fieldName === 'yes_price' || fieldName === 'no_price') {
+                                                input = markets[marketIndex].querySelector(`.${fieldName.replace('_', '-')}-percent`);
+                                                console.log('Input found with price selector:', input ? 'YES' : 'NO');
+                                            } else if (fieldName === 'volume') {
+                                                input = markets[marketIndex].querySelector('input[name*="volume"]');
+                                                console.log('Input found with volume selector:', input ? 'YES' : 'NO');
+                                            }
+                                        }
+                                        
+                                        if (input) {
+                                            console.log('✅ Found input element, applying styles');
+                                            
+                                            // Add red border
+                                            input.classList.add('is-invalid');
+                                            input.style.borderColor = '#ff6b6b';
+                                            input.style.backgroundColor = '#fff5f5';
+                                            
+                                            // Remove existing error messages for this field
+                                            const existingError = input.parentElement.querySelector('.error-message');
+                                            if (existingError) existingError.remove();
+                                            
+                                            // Add inline error message
+                                            const errorDiv = document.createElement('div');
+                                            errorDiv.className = 'error-message';
+                                            errorDiv.style.color = '#ff6b6b';
+                                            errorDiv.style.fontSize = '0.875rem';
+                                            errorDiv.style.marginTop = '0.25rem';
+                                            errorDiv.style.fontWeight = '500';
+                                            errorDiv.innerHTML = `<i class="fa fa-exclamation-circle"></i> ${message}`;
+                                            
+                                            // Insert after input
+                                            input.parentElement.appendChild(errorDiv);
+                                            
+                                            // Save first error element for scrolling
+                                            if (!firstErrorElement) {
+                                                firstErrorElement = input;
+                                            }
+                                            
+                                            // Add visual highlight to market box
+                                            const marketBox = markets[marketIndex].closest('.market-item, .box');
+                                            if (marketBox) {
+                                                console.log('✅ Highlighting market box');
+                                                marketBox.style.borderColor = '#ff6b6b';
+                                                marketBox.style.borderWidth = '2px';
+                                                marketBox.style.boxShadow = '0 0 0 3px rgba(255, 107, 107, 0.1)';
+                                            }
+                                        } else {
+                                            console.error('❌ Could not find input element for field:', fieldName);
+                                        }
+                                    } else {
+                                        console.error('❌ Market not found at index:', marketIndex);
+                                    }
+                                }
+                            } else {
+                                // Handle regular fields (event-level fields)
+                                input = form.querySelector(`[name="${field}"]`);
+                                if (input) {
+                                    input.classList.add('is-invalid');
+                                    input.style.borderColor = '#ff6b6b';
+                                    input.style.backgroundColor = '#fff5f5';
+                                    
+                                    // Remove existing error
+                                    const existingError = input.parentElement.querySelector('.error-message');
+                                    if (existingError) existingError.remove();
+                                    
+                                    // Add inline error message
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'error-message';
+                                    errorDiv.style.color = '#ff6b6b';
+                                    errorDiv.style.fontSize = '0.875rem';
+                                    errorDiv.style.marginTop = '0.25rem';
+                                    errorDiv.style.fontWeight = '500';
+                                    errorDiv.innerHTML = `<i class="fa fa-exclamation-circle"></i> ${errors[0]}`;
+                                    input.parentElement.appendChild(errorDiv);
+                                    
+                                    if (!firstErrorElement) {
+                                        firstErrorElement = input;
+                                    }
+                                }
+                            }
+                        });
+                    });
+                    
+                    errorHtml += '</ul>';
+                    errorAlert.innerHTML = errorHtml;
+                    
+                    // Insert error alert at the top of the form
+                    const formContainer = document.querySelector('.form-container');
+                    const formHeader = document.querySelector('.form-header');
+                    formContainer.insertBefore(errorAlert, formHeader.nextSibling);
+                    
+                    // Scroll to first error
+                    if (firstErrorElement) {
+                        setTimeout(() => {
+                            firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstErrorElement.focus();
+                            // Add pulsing effect
+                            firstErrorElement.style.animation = 'pulse 0.5s ease-in-out 3';
+                        }, 100);
+                    } else {
+                        // Scroll to error alert if no field found
+                        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+                
+                if (error.message && typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: error.message,
+                        confirmButtonColor: '#ff6b6b'
+                    });
+                }
+            });
         });
+
+        // Update market prices - convert percentage to decimal for modern forms
+        function updateMarketPricesModern(input) {
+            const marketItem = input.closest('.market-item');
+            if (!marketItem) return;
+
+            const yesPercentInput = marketItem.querySelector('.yes-price-percent');
+            const noPercentInput = marketItem.querySelector('.no-price-percent');
+            const yesDecimalInput = marketItem.querySelector('.yes-price-decimal');
+            const noDecimalInput = marketItem.querySelector('.no-price-decimal');
+
+            if (yesPercentInput && noPercentInput && yesDecimalInput && noDecimalInput) {
+                const yesPercent = parseFloat(yesPercentInput.value) || 0;
+                const noPercent = parseFloat(noPercentInput.value) || 0;
+
+                // Auto-adjust the other value if this one changes
+                if (input.classList.contains('yes-price-percent')) {
+                    noPercentInput.value = (100.0 - yesPercent).toFixed(1);
+                } else if (input.classList.contains('no-price-percent')) {
+                    yesPercentInput.value = (100.0 - noPercent).toFixed(1);
+                }
+
+                // Update hidden decimal fields
+                const finalYesPercent = parseFloat(yesPercentInput.value) || 0;
+                const finalNoPercent = parseFloat(noPercentInput.value) || 0;
+                
+                yesDecimalInput.value = (finalYesPercent / 100).toFixed(3);
+                noDecimalInput.value = (finalNoPercent / 100).toFixed(3);
+            }
+        }
+        
+        // Switch between image upload and URL tabs for market
+        function switchMarketImageTab(type, index) {
+            const uploadTab = document.getElementById(`marketImageUploadTab-${index}`);
+            const urlTab = document.getElementById(`marketImageUrlTab-${index}`);
+            const buttons = document.querySelectorAll(`[data-tab="market-image-upload-${index}"], [data-tab="market-image-url-${index}"]`);
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (type === 'upload') {
+                uploadTab.style.display = 'block';
+                urlTab.style.display = 'none';
+                document.querySelector(`[data-tab="market-image-upload-${index}"]`).classList.add('active');
+                // Clear URL input
+                const urlInput = urlTab.querySelector('input[type="url"]');
+                if (urlInput) urlInput.value = '';
+                // Hide URL preview
+                const urlPreview = document.getElementById(`marketImageUrlPreview-${index}`);
+                if (urlPreview) urlPreview.style.display = 'none';
+            } else {
+                uploadTab.style.display = 'none';
+                urlTab.style.display = 'block';
+                document.querySelector(`[data-tab="market-image-url-${index}"]`).classList.add('active');
+                // Clear file input
+                const fileInput = uploadTab.querySelector('input[type="file"]');
+                if (fileInput) fileInput.value = '';
+                // Hide file preview
+                const filePreview = document.getElementById(`marketImageFilePreview-${index}`);
+                if (filePreview) filePreview.style.display = 'none';
+            }
+        }
+        
+        // Handle market image file select
+        function handleMarketImageFileSelect(input, index) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(`marketImageFilePreview-${index}`);
+                    const previewImg = document.getElementById(`marketImageFilePreviewImg-${index}`);
+                    if (preview && previewImg) {
+                        previewImg.src = e.target.result;
+                        preview.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Handle market image URL input
+        function handleMarketImageUrlInput(input, index) {
+            const url = input.value;
+            if (url && url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                const preview = document.getElementById(`marketImageUrlPreview-${index}`);
+                const previewImg = document.getElementById(`marketImageUrlPreviewImg-${index}`);
+                if (preview && previewImg) {
+                    previewImg.src = url;
+                    preview.style.display = 'block';
+                }
+            } else {
+                const preview = document.getElementById(`marketImageUrlPreview-${index}`);
+                if (preview) preview.style.display = 'none';
+            }
+        }
+        
+        // Remove market image file preview
+        function removeMarketImageFilePreview(index) {
+            const fileInput = document.getElementById(`marketImageFileInput-${index}`);
+            const preview = document.getElementById(`marketImageFilePreview-${index}`);
+            if (fileInput) fileInput.value = '';
+            if (preview) preview.style.display = 'none';
+        }
+        
+        // Remove market image URL preview
+        function removeMarketImageUrlPreview(index) {
+            const urlInput = document.querySelector(`#marketImageUrlTab-${index} input[type="url"]`);
+            const preview = document.getElementById(`marketImageUrlPreview-${index}`);
+            if (urlInput) urlInput.value = '';
+            if (preview) preview.style.display = 'none';
+        }
 
         // Scroll to first error on page load if validation errors exist
         document.addEventListener('DOMContentLoaded', function() {
@@ -1857,3 +2594,5 @@
         }
     </style>
 @endsection
+
+

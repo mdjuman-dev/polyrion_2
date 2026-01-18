@@ -110,14 +110,14 @@ class ProfileController extends Controller
          ->with([
             'market' => function($query) {
                $query->select([
-                  'id', 'event_id', 'question', 'slug',
+                  'id', 'event_id', 'question', 'slug', 'image',
                   'outcome_prices',
                   'close_time', 'result_set_at', 'final_result',
                   'active', 'closed', 'archived'
                ]);
             },
             'market.event' => function($query) {
-               $query->select(['id', 'title', 'slug']);
+               $query->select(['id', 'title', 'slug', 'image', 'end_date']);
             }
          ])
          ->orderBy('created_at', 'desc')
@@ -233,7 +233,7 @@ class ProfileController extends Controller
 
    function settings()
    {
-      return view('frontend.profile_settings');
+      return redirect()->route('profile.index');
    }
 
    function update(Request $request)

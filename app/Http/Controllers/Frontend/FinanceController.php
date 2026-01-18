@@ -17,6 +17,7 @@ class FinanceController extends Controller
         // Get selected filters from query parameters
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedCategory = $request->get('category', 'all');
+        $selectedSecondaryCategory = $request->get('secondary_category', null);
 
         // Base query for finance events - Exclude ended events (reused for counts)
         $baseQuery = Event::whereIn('category', ['Finance', 'Economy', 'Business'])
@@ -26,6 +27,13 @@ class FinanceController extends Controller
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
             });
+
+        // Get secondary categories for Finance, Economy, and Business
+        $secondaryCategories = \App\Models\SecondaryCategory::active()
+            ->whereIn('main_category', ['Finance', 'Economy', 'Business'])
+            ->ordered()
+            ->withCount('activeEvents')
+            ->get();
 
         // Get events filtered by finance category - Exclude ended events
         $eventsQuery = (clone $baseQuery)
@@ -47,6 +55,11 @@ class FinanceController extends Controller
         // Filter by timeframe if selected
         if ($selectedTimeframe !== 'all') {
             $eventsQuery = $this->filterByTimeframe($eventsQuery, $selectedTimeframe);
+        }
+
+        // Filter by secondary category if selected
+        if ($selectedSecondaryCategory) {
+            $eventsQuery->where('secondary_category_id', $selectedSecondaryCategory);
         }
 
         // Filter by category if selected
@@ -76,7 +89,9 @@ class FinanceController extends Controller
             'selectedCategory',
             'events',
             'timeframeCounts',
-            'categoryCounts'
+            'categoryCounts',
+            'secondaryCategories',
+            'selectedSecondaryCategory'
         ));
     }
 

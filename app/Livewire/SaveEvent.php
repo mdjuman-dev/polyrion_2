@@ -27,9 +27,19 @@ class SaveEvent extends Component
             return;
         }
 
-        $this->isSaved = SavedEvent::where('user_id', Auth::id())
-            ->where('event_id', $this->eventId)
-            ->exists();
+        // Use eager-loaded relationship if available (from controller)
+        if ($this->event && $this->event->relationLoaded('savedByUsers')) {
+            $this->isSaved = $this->event->savedByUsers
+                ->contains('id', Auth::id());
+        } else {
+            // Fallback: query database (with cache)
+            $cacheKey = "event_saved:{$this->eventId}:" . Auth::id();
+            $this->isSaved = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function() {
+                return SavedEvent::where('user_id', Auth::id())
+                    ->where('event_id', $this->eventId)
+                    ->exists();
+            });
+        }
     }
 
     public function saveEvent()
@@ -58,6 +68,10 @@ class SaveEvent extends Component
             // Unsave
             $savedEvent->delete();
             $this->isSaved = false;
+            
+            // Clear cache
+            \Illuminate\Support\Facades\Cache::forget("event_saved:{$this->eventId}:" . Auth::id());
+            
             $this->dispatch('event-saved', [
                 'message' => 'Event removed from saved',
                 'type' => 'success'
@@ -69,6 +83,10 @@ class SaveEvent extends Component
                 'event_id' => $this->eventId
             ]);
             $this->isSaved = true;
+            
+            // Clear cache
+            \Illuminate\Support\Facades\Cache::forget("event_saved:{$this->eventId}:" . Auth::id());
+            
             $this->dispatch('event-saved', [
                 'message' => 'Event saved successfully!',
                 'type' => 'success'

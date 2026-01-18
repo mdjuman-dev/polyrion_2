@@ -17,6 +17,7 @@ class CryptoController extends Controller
         // Get selected filters from query parameters
         $selectedTimeframe = $request->get('timeframe', 'all');
         $selectedAsset = $request->get('asset', 'all');
+        $selectedSecondaryCategory = $request->get('secondary_category', null);
 
         // Base query for crypto events - Exclude ended events (reused for counts)
         $baseQuery = Event::where('category', 'Crypto')
@@ -26,6 +27,13 @@ class CryptoController extends Controller
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>', now());
             });
+
+        // Get secondary categories for Crypto
+        $secondaryCategories = \App\Models\SecondaryCategory::active()
+            ->byMainCategory('Crypto')
+            ->ordered()
+            ->withCount('activeEvents')
+            ->get();
 
         // Get events filtered by crypto category - Exclude ended events
         $eventsQuery = (clone $baseQuery)
@@ -47,6 +55,11 @@ class CryptoController extends Controller
         // Filter by timeframe if selected
         if ($selectedTimeframe !== 'all') {
             $eventsQuery = $this->filterByTimeframe($eventsQuery, $selectedTimeframe);
+        }
+
+        // Filter by secondary category if selected
+        if ($selectedSecondaryCategory) {
+            $eventsQuery->where('secondary_category_id', $selectedSecondaryCategory);
         }
 
         // Filter by asset if selected
@@ -76,7 +89,9 @@ class CryptoController extends Controller
             'selectedAsset',
             'events',
             'timeframeCounts',
-            'assetCounts'
+            'assetCounts',
+            'secondaryCategories',
+            'selectedSecondaryCategory'
         ));
     }
 

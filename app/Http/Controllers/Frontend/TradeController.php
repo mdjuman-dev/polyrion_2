@@ -160,10 +160,10 @@ class TradeController extends Controller
         ->where('user_id', $user->id)
         ->with([
             'market' => function($q) {
-                $q->select(['id', 'event_id', 'question', 'slug']);
+                $q->select(['id', 'event_id', 'question', 'slug', 'image']);
             },
             'market.event' => function($q) {
-                $q->select(['id', 'title', 'slug']);
+                $q->select(['id', 'title', 'slug', 'image']);
             }
         ])
             ->orderBy('created_at', 'desc')
@@ -218,10 +218,10 @@ class TradeController extends Controller
         ->where('user_id', $user->id)
         ->with([
             'market' => function($q) {
-                $q->select(['id', 'event_id', 'question', 'slug']);
+                $q->select(['id', 'event_id', 'question', 'slug', 'image']);
             },
             'market.event' => function($q) {
-                $q->select(['id', 'title', 'slug']);
+                $q->select(['id', 'title', 'slug', 'image']);
             }
         ])
             ->orderBy('created_at', 'desc')

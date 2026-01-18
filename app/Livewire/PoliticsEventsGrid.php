@@ -10,16 +10,19 @@ class PoliticsEventsGrid extends Component
     public $perPage = 20;
     public $category = 'all';
     public $country = null;
+    public $secondaryCategoryId = null;
 
     protected $queryString = [
         'category' => ['except' => 'all'],
         'country' => ['except' => ''],
+        'secondary_category' => ['except' => null, 'as' => 'secondaryCategoryId'],
     ];
 
     public function mount($category = 'all', $country = null)
     {
         $this->category = $category ?: request()->get('category', 'all');
         $this->country = $country ?: request()->get('country', null);
+        $this->secondaryCategoryId = request()->get('secondary_category', null);
     }
 
     public function loadMore()
@@ -35,6 +38,11 @@ class PoliticsEventsGrid extends Component
     }
 
     public function updatedCountry()
+    {
+        $this->perPage = 20;
+    }
+
+    public function updatedSecondaryCategoryId()
     {
         $this->perPage = 20;
     }
@@ -69,6 +77,11 @@ class PoliticsEventsGrid extends Component
             }])
             ->orderBy('created_at', 'desc');
 
+        // Filter by secondary category
+        if ($this->secondaryCategoryId) {
+            $query->where('secondary_category_id', $this->secondaryCategoryId);
+        }
+
         // Filter by category
         if ($this->category !== 'all') {
             $categoryKeywords = $this->getCategoryKeywords($this->category);
@@ -97,7 +110,7 @@ class PoliticsEventsGrid extends Component
 
         // Cache count query for 30 seconds to avoid duplicate queries
         $cacheKey = 'events_count:politics:' . md5(serialize([
-            $this->category, $this->country
+            $this->category, $this->country, $this->secondaryCategoryId
         ]));
         $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
             return (clone $query)->count();

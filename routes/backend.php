@@ -76,6 +76,18 @@ Route::prefix('/admin')->name('admin.')->group(function () {
          Route::post('/events/{event}/markets', 'storeMarkets')->middleware('permission:create markets,admin')->name('events.store-markets');
       });
 
+      // Secondary Category Management Routes
+      Route::controller(\App\Http\Controllers\Backend\SecondaryCategoryController::class)->prefix('secondary-categories')->name('secondary-categories.')->middleware('permission:manage events,admin')->group(function () {
+         Route::get('/', 'index')->name('index');
+         Route::get('/create', 'create')->middleware('permission:create events,admin')->name('create');
+         Route::post('/', 'store')->middleware('permission:create events,admin')->name('store');
+         Route::get('/{secondaryCategory}', 'show')->name('show');
+         Route::get('/{secondaryCategory}/edit', 'edit')->middleware('permission:edit events,admin')->name('edit');
+         Route::put('/{secondaryCategory}', 'update')->middleware('permission:edit events,admin')->name('update');
+         Route::delete('/{secondaryCategory}', 'destroy')->middleware('permission:delete events,admin')->name('destroy');
+         Route::get('/by-main-category/get', 'getByMainCategory')->name('by-main-category');
+      });
+
       // Comment Management Routes
       Route::controller(CommentController::class)->middleware('permission:manage events,admin')->group(function () {
          Route::delete('/comments/{id}', 'destroy')->name('comments.destroy');

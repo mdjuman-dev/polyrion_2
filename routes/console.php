@@ -39,3 +39,7 @@ Schedule::call(function () {
     }
 })->name('settle-markets')->everyMinute()->withoutOverlapping(5);
 // Note: onOneServer() removed - if using multiple servers, add it back and ensure cache is properly configured
+
+
+   // app/Console/Kernel.php - schedule method
+   Schedule::command('markets:snapshot')->name('snapshot-markets')->everyMinute();

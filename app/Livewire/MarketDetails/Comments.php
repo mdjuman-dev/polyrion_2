@@ -62,6 +62,9 @@ class Comments extends Component
         // Update replies count
         $parentComment->increment('replies_count');
 
+        // Clear cache when reply is added
+        $this->clearCommentsCache();
+
         $this->replyingTo = null;
         $this->replyText = '';
         $this->dispatch('replyAdded');
@@ -99,6 +102,9 @@ class Comments extends Component
             $comment->increment('likes_count');
         }
 
+        // Clear cache when likes change
+        $this->clearCommentsCache();
+        
         $this->dispatch('commentLiked');
     }
 
@@ -108,8 +114,18 @@ class Comments extends Component
             return false;
         }
 
-        $comment = EventComment::findOrFail($commentId);
-        return $comment->likes()->where('user_id', Auth::id())->exists();
+        // Use cached data from view bag (set in render method)
+        $userLikedComments = view()->shared('userLikedComments', []);
+        return isset($userLikedComments[$commentId]);
+    }
+    
+    /**
+     * Clear comments cache when data changes
+     */
+    private function clearCommentsCache()
+    {
+        \Illuminate\Support\Facades\Cache::forget("event_comments:{$this->event->id}");
+        \Illuminate\Support\Facades\Cache::forget("event_comments_count:{$this->event->id}");
     }
 
     public function fetchPolymarketComments()
@@ -149,36 +165,80 @@ class Comments extends Component
 
     public function render()
     {
-        // Don't fetch API on render - do it lazily via JavaScript or on demand
-        // This prevents blocking page load
+        // Cache key for comments (event-specific, updates every 30 seconds)
+        $cacheKey = "event_comments:{$this->event->id}";
+        $cacheTTL = 30; // 30 seconds cache
         
-        // Frontend: Only show active comments with pagination (limit to 10 for faster initial load)
-        $comments = EventComment::where('event_id', $this->event->id)
-            ->whereNull('parent_comment_id')
-            ->where(function ($q) {
-                $q->where('is_active', true)
-                    ->orWhereNull('is_active'); // For backward compatibility
-            })
-            ->with(['user', 'replies' => function ($replyQuery) {
-                $replyQuery->where(function ($q) {
+        // Get comments with optimized eager loading (prevent N+1)
+        $comments = \Illuminate\Support\Facades\Cache::remember($cacheKey, $cacheTTL, function() {
+            return EventComment::where('event_id', $this->event->id)
+                ->whereNull('parent_comment_id')
+                ->where(function ($q) {
                     $q->where('is_active', true)
                         ->orWhereNull('is_active');
                 })
-                ->limit(3) // Limit replies to 3 per comment (reduced from 5)
-                ->with('user'); // Removed 'likes' eager load for performance
-            }]) // Removed 'replies.likes' and 'likes' eager loads
-            ->orderBy('created_at', 'desc')
-            ->limit(10) // Limit to 10 comments for initial load (reduced from 20)
-            ->get();
+                ->with([
+                    'user:id,name,avatar', // Select only needed columns
+                    'replies' => function ($replyQuery) {
+                        $replyQuery->select([
+                            'id', 'event_id', 'user_id', 'comment_text', 'parent_comment_id',
+                            'likes_count', 'replies_count', 'is_active', 'created_at', 'updated_at'
+                        ])
+                        ->where(function ($q) {
+                            $q->where('is_active', true)
+                                ->orWhereNull('is_active');
+                        })
+                        ->limit(3)
+                        ->with('user:id,name,avatar')
+                        ->orderBy('created_at', 'asc');
+                    }
+                ])
+                ->select([
+                    'id', 'event_id', 'user_id', 'comment_text', 'parent_comment_id',
+                    'likes_count', 'replies_count', 'is_active', 'created_at', 'updated_at'
+                ])
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        });
+        
+        // Load likes for current user only (if authenticated) - single query
+        if (Auth::check()) {
+            $commentIds = $comments->pluck('id')->toArray();
+            $replyIds = $comments->flatMap(function($comment) {
+                return $comment->replies->pluck('id');
+            })->toArray();
+            
+            $allIds = array_merge($commentIds, $replyIds);
+            
+            if (!empty($allIds)) {
+                // Single query to get all likes for current user
+                $userLikes = \Illuminate\Support\Facades\DB::table('comment_likes')
+                    ->where('user_id', Auth::id())
+                    ->whereIn('comment_id', $allIds)
+                    ->pluck('comment_id')
+                    ->toArray();
+                
+                // Store in view bag for efficient lookup
+                view()->share('userLikedComments', array_flip($userLikes));
+            } else {
+                view()->share('userLikedComments', []);
+            }
+        } else {
+            view()->share('userLikedComments', []);
+        }
 
-        // Optimize count query - reuse same conditions as main query
-        $commentsCount = EventComment::where('event_id', $this->event->id)
-            ->whereNull('parent_comment_id')
-            ->where(function ($q) {
-                $q->where('is_active', true)
-                    ->orWhereNull('is_active');
-            })
-            ->count();
+        // Cache count query separately
+        $countCacheKey = "event_comments_count:{$this->event->id}";
+        $commentsCount = \Illuminate\Support\Facades\Cache::remember($countCacheKey, $cacheTTL, function() {
+            return EventComment::where('event_id', $this->event->id)
+                ->whereNull('parent_comment_id')
+                ->where(function ($q) {
+                    $q->where('is_active', true)
+                        ->orWhereNull('is_active');
+                })
+                ->count();
+        });
 
         return view('livewire.market-details.comments', [
             'comments' => $comments,

@@ -56,7 +56,9 @@
 <div class="trading-panel" id="tradingPanel" data-market-id="{{ $event->markets->first()->id ?? '' }}">
    <div class="panel-header">
       <div class="market-profile-img">
-         <img src="{{ $event->image }}" alt="Profile">
+         <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}" 
+              alt="Profile"
+              onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
       </div>
       <div class="panel-title-section">
          <h2 class="panel-market-title" id="panelMarketTitle">{{ $event->title ?? '' }}</h2>

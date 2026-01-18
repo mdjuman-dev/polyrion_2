@@ -68,6 +68,25 @@
                                 2026 Predictions
                             </a>
 
+                            <!-- Secondary Categories -->
+                            @if(isset($secondaryCategories) && $secondaryCategories->count() > 0)
+                                @foreach($secondaryCategories as $secCategory)
+                                    <a href="{{ route('politics.index') }}?secondary_category={{ $secCategory->id }}{{ $selectedCategory !== 'all' ? '&category=' . $selectedCategory : '' }}{{ $selectedCountry ? '&country=' . $selectedCountry : '' }}" 
+                                       class="filter-btn {{ ($selectedSecondaryCategory ?? '') == $secCategory->id ? 'active' : '' }}"
+                                       title="{{ $secCategory->description }}">
+                                        @if($secCategory->icon)
+                                            <img src="{{ asset('storage/' . $secCategory->icon) }}" 
+                                                 alt="{{ $secCategory->name }}" 
+                                                 style="width: 16px; height: 16px; margin-right: 4px; border-radius: 3px; object-fit: cover;">
+                                        @endif
+                                        {{ $secCategory->name }}
+                                        @if($secCategory->active_events_count > 0)
+                                            <span class="badge badge-sm" style="background: rgba(255,255,255,0.2); margin-left: 4px; font-size: 10px;">{{ $secCategory->active_events_count }}</span>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            @endif
+
                             <!-- Popular Categories -->
                             @foreach($popularCategories as $category)
                                 <a href="{{ route('politics.index') }}?category={{ strtolower(str_replace(' ', '-', $category['name'])) }}{{ $selectedCountry ? '&country=' . $selectedCountry : '' }}" 

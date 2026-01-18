@@ -57,7 +57,13 @@ class Event extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'event_tags', 'event_id', 'tag_id')
-            ->withTimestamps();
+            ->withTimestamps()
+            ->select('tags.id', 'tags.label', 'tags.slug');
+    }
+
+    public function secondaryCategory()
+    {
+        return $this->belongsTo(SecondaryCategory::class, 'secondary_category_id');
     }
 
     /**

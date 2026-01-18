@@ -23,6 +23,16 @@ class PoliticsController extends Controller
                   ->orWhere('end_date', '>', now());
             });
 
+        // Get secondary categories for Politics, Elections, and Geopolitics
+        $secondaryCategories = \App\Models\SecondaryCategory::active()
+            ->whereIn('main_category', ['Politics', 'Elections', 'Geopolitics'])
+            ->ordered()
+            ->withCount('activeEvents')
+            ->get();
+
+        // Get selected secondary category from query
+        $selectedSecondaryCategory = $request->get('secondary_category', null);
+
         // Extract dynamic categories from event titles and market questions (cached)
         $cacheKey = 'politics_dynamic_categories';
         $dynamicCategories = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($baseQuery) {
@@ -69,6 +79,11 @@ class PoliticsController extends Controller
                 ->limit(10);
             }])
             ->orderBy('created_at', 'desc');
+
+        // Filter by secondary category if selected
+        if ($selectedSecondaryCategory) {
+            $eventsQuery->where('secondary_category_id', $selectedSecondaryCategory);
+        }
 
         // If specific category selected, filter by event title and market questions
         if ($selectedCategory !== 'all') {
@@ -124,7 +139,9 @@ class PoliticsController extends Controller
             'selectedCategory',
             'selectedCountry',
             'events',
-            'countries'
+            'countries',
+            'secondaryCategories',
+            'selectedSecondaryCategory'
         ));
     }
 

@@ -19,7 +19,7 @@
         <div class="market-card multi-market">
             <div class="market-card-header">
                 <div class="market-profile-img">
-                    <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}"
+                    <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}"
                         alt="{{ $event->title }}"
                         onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
                 </div>
@@ -64,8 +64,8 @@
                             <span class="market-card-outcome-label "
                                 style="color:#fff">{{ $market->groupItem_title }}</span>
                             <span class="market-card-outcome-probability">{{ $yesProb }}%</span>
-                            <button class="market-card-yes-btn">{{ $firstOutcome }}</button>
-                            <button class="market-card-no-btn">{{ $secondOutcome }}</button>
+                            <button class="market-card-yes-btn">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+                            <button class="market-card-no-btn">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
                         </div>
                     @endif
                 @endforeach
@@ -124,11 +124,12 @@
 
         <div class="market-card single-market">
             <div class="d-flex">
-                <div class="market-card-header me-3">
-                    <div class="market-profile-img">
-                        <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}"
-                            alt="{{ $event->title }}">
-                    </div>
+            <div class="market-card-header me-3">
+                <div class="market-profile-img">
+                    <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}"
+                        alt="{{ $event->title }}"
+                        onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
+                </div>
                     <div class="market-title-section">
                         <a href="{{ $marketLink }}" class="market-card-title"
                             style="color:#fff">{{ \Illuminate\Support\Str::limit($event->title, $titleLength) }}</a>
@@ -144,8 +145,8 @@
             </div>
 
             <div class="market-card-body-single">
-                <button class="market-card-yes-btn-large">{{ $firstOutcome }}</button>
-                <button class="market-card-no-btn-large">{{ $secondOutcome }}</button>
+                <button class="market-card-yes-btn-large">{{ \Illuminate\Support\Str::limit($firstOutcome, 4, '') }}</button>
+                <button class="market-card-no-btn-large">{{ \Illuminate\Support\Str::limit($secondOutcome, 4, '') }}</button>
             </div>
 
             <div class="market-footer">

@@ -9,17 +9,20 @@ class CategoryEventsGrid extends Component
 {
     public $category;
     public $subcategory = 'all';
+    public $secondaryCategoryId = null;
     public $search = '';
     public $perPage = 20;
 
     protected $queryString = [
         'subcategory' => ['except' => 'all'],
+        'secondary_category' => ['except' => null, 'as' => 'secondaryCategoryId'],
     ];
 
     public function mount($category, $subcategory = 'all')
     {
         $this->category = $category;
         $this->subcategory = $subcategory ?: request()->get('subcategory', 'all');
+        $this->secondaryCategoryId = request()->get('secondary_category', null);
     }
 
     public function loadMore()
@@ -80,6 +83,11 @@ class CategoryEventsGrid extends Component
             $query->byCategory($categoryName);
         }
 
+        // Filter by secondary category if provided
+        if ($this->secondaryCategoryId) {
+            $query->where('secondary_category_id', $this->secondaryCategoryId);
+        }
+
         // Filter by sub-category
         if ($this->subcategory && $this->subcategory !== 'all') {
             $subCategoryKeywords = $this->getSubCategoryKeywords($this->subcategory, $this->category);
@@ -108,7 +116,7 @@ class CategoryEventsGrid extends Component
 
         // Cache count query for 30 seconds to avoid duplicate queries
         $cacheKey = 'events_count:category:' . md5(serialize([
-            $this->category, $this->subcategory, $this->search
+            $this->category, $this->subcategory, $this->secondaryCategoryId, $this->search
         ]));
         $totalCount = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($query) {
             return $query->count();

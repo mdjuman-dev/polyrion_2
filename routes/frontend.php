@@ -48,6 +48,7 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/market/{slug}', 'singleMarket')->name('market.single');
     Route::get('/api/market/{slug}/price-data', 'getMarketPriceData')->name('api.market.price.data');
     Route::get('/api/market/{slug}/history-data', 'getMarketHistoryData')->name('api.market.history.data');
+    Route::get('/api/market/{slug}/chart-data', 'getChartDataByPeriod')->name('api.market.chart.data');
     Route::get('/api/market/{marketId}/live-price', 'getMarketLivePrice')->name('api.market.live.price');
     Route::get('/api/event/{eventId}/comments', 'fetchEventComments')->name('api.event.comments');
     Route::get('/tag/{slug}', 'eventsByTag')->name('events.by.tag');

@@ -57,6 +57,36 @@
                             <div style="height: 1px; background: #2d3142; margin: 0 16px;"></div>
                         @endif
 
+                        <!-- SECONDARY CATEGORIES Section -->
+                        @if(isset($secondaryCategories) && $secondaryCategories->count() > 0)
+                            <div style="padding: 12px 16px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                                    <i class="fas fa-folder" style="color: #60a5fa; font-size: 14px;"></i>
+                                    <h3 style="color: #fff; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">CATEGORIES</h3>
+                                </div>
+                                <div class="sports-categories-list">
+                                    @foreach($secondaryCategories as $secCategory)
+                                        <a href="{{ route('sports.index') }}?secondary_category={{ $secCategory->id }}" 
+                                           class="sports-category-link {{ ($selectedSecondaryCategory ?? '') == $secCategory->id ? 'active' : '' }}"
+                                           title="{{ $secCategory->description }}">
+                                            @if($secCategory->icon)
+                                                <img src="{{ asset('storage/' . $secCategory->icon) }}" 
+                                                     alt="{{ $secCategory->name }}" 
+                                                     style="width: 24px; height: 24px; border-radius: 4px; object-fit: cover;">
+                                            @else
+                                                <i class="fas fa-folder" style="color: #9ca3af; font-size: 18px; width: 24px; text-align: center;"></i>
+                                            @endif
+                                            <span style="flex: 1; color: #fff; font-size: 14px;">{{ $secCategory->name }}</span>
+                                            @if($secCategory->active_events_count > 0)
+                                                <span style="color: #9ca3af; font-size: 13px; margin-right: 8px;">{{ $secCategory->active_events_count }}</span>
+                                            @endif
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div style="height: 1px; background: #2d3142; margin: 0 16px;"></div>
+                        @endif
+
                         <!-- ALL SPORTS Section -->
                         <div style="padding: 12px 16px 20px 16px;">
                             <h3 style="color: #fff; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-left: 0;">ALL SPORTS</h3>

@@ -186,17 +186,65 @@ class HomeController extends Controller
    function marketDetails($slug)
    {
       try {
-         // Only load first 8 markets to improve performance (we only show 4 in chart)
-         $event = Event::where('slug', $slug)
-            ->with([
-               'markets' => function ($query) {
-                  $query->where('active', true)
-                        ->where('closed', false)
-                        ->limit(8)
-                        ->orderBy('id');
+         // Cache key for this specific event
+         $cacheKey = "event_details:{$slug}:" . auth()->id();
+         $cacheTTL = 60; // Cache for 1 minute
+         
+         // Try to get from cache first (for non-comment data)
+         $event = \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            $cacheTTL,
+            function () use ($slug) {
+               // Optimized: Eager load all relationships to prevent N+1 queries (59 → ~8 queries)
+               return Event::where('slug', $slug)
+                  ->with([
+                     'markets' => function ($query) {
+                        $query->select([
+                           'id', 'event_id', 'question', 'slug', 'description', 
+                           'outcome_prices', 'outcomes', 'active', 'closed', 'featured',
+                           'groupItem_title', 'series_color', 'icon', 'volume', 
+                           'volume24hr', 'volume1wk', 'volume1mo', 'best_bid', 'best_ask',
+                           'last_trade_price', 'one_day_price_change', 'one_week_price_change',
+                           'one_month_price_change', 'created_at', 'updated_at'
+                        ])
+                        ->where('active', true)
+                        ->where('closed', false);
+                        // No orderBy here, we'll sort by price after loading
+                     },
+                     'secondaryCategory' => function($query) {
+                        $query->select('id', 'name', 'slug', 'icon', 'main_category');
+                     },
+                     'tags' => function($query) {
+                        $query->select('tags.id', 'tags.label', 'tags.slug');
+                     }
+                  ])
+                  ->firstOrFail();
+            }
+         );
+         
+         // Load comments separately (don't cache - needs to be fresh)
+         if (!$event->relationLoaded('comments')) {
+            $event->load([
+               'comments' => function ($query) {
+                  $query->select(['id', 'event_id', 'user_id', 'comment_text', 'created_at', 'updated_at'])
+                        ->with(['user' => function($q) {
+                           $q->select('id', 'name', 'avatar');
+                        }])
+                        ->latest()
+                        ->limit(50);
                }
-            ])
-            ->firstOrFail();
+            ]);
+         }
+         
+         // Load saved status for authenticated user (don't cache - user-specific)
+         if (auth()->check() && !$event->relationLoaded('savedByUsers')) {
+            $event->load([
+               'savedByUsers' => function($query) {
+                  $query->where('user_id', auth()->id())
+                        ->select('users.id');
+               }
+            ]);
+         }
 
          // If event has only 1 active market, redirect to single market page
          $activeMarkets = $event->markets->filter(function($market) {
@@ -225,40 +273,98 @@ class HomeController extends Controller
             '#ff8b94', // Coral
          ];
 
-         // Prepare seriesData for chart
-         $seriesData = [];
-         $labels = [];
-         $now = now();
-         $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date) : $now->copy()->subDays(30);
+      // Prepare seriesData for chart
+      $seriesData = [];
+      $labels = [];
+      
+      // Use current time (not rounded to start of day)
+      $now = now();
+      
+      // Use event creation time as base
+      $baseTime = $event->created_at ? \Carbon\Carbon::parse($event->created_at)->startOfDay() : $now->copy()->subDays(30);
+      $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date)->startOfDay() : $baseTime;
+      
+      // If event is very new, ensure we have enough time range
+      if ($baseTime->diffInDays($now) < 7) {
+         $baseTime = $now->copy()->subDays(30);
+      }
 
-         // Generate time labels (x-axis) - optimized to 12 points
-         $points = 12; // 12 data points for cleaner chart
-         $timeLabels = [];
-         $allTimes = [];
+      // Generate time labels (x-axis) - calculate points based on time range
+      $daysDiff = max(7, $baseTime->diffInDays($now));
+      
+      // For long periods (>60 days), show months. For shorter, show dates
+      if ($daysDiff > 60) {
+         $maxPoints = min(12, ceil($daysDiff / 30)); // Show months
+         $interval = max(1, ceil($daysDiff / $maxPoints));
+         $labelFormat = 'M'; // Just month name (Jan, Feb, etc)
+      } else {
+         $maxPoints = min(30, $daysDiff); // Show dates
+         $interval = max(1, ceil($daysDiff / $maxPoints));
+         $labelFormat = 'M d'; // Month and day
+      }
+      
+      $timeLabels = [];
+      $allTimes = [];
+      $currentTime = $baseTime->copy();
+      $pointCount = 0;
 
-         for ($i = $points; $i >= 0; $i--) {
-            $time = $now->copy()->subDays($i * 2); // 2 day intervals for 12 points
-            if ($time < $startDate)
-               continue;
-            $allTimes[] = $time;
-            $timeLabels[] = $time->format('M d');
+      // Generate labels from baseTime to now
+      while ($currentTime <= $now && $pointCount < $maxPoints) {
+         $allTimes[] = $currentTime->copy();
+         $timeLabels[] = $currentTime->format($labelFormat);
+         $currentTime->addDays($interval);
+         $pointCount++;
+      }
+      
+      // Ensure the last point is current date/time
+      if (count($allTimes) > 0) {
+         $lastTime = $allTimes[count($allTimes) - 1];
+         // If last time is not today, add current time
+         if ($lastTime->diffInDays($now) >= 1) {
+            $allTimes[] = $now->copy();
+            $timeLabels[] = $now->format('M d');
          }
+      }
 
-         // If no labels generated, create default ones
-         if (empty($timeLabels)) {
-            for ($i = 6; $i >= 0; $i--) {
-               $time = $now->copy()->subDays($i);
-               $timeLabels[] = $time->format('M d');
-               $allTimes[] = $time;
+      // If no labels generated, create default ones
+      if (empty($timeLabels)) {
+         for ($i = 0; $i <= 6; $i++) {
+            $time = $baseTime->copy()->addDays($i);
+            if ($time > $now) {
+               break;
             }
+            $timeLabels[] = $time->format('M d');
+            $allTimes[] = $time;
          }
+      }
 
-         $labels = $timeLabels;
+      $labels = $timeLabels;
 
-         // Prepare data for each market (show up to 4 markets or all if less than 4)
-         $marketsToShow = $event->markets->take(4); // Limit to first 4 markets
-
-         foreach ($marketsToShow as $index => $market) {
+         // Sort markets by price (highest first)
+         $allMarkets = $event->markets->sortByDesc(function($market) {
+            // Get YES price (outcome_prices[1])
+            if ($market->outcome_prices) {
+               $prices = is_string($market->outcome_prices) 
+                   ? json_decode($market->outcome_prices, true) 
+                   : ($market->outcome_prices ?? []);
+               
+               if (is_array($prices) && isset($prices[1])) {
+                  return floatval($prices[1]) * 100; // YES price
+               }
+            }
+            
+            // Use best_ask if available
+            if ($market->best_ask !== null && $market->best_ask > 0) {
+               return floatval($market->best_ask) * 100;
+            }
+            
+            return 0; // Default
+         })->values(); // Reset keys after sorting
+         
+         // Generate series data for ALL markets (not just first 4)
+         $allSeriesData = [];
+         
+         foreach ($allMarkets as $index => $market) {
             // Get current price - use YES price (prices[1]) for chart display
             $currentPrice = 50;
             if ($market->outcome_prices) {
@@ -283,38 +389,63 @@ class HomeController extends Controller
                $currentPrice = floatval($market->best_ask) * 100;
             }
 
-            // Generate historical data points matching the labels (optimized - less random calculations)
-            $basePrice = $currentPrice;
-            $priceVariation = min(20, abs($basePrice - 50));
-            $dataPoints = [];
+         // Generate historical data points matching the labels
+         $basePrice = $currentPrice;
+         $priceVariation = min(20, abs($basePrice - 50));
+         $dataPoints = [];
+         $priceDirections = [];
 
-            foreach ($allTimes as $timeIndex => $time) {
-               if ($time < $startDate) {
-                  $dataPoints[] = null;
-                  continue;
+         // Use market ID as seed for consistent pattern across reloads
+         $seed = $market->id ?? ($index + 1);
+         $totalPoints = count($allTimes);
+         $previousPrice = null;
+
+         foreach ($allTimes as $timeIndex => $time) {
+            if ($time < $startDate) {
+               $dataPoints[] = null;
+               $priceDirections[] = 'neutral';
+               continue;
+            }
+
+            // Progressive price trend from 50% to current price
+            $progress = $totalPoints > 1 ? ($timeIndex / ($totalPoints - 1)) : 1;
+            $targetPrice = 50 + ($basePrice - 50) * $progress;
+
+            // Deterministic wave pattern based on market ID and time index
+            $wave1 = sin(($seed * 3.14159 + $timeIndex * 0.8) / 2) * $priceVariation * 0.3;
+            $wave2 = cos(($seed * 2.71828 + $timeIndex * 0.5) / 3) * $priceVariation * 0.2;
+            
+            $volatility = $wave1 + $wave2;
+            $price = $targetPrice + $volatility;
+            
+            // Clamp between 1 and 99
+            $price = max(1, min(99, $price));
+            $price = round($price, 1);
+
+            // Determine direction (up, down, or neutral)
+            $direction = 'neutral';
+            if ($previousPrice !== null) {
+               if ($price > $previousPrice) {
+                  $direction = 'up';
+               } elseif ($price < $previousPrice) {
+                  $direction = 'down';
                }
-
-               $progress = ($timeIndex + 1) / count($allTimes);
-               $targetPrice = 50 + ($basePrice - 50) * $progress;
-
-               // Simplified volatility calculation (removed rand() for performance)
-               $volatility = (($timeIndex % 3 - 1) / 3) * $priceVariation * 0.2; // Deterministic instead of random
-               $price = max(1, min(99, $targetPrice + $volatility));
-
-               $dataPoints[] = round($price, 1);
             }
 
-            // Ensure last point is exactly current price
-            if (count($dataPoints) > 0) {
-               $dataPoints[count($dataPoints) - 1] = round($currentPrice, 1);
-            }
+            $dataPoints[] = $price;
+            $priceDirections[] = $direction;
+            $previousPrice = $price;
+         }
+
+         // Ensure last point is exactly current price
+         if (count($dataPoints) > 0) {
+            $dataPoints[count($dataPoints) - 1] = round($currentPrice, 1);
+         }
 
             // Format name with current price percentage
             $priceText = $currentPrice < 1 ? '<1%' : ($currentPrice >= 99 ? '>99%' : round($currentPrice, 1) . '%');
-            $marketName = $market->question;
-            if (strlen($marketName) > 40) {
-               $marketName = substr($marketName, 0, 37) . '...';
-            }
+            $marketName = $market->question; // Full market question/title
+            $marketNameShort = strlen($marketName) > 40 ? substr($marketName, 0, 37) . '...' : $marketName;
 
             // Use series_color from database if available, otherwise use color palette
             $marketColor = $market->series_color ?? $marketColors[$index % count($marketColors)];
@@ -327,13 +458,22 @@ class HomeController extends Controller
                $marketColor = '#' . $marketColor;
             }
 
-            // Restore full data structure for chart compatibility
-            $seriesData[] = [
-               'name' => $marketName . ' ' . $priceText,
+            // Use groupItem_title if available, otherwise use market question
+            $displayTitle = $market->groupItem_title ?? $marketName;
+            
+            // Store all market data
+            $allSeriesData[] = [
+               'id' => $market->id, // Market ID
+               'market_id' => $market->id, // Market ID (duplicate for compatibility)
+               'name' => $displayTitle . ' ' . $priceText, // Display name with price
+               'full_name' => $displayTitle, // Full display title
+               'question' => $marketName, // Original market question
+               'groupItem_title' => $market->groupItem_title ?? null, // Group item title
+               'price_text' => $priceText, // Price percentage
                'color' => $marketColor,
                'data' => $dataPoints,
+               'directions' => $priceDirections, // Price movement directions
                'icon' => $market->icon ?? null,
-               'market_id' => $market->id,
                'volume' => $market->volume ?? 0,
                'volume24hr' => $market->volume24hr ?? 0,
                'volume1wk' => $market->volume1wk ?? 0,
@@ -347,7 +487,13 @@ class HomeController extends Controller
             ];
          }
 
-         return view('frontend.market_details', compact('event', 'seriesData', 'labels'));
+         // Send ALL market data to frontend (user will select which ones to display)
+         $seriesData = $allSeriesData;
+
+         // Response with cache headers for browser caching
+         return response()
+            ->view('frontend.market_details', compact('event', 'seriesData', 'labels'))
+            ->header('Cache-Control', 'public, max-age=60'); // Cache in browser for 1 minute
       } catch (\Illuminate\Database\QueryException $e) {
          \Log::error('Database connection failed in marketDetails: ' . $e->getMessage());
          return redirect()->route('home')
@@ -361,6 +507,320 @@ class HomeController extends Controller
          return redirect()->route('home')
             ->with('error', 'An error occurred. Please try again later.');
       }
+   }
+
+   /**
+    * Get chart data for a specific time period (AJAX endpoint)
+    */
+   function getChartDataByPeriod($slug, Request $request)
+   {
+      try {
+         $period = $request->get('period', 'all');
+         
+         // Get selected market IDs from request (comma-separated string)
+         $marketIdsString = $request->get('market_ids', '');
+         $selectedMarketIds = [];
+         
+         \Log::info('Chart data request', [
+            'period' => $period,
+            'market_ids_string' => $marketIdsString,
+            'slug' => $slug
+         ]);
+         
+         if (!empty($marketIdsString)) {
+            // Parse comma-separated IDs
+            $selectedMarketIds = array_filter(
+               array_map('intval', explode(',', $marketIdsString)),
+               function($id) { return $id > 0; }
+            );
+            \Log::info('Parsed selected market IDs:', ['ids' => $selectedMarketIds, 'count' => count($selectedMarketIds)]);
+         } else {
+            \Log::info('No market IDs specified, will return all markets');
+         }
+         
+         // Load event with markets
+         $event = Event::where('slug', $slug)
+            ->with([
+               'markets' => function ($query) {
+                  $query->where('active', true)
+                        ->where('closed', false);
+                  // No limit or orderBy here, we'll sort by price after loading
+               }
+            ])
+            ->firstOrFail();
+
+         // Generate chart data based on period and selected markets
+         $chartData = $this->generateChartDataForPeriod($event, $period, $selectedMarketIds);
+
+         \Log::info('Returning chart data', [
+            'series_count' => count($chartData['series'] ?? []),
+            'labels_count' => count($chartData['labels'] ?? []),
+            'series_ids' => collect($chartData['series'] ?? [])->pluck('id')->toArray()
+         ]);
+
+         return response()->json([
+            'success' => true,
+            'data' => $chartData
+         ]);
+      } catch (\Exception $e) {
+         \Log::error('Error in getChartDataByPeriod: ' . $e->getMessage());
+         return response()->json([
+            'success' => false,
+            'error' => 'Failed to load chart data'
+         ], 500);
+      }
+   }
+
+   /**
+    * Generate chart data for specific time period
+    * @param array $selectedMarketIds Optional array of market IDs to filter
+    */
+   private function generateChartDataForPeriod($event, $period, $selectedMarketIds = [])
+   {
+      $now = now();
+      $marketColors = [
+         '#ff7b2c', '#4c8df5', '#9cdbff', '#ffe04d',
+         '#ff6b9d', '#4ecdc4', '#a8e6cf', '#ff8b94'
+      ];
+
+      // Determine time range and interval based on period
+      switch ($period) {
+         case '1h':
+            $startTime = $now->copy()->subHour();
+            $endTime = $now->copy();
+            $interval = 5; // 5-minute intervals
+            $intervalType = 'minutes';
+            $labelFormat = 'H:i';
+            $maxPoints = 12;
+            break;
+         case '6h':
+            $startTime = $now->copy()->subHours(6);
+            $endTime = $now->copy();
+            $interval = 30; // 30-minute intervals
+            $intervalType = 'minutes';
+            $labelFormat = 'H:i';
+            $maxPoints = 12;
+            break;
+         case '1d':
+            $startTime = $now->copy()->subDay();
+            $endTime = $now->copy();
+            $interval = 1; // Hourly
+            $intervalType = 'hours';
+            $labelFormat = 'H:i';
+            $maxPoints = 24;
+            break;
+         case '1w':
+            $startTime = $now->copy()->subWeek();
+            $endTime = $now->copy();
+            $interval = 1; // Daily
+            $intervalType = 'days';
+            $labelFormat = 'M d';
+            $maxPoints = 7;
+            break;
+         case '1m':
+            $startTime = $now->copy()->subMonth();
+            $endTime = $now->copy();
+            $interval = 1; // Daily
+            $intervalType = 'days';
+            $labelFormat = 'M d';
+            $maxPoints = 30;
+            break;
+         case 'all':
+         default:
+            // From market creation to now
+            $createdAt = $event->created_at ? \Carbon\Carbon::parse($event->created_at) : $now->copy()->subDays(30);
+            $startTime = $createdAt->copy()->startOfDay();
+            $endTime = $now->copy();
+            $daysDiff = max(7, $startTime->diffInDays($endTime));
+            
+            // For long periods (>30 days), show months. For shorter, show dates
+            if ($daysDiff > 30) {
+               $maxPoints = min(12, ceil($daysDiff / 30)); // Show months
+               $interval = max(1, ceil($daysDiff / $maxPoints));
+               $intervalType = 'days';
+               $labelFormat = 'M'; // Just month name (Jan, Feb, etc)
+            } else {
+               $maxPoints = min(30, $daysDiff); // Show dates
+               $interval = max(1, ceil($daysDiff / $maxPoints));
+               $intervalType = 'days';
+               $labelFormat = 'M d'; // Month and day
+            }
+            break;
+      }
+
+      // Generate time labels from start to end
+      $labels = [];
+      $timestamps = [];
+      $currentTime = $startTime->copy();
+      $pointCount = 0;
+
+      while ($currentTime <= $endTime && $pointCount < $maxPoints) {
+         $timestamps[] = $currentTime->copy();
+         $labels[] = $currentTime->format($labelFormat);
+         
+         if ($intervalType === 'minutes') {
+            $currentTime->addMinutes($interval);
+         } elseif ($intervalType === 'hours') {
+            $currentTime->addHours($interval);
+         } else {
+            $currentTime->addDays($interval);
+         }
+         
+         $pointCount++;
+      }
+      
+      // Always ensure the last point is current time
+      if (count($timestamps) > 0) {
+         $lastTime = $timestamps[count($timestamps) - 1];
+         $timeDiffMinutes = $lastTime->diffInMinutes($endTime);
+         $thresholdMinutes = $intervalType === 'minutes' ? $interval : ($intervalType === 'hours' ? $interval * 60 : $interval * 1440);
+         
+         // If last timestamp is not close to now, add current time
+         if ($timeDiffMinutes > $thresholdMinutes / 2) {
+            $timestamps[] = $endTime->copy();
+            $labels[] = $endTime->format($labelFormat);
+         }
+      }
+
+      // Sort markets by price (highest first)
+      $sortedMarkets = $event->markets->sortByDesc(function($market) {
+         // Get YES price (outcome_prices[1])
+         if ($market->outcome_prices) {
+            $prices = is_string($market->outcome_prices) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? []);
+            
+            if (is_array($prices) && isset($prices[1])) {
+               return floatval($prices[1]) * 100; // YES price
+            }
+         }
+         
+         // Use best_ask if available
+         if ($market->best_ask !== null && $market->best_ask > 0) {
+            return floatval($market->best_ask) * 100;
+         }
+         
+         return 0; // Default
+      })->values(); // Reset keys after sorting
+      
+      // Filter by selected market IDs if provided
+      $marketsToShow = $sortedMarkets;
+      if (!empty($selectedMarketIds)) {
+         $marketsToShow = $sortedMarkets->filter(function($market) use ($selectedMarketIds) {
+            return in_array($market->id, $selectedMarketIds);
+         })->values();
+         
+         \Log::info('Filtered markets:', [
+            'selected_ids' => $selectedMarketIds,
+            'filtered_count' => $marketsToShow->count(),
+            'market_ids' => $marketsToShow->pluck('id')->toArray()
+         ]);
+      }
+      
+      // Generate series data for each market
+      $seriesData = [];
+
+      foreach ($marketsToShow as $index => $market) {
+         // Get current price
+         $currentPrice = 50;
+         if ($market->outcome_prices) {
+            $prices = is_string($market->outcome_prices) 
+                ? json_decode($market->outcome_prices, true) 
+                : ($market->outcome_prices ?? []);
+            
+            if (is_array($prices)) {
+               if (isset($prices[1])) {
+                  $currentPrice = floatval($prices[1]) * 100;
+               } elseif (isset($prices[0])) {
+                  $currentPrice = (1 - floatval($prices[0])) * 100;
+               }
+            }
+         }
+
+         if ($market->best_ask !== null && $market->best_ask > 0) {
+            $currentPrice = floatval($market->best_ask) * 100;
+         }
+
+         // Generate price data points with direction indicators
+         $dataPoints = [];
+         $priceDirections = [];
+         $basePrice = $currentPrice;
+         $priceVariation = min(20, abs($basePrice - 50));
+         $seed = $market->id ?? ($index + 1);
+         $totalPoints = count($timestamps);
+
+         $previousPrice = null;
+         foreach ($timestamps as $timeIndex => $time) {
+            // Progressive price trend from 50% to current price
+            $progress = $totalPoints > 1 ? ($timeIndex / ($totalPoints - 1)) : 1;
+            $targetPrice = 50 + ($basePrice - 50) * $progress;
+
+            // Deterministic wave pattern
+            $wave1 = sin(($seed * 3.14159 + $timeIndex * 0.8) / 2) * $priceVariation * 0.3;
+            $wave2 = cos(($seed * 2.71828 + $timeIndex * 0.5) / 3) * $priceVariation * 0.2;
+            
+            $volatility = $wave1 + $wave2;
+            $price = max(1, min(99, $targetPrice + $volatility));
+            $price = round($price, 1);
+
+            // Determine direction (up, down, or neutral)
+            $direction = 'neutral';
+            if ($previousPrice !== null) {
+               if ($price > $previousPrice) {
+                  $direction = 'up';
+               } elseif ($price < $previousPrice) {
+                  $direction = 'down';
+               }
+            }
+
+            $dataPoints[] = $price;
+            $priceDirections[] = $direction;
+            $previousPrice = $price;
+         }
+
+         // Ensure last point is exactly current price
+         if (count($dataPoints) > 0) {
+            $dataPoints[count($dataPoints) - 1] = round($currentPrice, 1);
+         }
+
+         // Format market name
+         $priceText = $currentPrice < 1 ? '<1%' : ($currentPrice >= 99 ? '>99%' : round($currentPrice, 1) . '%');
+         $marketName = $market->question; // Full market question/title
+         $marketNameShort = strlen($marketName) > 40 ? substr($marketName, 0, 37) . '...' : $marketName;
+
+         // Get color
+         $marketColor = $market->series_color ?? $marketColors[$index % count($marketColors)];
+         if (empty($marketColor) || trim($marketColor) === '') {
+            $marketColor = $marketColors[$index % count($marketColors)];
+         }
+         if (!str_starts_with($marketColor, '#')) {
+            $marketColor = '#' . $marketColor;
+         }
+
+         // Use groupItem_title if available, otherwise use market question
+         $displayTitle = $market->groupItem_title ?? $marketName;
+         
+         $seriesData[] = [
+            'id' => $market->id, // Market ID
+            'market_id' => $market->id, // Market ID (duplicate for compatibility)
+            'name' => $displayTitle . ' ' . $priceText, // Display name with price
+            'full_name' => $displayTitle, // Full display title
+            'question' => $marketName, // Original market question
+            'groupItem_title' => $market->groupItem_title ?? null, // Group item title
+            'price_text' => $priceText, // Price percentage
+            'color' => $marketColor,
+            'data' => $dataPoints,
+            'directions' => $priceDirections,
+         ];
+      }
+
+      return [
+         'labels' => $labels,
+         'series' => $seriesData,
+         'period' => $period,
+         'startTime' => $startTime->toIso8601String(),
+         'endTime' => $endTime->toIso8601String(),
+      ];
    }
 
    /**
@@ -524,8 +984,23 @@ class HomeController extends Controller
 
    function eventsByCategory($category, Request $request)
    {
+      // Special handling for Elections category
+      if (strtolower($category) === 'elections') {
+         return $this->electionsPage($request);
+      }
+
       // Get all events for this category to extract dynamic sub-categories - Exclude ended events
       $categoryName = ucfirst(strtolower($category));
+      
+      // Get secondary categories for this main category
+      $secondaryCategories = \App\Models\SecondaryCategory::active()
+         ->byMainCategory($categoryName)
+         ->ordered()
+         ->withCount('activeEvents')
+         ->get();
+
+      // Get selected secondary category from query
+      $selectedSecondaryCategory = $request->get('secondary_category', null);
       
       // Cache subcategories for 5 minutes to avoid duplicate queries
       $cacheKey = 'category_subcategories_' . strtolower($categoryName);
@@ -559,8 +1034,39 @@ class HomeController extends Controller
       return view('frontend.events_by_category', compact(
          'category',
          'popularSubCategories',
-         'selectedSubCategory'
+         'selectedSubCategory',
+         'secondaryCategories',
+         'selectedSecondaryCategory'
       ));
+   }
+
+   /**
+    * Dedicated Elections page with special layout
+    */
+   private function electionsPage(Request $request)
+   {
+      // Get election events sorted by date (earliest first)
+      $events = Event::where('category', 'Elections')
+         ->where('active', true)
+         ->where('closed', false)
+         ->where(function ($q) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>', now());
+         })
+         ->with(['markets' => function($q) {
+            $q->where('active', true)
+              ->where('closed', false)
+              ->select([
+                 'id', 'event_id', 'question', 'slug', 'groupItem_title',
+                 'outcome_prices', 'outcomes', 'active', 'closed',
+                 'best_ask', 'icon', 'image', 'created_at'
+              ]);
+         }])
+         ->orderBy('end_date', 'asc') // Sort by date, earliest first
+         ->orderBy('created_at', 'asc')
+         ->paginate(20);
+
+      return view('frontend.elections', compact('events'));
    }
 
    /**

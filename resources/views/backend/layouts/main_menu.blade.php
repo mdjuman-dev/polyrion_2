@@ -33,6 +33,14 @@
                     </a>
                 </li>
                 @endif
+                @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('manage events', 'admin')))
+                <li class="{{ request()->routeIs('admin.secondary-categories.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.secondary-categories.index') }}">
+                        <iconify-icon icon="mdi:folder-multiple" class="sidebar-icon"></iconify-icon>
+                        <span>Secondary Categories</span>
+                    </a>
+                </li>
+                @endif
                 @if($admin && ($admin->isSuperAdmin() || $admin->hasPermissionTo('view markets', 'admin')))
                 <li class="{{ request()->routeIs('admin.market.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.market.index') }}">

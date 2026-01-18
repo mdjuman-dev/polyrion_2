@@ -864,7 +864,6 @@
 
     <script src="{{ asset('frontend/assets/js/jquery.min.js') }}"></script>
     <script src="{{ asset('frontend/assets/js/bootstrap.min.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <!-- Frontend App JS (Production Optimized) -->
     <script src="{{ asset('frontend/assets/js/frontend-app.min.js') }}"></script>
     
@@ -1956,109 +1955,9 @@
                 if (e.which === 13) $(this).siblings('.comment-reply-submit-btn').click();
             });
 
-            $doc.on('click', '.chart-btn', function() {
-                $('.chart-btn').removeClass('active');
-                $(this).addClass('active');
-                if (window.marketChart) {
-                    window.marketChart.data.datasets[0].data = generateChartData(50, 100);
-                    window.marketChart.data.datasets[1].data = generateChartData(48, 100);
-                    window.marketChart.data.datasets[2].data = generateChartData(1.9, 100);
-                    window.marketChart.data.datasets[3].data = generateChartData(0.5, 100);
-                    window.marketChart.update();
-                }
-            });
-
-            const generateChartData = (target, length) => {
-                const data = [];
-                let current = Math.random() * 20 + 10;
-                for (let i = 0; i < length; i++) {
-                    current = current + (Math.random() - 0.5) * 10 + (target - current) * 0.02;
-                    data.push(Math.max(0, Math.min(100, current)));
-                }
-                return data;
-            };
-
-            const initMarketChart = () => {
-                const ctx = $('#marketChart')[0];
-                if (ctx && typeof Chart !== 'undefined') {
-                    window.marketChart = new Chart(ctx.getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: Array.from({
-                                length: 100
-                            }, (_, i) => i),
-                            datasets: [{
-                                    label: 'No change',
-                                    data: generateChartData(50, 100),
-                                    borderColor: '#f97316',
-                                    borderWidth: 2,
-                                    tension: 0.1,
-                                    pointRadius: 0
-                                },
-                                {
-                                    label: '25 bps decrease',
-                                    data: generateChartData(48, 100),
-                                    borderColor: '#3b82f6',
-                                    borderWidth: 2,
-                                    tension: 0.1,
-                                    pointRadius: 0
-                                },
-                                {
-                                    label: '50+ bps decrease',
-                                    data: generateChartData(1.9, 100),
-                                    borderColor: '#06b6d4',
-                                    borderWidth: 2,
-                                    tension: 0.1,
-                                    pointRadius: 0
-                                },
-                                {
-                                    label: '25+ bps increase',
-                                    data: generateChartData(0.5, 100),
-                                    borderColor: '#eab308',
-                                    borderWidth: 2,
-                                    tension: 0.1,
-                                    pointRadius: 0
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    mode: 'index',
-                                    intersect: false
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    grid: {
-                                        color: '#374151'
-                                    },
-                                    position: 'right',
-                                    ticks: {
-                                        callback: v => v + '%'
-                                    }
-                                }
-                            },
-                            interaction: {
-                                mode: 'nearest',
-                                axis: 'x',
-                                intersect: false
-                            }
-                        }
-                    });
-                }
-            };
-
-            const checkChartJS = () => {
-                if (typeof Chart !== 'undefined') initMarketChart();
-                else setTimeout(checkChartJS, 50);
-            };
-            checkChartJS();
+            // Chart button clicks and chart initialization are now handled in specific pages
+            // (market_details.blade.php, profile.blade.php, etc.)
+            // Removed to prevent conflicts with page-specific chart implementations
             updateOutcomePrice();
             updateSummary();
         })();

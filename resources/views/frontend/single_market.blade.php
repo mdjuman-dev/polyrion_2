@@ -251,7 +251,9 @@
                <div class="market-header-top">
                   <div class="market-header-left">
                      <div class="market-profile-img" style="width: 65px; height: 65px; border-radius: 10%;">
-                        <img src="{{ $event->image ?? asset('frontend/assets/images/default-market.png') }}" alt="Profile">
+                        <img src="{{ $event->image ? (str_starts_with($event->image, 'http') ? $event->image : asset('storage/' . $event->image)) : asset('frontend/assets/images/default-market.png') }}" 
+                             alt="Profile"
+                             onerror="this.src='{{ asset('frontend/assets/images/default-market.png') }}'">
                      </div>
                      <div class="market-header-info">
                         <h1 class="market-title">{{ $market->question }}</h1>

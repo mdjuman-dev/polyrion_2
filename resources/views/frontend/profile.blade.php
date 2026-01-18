@@ -2949,6 +2949,9 @@
     </style>
 
     @push('script')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+            crossorigin="anonymous"></script>
+        
         <script>
             function openPasswordModal() {
                 $('#passwordModal').fadeIn(200).css('display', 'flex');

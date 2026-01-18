@@ -222,26 +222,39 @@
                                                             </div>
 
                                                             <div class="form-group">
-                                                                <label class="form-label">Initial Prices</label>
+                                                                <label class="form-label">Initial Prices (Chance %)</label>
                                                                 <div class="row">
                                                                     <div class="col-6">
-                                                                        <label class="small">Yes Price</label>
+                                                                        <label class="small">Yes Chance (%)</label>
                                                                         <input type="number"
-                                                                            name="markets[INDEX][yes_price]"
-                                                                            class="form-control" step="0.001"
-                                                                            min="0" max="1" value="0.5"
-                                                                            placeholder="0.5">
+                                                                            name="markets[INDEX][yes_price_percent]"
+                                                                            class="form-control yes-price-percent" step="0.1"
+                                                                            min="0" max="100" value="50"
+                                                                            placeholder="50.0"
+                                                                            onchange="updateMarketPrices(this)">
+                                                                        <input type="hidden" name="markets[INDEX][yes_price]" class="yes-price-decimal" value="0.5">
                                                                     </div>
                                                                     <div class="col-6">
-                                                                        <label class="small">No Price</label>
+                                                                        <label class="small">No Chance (%)</label>
                                                                         <input type="number"
-                                                                            name="markets[INDEX][no_price]"
-                                                                            class="form-control" step="0.001"
-                                                                            min="0" max="1" value="0.5"
-                                                                            placeholder="0.5">
+                                                                            name="markets[INDEX][no_price_percent]"
+                                                                            class="form-control no-price-percent" step="0.1"
+                                                                            min="0" max="100" value="50"
+                                                                            placeholder="50.0"
+                                                                            onchange="updateMarketPrices(this)">
+                                                                        <input type="hidden" name="markets[INDEX][no_price]" class="no-price-decimal" value="0.5">
                                                                     </div>
                                                                 </div>
-                                                                <small class="form-text text-muted">Must sum to 1.0</small>
+                                                                <small class="form-text text-muted">Must sum to 100%</small>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label class="form-label">Volume</label>
+                                                                <input type="number" name="markets[INDEX][volume]"
+                                                                    class="form-control" step="0.01"
+                                                                    min="0" value="0"
+                                                                    placeholder="0.00">
+                                                                <small class="form-text text-muted">Trading volume for this market</small>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -427,24 +440,37 @@
                                                             </div>
 
                                                             <div class="form-group">
-                                                                <label class="form-label">Initial Prices</label>
+                                                                <label class="form-label">Initial Prices (Chance %)</label>
                                                                 <div class="row">
                                                                     <div class="col-6">
-                                                                        <label class="small">Yes Price</label>
-                                                                        <input type="number" name="markets[0][yes_price]"
-                                                                            class="form-control" step="0.001"
-                                                                            min="0" max="1" value="0.5"
-                                                                            placeholder="0.5">
+                                                                        <label class="small">Yes Chance (%)</label>
+                                                                        <input type="number" name="markets[0][yes_price_percent]"
+                                                                            class="form-control yes-price-percent" step="0.1"
+                                                                            min="0" max="100" value="50"
+                                                                            placeholder="50.0"
+                                                                            onchange="updateMarketPrices(this)">
+                                                                        <input type="hidden" name="markets[0][yes_price]" class="yes-price-decimal" value="0.5">
                                                                     </div>
                                                                     <div class="col-6">
-                                                                        <label class="small">No Price</label>
-                                                                        <input type="number" name="markets[0][no_price]"
-                                                                            class="form-control" step="0.001"
-                                                                            min="0" max="1" value="0.5"
-                                                                            placeholder="0.5">
+                                                                        <label class="small">No Chance (%)</label>
+                                                                        <input type="number" name="markets[0][no_price_percent]"
+                                                                            class="form-control no-price-percent" step="0.1"
+                                                                            min="0" max="100" value="50"
+                                                                            placeholder="50.0"
+                                                                            onchange="updateMarketPrices(this)">
+                                                                        <input type="hidden" name="markets[0][no_price]" class="no-price-decimal" value="0.5">
                                                                     </div>
                                                                 </div>
-                                                                <small class="form-text text-muted">Must sum to 1.0</small>
+                                                                <small class="form-text text-muted">Must sum to 100%</small>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label class="form-label">Volume</label>
+                                                                <input type="number" name="markets[0][volume]"
+                                                                    class="form-control" step="0.01"
+                                                                    min="0" value="0"
+                                                                    placeholder="0.00">
+                                                                <small class="form-text text-muted">Trading volume for this market</small>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -590,33 +616,220 @@
             });
         }
 
-        // Validate price sum
+        // Validate price sum and handle form submission with AJAX
         document.getElementById('marketsForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Always prevent default to handle via AJAX
+            
+            const form = this;
+            const submitBtn = form.querySelector('button[type="submit"]');
             const markets = document.querySelectorAll('.market-item:not(.market-item-template)');
             let isValid = true;
 
+            // Client-side validation first
             markets.forEach(market => {
-                const yesPrice = parseFloat(market.querySelector('input[name*="[yes_price]"]').value) || 0;
-                const noPrice = parseFloat(market.querySelector('input[name*="[no_price]"]').value) || 0;
-                const sum = yesPrice + noPrice;
+                const yesPercentInput = market.querySelector('.yes-price-percent');
+                const noPercentInput = market.querySelector('.no-price-percent');
+                
+                if (yesPercentInput && noPercentInput) {
+                    const yesPercent = parseFloat(yesPercentInput.value) || 0;
+                    const noPercent = parseFloat(noPercentInput.value) || 0;
+                    const sum = yesPercent + noPercent;
 
-                if (Math.abs(sum - 1.0) > 0.001) {
-                    isValid = false;
+                    if (Math.abs(sum - 100.0) > 0.1) {
+                        isValid = false;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Prices',
+                                text: 'Yes and No chances must sum to 100% for all markets. Current sum: ' + sum.toFixed(1) + '%',
+                                confirmButtonColor: '#ffb11a'
+                            });
+                        } else {
+                            alert('Yes and No chances must sum to 100% for all markets. Current sum: ' + sum.toFixed(1) + '%');
+                        }
+                        return false;
+                    }
+                }
+            });
+
+            if (!isValid) return;
+
+            // Show loading state
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving Markets...';
+
+            // Clear previous errors
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+            // Prepare FormData
+            const formData = new FormData(form);
+
+            // Submit via AJAX
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw data;
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show success message
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Invalid Prices',
-                            text: 'Yes and No prices must sum to 1.0 for all markets',
-                            confirmButtonColor: '#ffb11a'
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Markets added successfully!',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.href = data.redirect || '{{ route("admin.events.show", $event) }}';
                         });
                     } else {
-                        alert('Yes and No prices must sum to 1.0 for all markets');
+                        window.location.href = data.redirect || '{{ route("admin.events.show", $event) }}';
                     }
-                    e.preventDefault();
-                    return false;
+                } else {
+                    throw data;
+                }
+            })
+            .catch(error => {
+                console.error('Validation errors:', error);
+                
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+
+                // Handle validation errors
+                if (error.errors) {
+                    let firstErrorElement = null;
+                    
+                    // Show each error on its field
+                    Object.keys(error.errors).forEach(field => {
+                        const errors = Array.isArray(error.errors[field]) ? error.errors[field] : [error.errors[field]];
+                        
+                        // Handle nested field names like markets.0.question
+                        if (field.includes('.')) {
+                            const parts = field.split('.');
+                            if (parts[0] === 'markets' && parts.length >= 3) {
+                                const marketIndex = parseInt(parts[1]);
+                                const fieldName = parts[2];
+                                const markets = document.querySelectorAll('.market-item:not(.market-item-template)');
+                                
+                                if (markets[marketIndex]) {
+                                    // Try multiple selectors to find the input
+                                    let input = markets[marketIndex].querySelector(`[name="markets[${marketIndex}][${fieldName}]"]`) ||
+                                               markets[marketIndex].querySelector(`[name*="[${fieldName}]"]`) ||
+                                               markets[marketIndex].querySelector(`.${fieldName}`);
+                                    
+                                    // Special handling for specific fields
+                                    if (!input) {
+                                        if (fieldName === 'question') {
+                                            input = markets[marketIndex].querySelector('.market-question') ||
+                                                   markets[marketIndex].querySelector('input[placeholder*="question"]');
+                                        } else if (fieldName === 'yes_price' || fieldName === 'no_price') {
+                                            input = markets[marketIndex].querySelector(`.${fieldName.replace('_', '-')}-percent`);
+                                        } else if (fieldName === 'volume') {
+                                            input = markets[marketIndex].querySelector('input[name*="volume"]');
+                                        }
+                                    }
+                                    
+                                    if (input) {
+                                        // Add red border and styling
+                                        input.classList.add('is-invalid');
+                                        input.style.borderColor = '#ff6b6b';
+                                        input.style.backgroundColor = '#fff5f5';
+                                        
+                                        // Remove existing error
+                                        const existingError = input.parentElement.querySelector('.invalid-feedback');
+                                        if (existingError) existingError.remove();
+                                        
+                                        // Add error message
+                                        const errorDiv = document.createElement('div');
+                                        errorDiv.className = 'invalid-feedback';
+                                        errorDiv.style.display = 'block';
+                                        errorDiv.style.color = '#ff6b6b';
+                                        errorDiv.style.fontSize = '0.875rem';
+                                        errorDiv.style.marginTop = '0.25rem';
+                                        errorDiv.style.fontWeight = '500';
+                                        errorDiv.innerHTML = `<i class="fa fa-exclamation-circle"></i> ${errors[0]}`;
+                                        input.parentElement.appendChild(errorDiv);
+                                        
+                                        // Save first error element
+                                        if (!firstErrorElement) {
+                                            firstErrorElement = input;
+                                        }
+                                        
+                                        // Highlight market box
+                                        const marketBox = markets[marketIndex].closest('.market-item, .box');
+                                        if (marketBox) {
+                                            marketBox.style.borderColor = '#ff6b6b';
+                                            marketBox.style.borderWidth = '2px';
+                                            marketBox.style.boxShadow = '0 0 0 3px rgba(255, 107, 107, 0.1)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Scroll to first error
+                    if (firstErrorElement) {
+                        setTimeout(() => {
+                            firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstErrorElement.focus();
+                            firstErrorElement.style.animation = 'pulse 0.5s ease-in-out 3';
+                        }, 100);
+                    }
+                }
+                
+                if (error.message && typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: error.message,
+                        confirmButtonColor: '#ff6b6b'
+                    });
                 }
             });
         });
+
+        // Update market prices - convert percentage to decimal
+        function updateMarketPrices(input) {
+            const marketItem = input.closest('.market-item, .box');
+            const yesPercentInput = marketItem.querySelector('.yes-price-percent');
+            const noPercentInput = marketItem.querySelector('.no-price-percent');
+            const yesDecimalInput = marketItem.querySelector('.yes-price-decimal');
+            const noDecimalInput = marketItem.querySelector('.no-price-decimal');
+
+            if (yesPercentInput && noPercentInput && yesDecimalInput && noDecimalInput) {
+                const yesPercent = parseFloat(yesPercentInput.value) || 0;
+                const noPercent = parseFloat(noPercentInput.value) || 0;
+
+                // Auto-adjust the other value if this one changes
+                if (input.classList.contains('yes-price-percent')) {
+                    noPercentInput.value = (100.0 - yesPercent).toFixed(1);
+                } else if (input.classList.contains('no-price-percent')) {
+                    yesPercentInput.value = (100.0 - noPercent).toFixed(1);
+                }
+
+                // Update hidden decimal fields
+                const finalYesPercent = parseFloat(yesPercentInput.value) || 0;
+                const finalNoPercent = parseFloat(noPercentInput.value) || 0;
+                
+                yesDecimalInput.value = (finalYesPercent / 100).toFixed(3);
+                noDecimalInput.value = (finalNoPercent / 100).toFixed(3);
+            }
+        }
 
         // Market Image Tab Switching
         function switchMarketImageTab(type, index) {
@@ -754,3 +967,5 @@
         }
     </style>
 @endsection
+
+

@@ -135,18 +135,33 @@ class EventController extends Controller
         if (!Auth::guard('admin')->check()) {
             abort(403, 'Unauthorized. Only admins can add markets.');
         }
-        $validated = $request->validate([
-            'markets' => 'required|array|min:1',
-            'markets.*.question' => 'required|string|max:255',
-            'markets.*.description' => 'nullable|string',
-            'markets.*.slug' => 'nullable|string|max:255',
-            'markets.*.image' => 'nullable|url|max:500',
-            'markets.*.icon' => 'nullable|url|max:500',
-            'markets.*.start_date' => 'nullable|date',
-            'markets.*.end_date' => 'nullable|date',
-            'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
-            'markets.*.no_price' => 'nullable|numeric|min:0|max:1',
-        ]);
+        
+        // Wrap validation in try-catch for AJAX handling
+        try {
+            $validated = $request->validate([
+                'markets' => 'required|array|min:1',
+                'markets.*.question' => 'required|string|max:255',
+                'markets.*.description' => 'nullable|string',
+                'markets.*.slug' => 'nullable|string|max:255',
+                'markets.*.image' => 'nullable|url|max:500',
+                'markets.*.icon' => 'nullable|url|max:500',
+                'markets.*.start_date' => 'nullable|date',
+                'markets.*.end_date' => 'nullable|date',
+                'markets.*.volume' => 'nullable|numeric|min:0',
+                'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
+                'markets.*.no_price' => 'nullable|numeric|min:0|max:1',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors for AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e; // Re-throw for normal form submission
+        }
 
         $createdCount = 0;
         foreach ($validated['markets'] as $marketData) {
@@ -183,12 +198,22 @@ class EventController extends Controller
                 'icon' => $marketData['icon'] ?? null,
                 'start_date' => $marketData['start_date'] ?? null,
                 'end_date' => $marketData['end_date'] ?? null,
+                'volume' => $marketData['volume'] ?? 0,
                 'outcome_prices' => json_encode($outcomePrices),
                 'outcomes' => json_encode(['No', 'Yes']),
                 'active' => true,
             ]);
 
             $createdCount++;
+        }
+
+        // Check if request is AJAX
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully created {$createdCount} market(s) for this event.",
+                'redirect' => route('admin.events.show', $event)
+            ]);
         }
 
         return redirect()
@@ -267,69 +292,102 @@ class EventController extends Controller
             abort(403, 'Unauthorized. Only admins can create events.');
         }
 
-        // Validate event data with custom messages
-        $eventValidated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'category' => 'nullable|string|max:50',
-            'slug' => 'nullable|string|max:255|unique:events,slug',
-            'image' => 'nullable|url|max:500',
-            'icon' => 'nullable|url|max:500',
-            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date',
-            'active' => 'nullable|boolean',
-            'featured' => 'nullable|boolean',
-        ], [
-            'title.required' => 'Event title is required.',
-            'title.max' => 'Event title cannot exceed 255 characters.',
-            'slug.unique' => 'This slug is already taken. Please use a different one.',
-            'image.url' => 'Please provide a valid image URL.',
-            'icon.url' => 'Please provide a valid icon URL.',
-            'image_file.image' => 'Event image must be an image file.',
-            'image_file.mimes' => 'Event image must be a jpeg, png, jpg, gif, or webp file.',
-            'image_file.max' => 'Event image must not exceed 2MB.',
-            'icon_file.image' => 'Event icon must be an image file.',
-            'icon_file.mimes' => 'Event icon must be a jpeg, png, jpg, gif, or webp file.',
-            'icon_file.max' => 'Event icon must not exceed 2MB.',
-            'end_date.after' => 'End date must be after start date.',
-        ]);
+        // Wrap all validation in try-catch for AJAX handling
+        try {
+            // Validate event data with custom messages
+            $eventValidated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'category' => 'nullable|string|max:50',
+                'secondary_category_id' => 'nullable|exists:secondary_categories,id',
+                'slug' => 'nullable|string|max:255|unique:events,slug',
+                'image' => 'nullable|url|max:500',
+                'icon' => 'nullable|url|max:500',
+                'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after:start_date',
+                'active' => 'nullable|boolean',
+                'featured' => 'nullable|boolean',
+            ], [
+                'title.required' => 'Event title is required.',
+                'title.max' => 'Event title cannot exceed 255 characters.',
+                'secondary_category_id.exists' => 'The selected secondary category does not exist.',
+                'slug.unique' => 'This slug is already taken. Please use a different one.',
+                'image.url' => 'Please provide a valid image URL.',
+                'icon.url' => 'Please provide a valid icon URL.',
+                'image_file.image' => 'Event image must be an image file.',
+                'image_file.mimes' => 'Event image must be a jpeg, png, jpg, gif, or webp file.',
+                'image_file.max' => 'Event image must not exceed 2MB.',
+                'icon_file.image' => 'Event icon must be an image file.',
+                'icon_file.mimes' => 'Event icon must be a jpeg, png, jpg, gif, or webp file.',
+                'icon_file.max' => 'Event icon must not exceed 2MB.',
+                'end_date.after' => 'End date must be after start date.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors for AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e; // Re-throw for normal form submission
+        }
 
-        // Validate markets data with custom messages
-        $marketsValidated = $request->validate([
-            'markets' => 'required|array|min:1',
-            'markets.*.question' => 'required|string|max:255',
-            'markets.*.description' => 'nullable|string',
-            'markets.*.slug' => 'nullable|string|max:255',
-            'markets.*.image' => 'nullable|url|max:500',
-            'markets.*.icon' => 'nullable|url|max:500',
-            'markets.*.image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'markets.*.icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'markets.*.start_date' => 'nullable|date',
-            'markets.*.end_date' => 'nullable|date',
-            'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
-            'markets.*.no_price' => 'nullable|numeric|min:0|max:1',
-        ], [
-            'markets.required' => 'At least one market is required.',
-            'markets.min' => 'At least one market is required.',
-            'markets.*.question.required' => 'Market question is required.',
-            'markets.*.question.max' => 'Market question cannot exceed 255 characters.',
-            'markets.*.image.url' => 'Please provide a valid image URL.',
-            'markets.*.icon.url' => 'Please provide a valid icon URL.',
-            'markets.*.image_file.image' => 'Market image must be an image file.',
-            'markets.*.image_file.mimes' => 'Market image must be a jpeg, png, jpg, gif, or webp file.',
-            'markets.*.image_file.max' => 'Market image must not exceed 2MB.',
-            'markets.*.icon_file.image' => 'Market icon must be an image file.',
-            'markets.*.icon_file.mimes' => 'Market icon must be a jpeg, png, jpg, gif, or webp file.',
-            'markets.*.icon_file.max' => 'Market icon must not exceed 2MB.',
-            'markets.*.yes_price.numeric' => 'Yes price must be a number.',
-            'markets.*.yes_price.min' => 'Yes price must be between 0 and 1.',
-            'markets.*.yes_price.max' => 'Yes price must be between 0 and 1.',
-            'markets.*.no_price.numeric' => 'No price must be a number.',
-            'markets.*.no_price.min' => 'No price must be between 0 and 1.',
-            'markets.*.no_price.max' => 'No price must be between 0 and 1.',
-        ]);
+        try {
+            // Validate markets data with custom messages
+            $marketsValidated = $request->validate([
+                'markets' => 'required|array|min:1',
+                'markets.*.question' => 'required|string|max:255',
+                'markets.*.description' => 'nullable|string',
+                'markets.*.slug' => 'nullable|string|max:255',
+                'markets.*.image' => 'nullable|url|max:500',
+                'markets.*.icon' => 'nullable|url|max:500',
+                'markets.*.image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'markets.*.icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'markets.*.start_date' => 'nullable|date',
+                'markets.*.end_date' => 'nullable|date|after:markets.*.start_date',
+                'markets.*.volume' => 'nullable|numeric|min:0',
+                'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
+                'markets.*.no_price' => 'nullable|numeric|min:0|max:1',
+            ], [
+                'markets.required' => 'At least one market is required.',
+                'markets.min' => 'At least one market is required.',
+                'markets.*.question.required' => 'Market question is required.',
+                'markets.*.question.max' => 'Market question cannot exceed 255 characters.',
+                'markets.*.image.url' => 'Please provide a valid image URL.',
+                'markets.*.icon.url' => 'Please provide a valid icon URL.',
+                'markets.*.image_file.image' => 'Market image must be an image file.',
+                'markets.*.image_file.mimes' => 'Market image must be a jpeg, png, jpg, gif, or webp file.',
+                'markets.*.image_file.max' => 'Market image must not exceed 2MB.',
+                'markets.*.icon_file.image' => 'Market icon must be an image file.',
+                'markets.*.icon_file.mimes' => 'Market icon must be a jpeg, png, jpg, gif, or webp file.',
+                'markets.*.icon_file.max' => 'Market icon must not exceed 2MB.',
+                'markets.*.start_date.date' => 'Start date must be a valid date.',
+                'markets.*.end_date.date' => 'End date must be a valid date.',
+                'markets.*.end_date.after' => 'End date must be after start date.',
+                'markets.*.volume.numeric' => 'Volume must be a number.',
+                'markets.*.volume.min' => 'Volume must be at least 0.',
+                'markets.*.yes_price.numeric' => 'Yes price must be a number.',
+                'markets.*.yes_price.min' => 'Yes price must be between 0 and 1.',
+                'markets.*.yes_price.max' => 'Yes price must be between 0 and 1.',
+                'markets.*.no_price.numeric' => 'No price must be a number.',
+                'markets.*.no_price.min' => 'No price must be between 0 and 1.',
+                'markets.*.no_price.max' => 'No price must be between 0 and 1.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors for AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e; // Re-throw for normal form submission
+        }
 
         // Additional validation: Check if yes_price + no_price = 1.0 for each market
         foreach ($marketsValidated['markets'] as $index => $marketData) {
@@ -338,11 +396,24 @@ class EventController extends Controller
             $sum = $yesPrice + $noPrice;
 
             if (abs($sum - 1.0) > 0.001) {
+                $errorMessage = "Market #" . ($index + 1) . ": Yes and No prices must sum to 1.0 (100%). Current sum: " . number_format($sum, 3);
+                
+                // Check if request is AJAX
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validation failed',
+                        'errors' => [
+                            "markets.{$index}.yes_price" => [$errorMessage]
+                        ]
+                    ], 422);
+                }
+                
                 return redirect()
                     ->back()
                     ->withInput()
                     ->withErrors([
-                        "markets.{$index}.yes_price" => "Yes and No prices must sum to 1.0 (Current sum: {$sum})"
+                        "markets.{$index}.yes_price" => $errorMessage
                     ]);
             }
         }
@@ -354,6 +425,51 @@ class EventController extends Controller
             // Auto-detect category if not provided
             if (empty($eventValidated['category'])) {
                 $eventValidated['category'] = $this->categoryDetector->detect($eventValidated['title']);
+            }
+
+            // Validate secondary category matches main category
+            if (!empty($eventValidated['secondary_category_id']) && !empty($eventValidated['category'])) {
+                $secondaryCategory = \App\Models\SecondaryCategory::find($eventValidated['secondary_category_id']);
+                
+                if (!$secondaryCategory) {
+                    DB::rollBack();
+                    
+                    // Check if request is AJAX
+                    if ($request->wantsJson() || $request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Validation failed',
+                            'errors' => [
+                                'secondary_category_id' => ['The selected secondary category is invalid.']
+                            ]
+                        ], 422);
+                    }
+                    
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->withErrors(['secondary_category_id' => 'The selected secondary category is invalid.']);
+                }
+
+                if (strcasecmp($secondaryCategory->main_category, $eventValidated['category']) !== 0) {
+                    DB::rollBack();
+                    
+                    // Check if request is AJAX
+                    if ($request->wantsJson() || $request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Validation failed',
+                            'errors' => [
+                                'secondary_category_id' => ["The selected secondary category does not belong to the '{$eventValidated['category']}' main category."]
+                            ]
+                        ], 422);
+                    }
+                    
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->withErrors(['secondary_category_id' => "The selected secondary category does not belong to the '{$eventValidated['category']}' main category."]);
+                }
             }
 
             // Generate slug if not provided
@@ -460,6 +576,7 @@ class EventController extends Controller
                     'icon' => $marketIcon,
                     'start_date' => $marketData['start_date'] ?? null,
                     'end_date' => $marketData['end_date'] ?? null,
+                    'volume' => $marketData['volume'] ?? 0,
                     'outcome_prices' => json_encode($outcomePrices),
                     'outcomes' => json_encode(['No', 'Yes']),
                     'active' => true,
@@ -470,6 +587,15 @@ class EventController extends Controller
 
             // Commit transaction if everything is successful
             DB::commit();
+
+            // Check if request is AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Event created successfully with {$createdCount} market(s).",
+                    'redirect' => route('admin.events.show', $event)
+                ]);
+            }
 
             return redirect()
                 ->route('admin.events.show', $event)
@@ -482,6 +608,15 @@ class EventController extends Controller
                 'request' => $request->all(),
                 'exception' => $e
             ]);
+
+            // Check if request is AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while creating the event. Please try again.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
 
             return redirect()
                 ->back()
@@ -502,16 +637,14 @@ class EventController extends Controller
                   ->latest()
                   ->limit(50); // Limit markets shown
             },
-            'tags' => function($q) {
-                $q->select(['id', 'label', 'slug']);
-            },
+            'tags', // Load tags without additional select (already defined in relationship)
             'comments' => function ($query) {
-                $query->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment', 'is_active', 'created_at'])
+                $query->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment_text', 'is_active', 'created_at'])
                     ->whereNull('parent_comment_id')
                     ->with(['user' => function($uq) {
                         $uq->select(['id', 'name', 'email']);
                     }, 'replies' => function ($replyQuery) {
-                        $replyQuery->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment', 'is_active', 'created_at'])
+                        $replyQuery->select(['id', 'event_id', 'user_id', 'parent_comment_id', 'comment_text', 'is_active', 'created_at'])
                             ->with(['user' => function($uq) {
                                 $uq->select(['id', 'name', 'email']);
                             }])
@@ -541,12 +674,20 @@ class EventController extends Controller
     public function edit(Event $event)
     {
         $categories = $this->categoryDetector->getAvailableCategories();
+        
+        // Load markets with necessary data
+        $event->load(['markets' => function($q) {
+            $q->select(['id', 'event_id', 'question', 'slug', 'description', 'volume', 'outcome_prices', 'outcomes', 'active', 'closed'])
+              ->orderBy('created_at', 'asc');
+        }]);
+        
         return view('backend.events.edit', compact('event', 'categories'));
     }
 
     /**
      * Update the specified event
      * Category will be re-detected if title changes
+     * Also updates associated markets
      */
     public function update(Request $request, Event $event)
     {
@@ -554,18 +695,90 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:50',
+            'markets' => 'nullable|array',
+            'markets.*.id' => 'required|exists:markets,id',
+            'markets.*.question' => 'required|string|max:255',
+            'markets.*.description' => 'nullable|string',
+            'markets.*.volume' => 'nullable|numeric|min:0',
+            'markets.*.yes_price' => 'nullable|numeric|min:0|max:1',
+            'markets.*.no_price' => 'nullable|numeric|min:0|max:1',
+            'markets.*.active' => 'nullable|boolean',
+            'markets.*.closed' => 'nullable|boolean',
         ]);
 
-        // Re-detect category if title changed and category not manually set
-        if ($event->title !== $validated['title'] && empty($validated['category'])) {
-            $validated['category'] = $this->categoryDetector->detect($validated['title']);
+        // Validate market prices sum to 1.0
+        if (isset($validated['markets'])) {
+            foreach ($validated['markets'] as $index => $marketData) {
+                if (isset($marketData['yes_price']) && isset($marketData['no_price'])) {
+                    $sum = (float)$marketData['yes_price'] + (float)$marketData['no_price'];
+                    if (abs($sum - 1.0) > 0.001) {
+                        return back()
+                            ->withInput()
+                            ->withErrors(["markets.{$index}.yes_price" => "Yes and No prices must sum to 1.0 (Current sum: {$sum})"]);
+                    }
+                }
+            }
         }
 
-        $event->update($validated);
+        try {
+            DB::beginTransaction();
 
-        return redirect()
-            ->route('admin.events.index')
-            ->with('success', 'Event updated successfully.');
+            // Re-detect category if title changed and category not manually set
+            if ($event->title !== $validated['title'] && empty($validated['category'])) {
+                $validated['category'] = $this->categoryDetector->detect($validated['title']);
+            }
+
+            // Update event
+            $event->update([
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'category' => $validated['category'] ?? $event->category,
+            ]);
+
+            // Update markets if provided
+            if (isset($validated['markets'])) {
+                foreach ($validated['markets'] as $marketData) {
+                    $market = Market::find($marketData['id']);
+                    
+                    if ($market && $market->event_id == $event->id) {
+                        $updateData = [
+                            'question' => $marketData['question'],
+                            'description' => $marketData['description'] ?? null,
+                            'volume' => $marketData['volume'] ?? $market->volume,
+                            'active' => isset($marketData['active']) ? (bool)$marketData['active'] : $market->active,
+                            'closed' => isset($marketData['closed']) ? (bool)$marketData['closed'] : $market->closed,
+                        ];
+
+                        // Update outcome prices if provided
+                        if (isset($marketData['yes_price']) && isset($marketData['no_price'])) {
+                            $outcomePrices = [
+                                (string) $marketData['no_price'],  // Index 0 = No
+                                (string) $marketData['yes_price']   // Index 1 = Yes
+                            ];
+                            $updateData['outcome_prices'] = json_encode($outcomePrices);
+                        }
+
+                        $market->update($updateData);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.events.show', $event)
+                ->with('success', 'Event and markets updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update event and markets', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to update event: ' . $e->getMessage());
+        }
     }
 
     /**
